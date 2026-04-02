@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reporte HSE</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 24px 16px 40px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.10);
+      width: 100%;
+      max-width: 520px;
+      padding: 28px 28px 32px;
+    }
+
+    /* ── Header ── */
+    .app-header {
+      background: #1A5276;
+      color: white;
+      border-radius: 8px;
+      padding: 14px 20px;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .app-header .icon { font-size: 24px; }
+    .app-header h1   { font-size: 16px; font-weight: 700; margin: 0; }
+    .app-header p    { font-size: 11px; opacity: .8; margin: 3px 0 0; }
+
+    /* ── Section ── */
+    .section-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1A5276;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      margin-bottom: 5px;
+    }
+    .section-line {
+      border: none;
+      border-top: 2px solid #1A5276;
+      margin-bottom: 18px;
+    }
+
+    /* ── Fields ── */
+    .field { margin-bottom: 16px; }
+
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 6px;
+    }
+    .field label .req { color: #e74c3c; margin-left: 2px; }
+
+    .field input[type="date"],
+    .field select {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #333;
+      background: #fff;
+      transition: border-color .2s, box-shadow .2s;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .field select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 36px;
+    }
+    .field input:focus,
+    .field select:focus {
+      outline: none;
+      border-color: #1A5276;
+      box-shadow: 0 0 0 3px rgba(26,82,118,.12);
+    }
+    .field select:disabled {
+      background-color: #f5f5f5;
+      color: #aaa;
+      cursor: not-allowed;
+    }
+    .field .hint {
+      font-size: 11px;
+      color: #999;
+      margin-top: 5px;
+    }
+
+    /* ── Two-column row ── */
+    .row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    /* ── Upload area ── */
+    .upload-area {
+      border: 2px dashed #b0c9e0;
+      border-radius: 10px;
+      padding: 26px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      background: #f7fafc;
+      position: relative;
+    }
+    .upload-area:hover,
+    .upload-area.dragover {
+      border-color: #1A5276;
+      background: #eaf1f8;
+    }
+    .upload-area input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+    .upload-icon   { font-size: 28px; margin-bottom: 6px; }
+    .upload-text   { font-size: 13px; color: #555; }
+    .upload-text span { color: #1A5276; font-weight: 600; }
+    .upload-sub    { font-size: 11px; color: #aaa; margin-top: 4px; }
+    .file-selected {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #1e8449;
+      font-weight: 600;
+      display: none;
+    }
+
+    /* ── Submit button ── */
+    .btn-submit {
+      width: 100%;
+      padding: 13px;
+      background: #1A5276;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background .2s;
+      letter-spacing: .3px;
+    }
+    .btn-submit:hover:not(:disabled) { background: #154360; }
+    .btn-submit:disabled { background: #a0b5c5; cursor: not-allowed; }
+
+    /* ── Alerts ── */
+    .alert {
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-top: 14px;
+      display: none;
+      line-height: 1.5;
+    }
+    .alert.ok  { background: #e9f7ef; color: #1e8449; border: 1px solid #a9dfbf; }
+    .alert.err { background: #fdedec; color: #c0392b; border: 1px solid #f5b7b1; }
+
+    /* ── Spinner ── */
+    .spinner {
+      display: inline-block;
+      width: 15px; height: 15px;
+      border: 2px solid rgba(255,255,255,.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div class="card">
+
+  <!-- ── Header ── -->
+  <div class="app-header">
+    <div class="icon">🦺</div>
+    <div>
+      <h1>Reporte HSE</h1>
+      <p>Health, Safety &amp; Environment — 2026</p>
+    </div>
+  </div>
+
+  <form id="form" novalidate>
+
+    <!-- ════ DATOS GENERALES ════ -->
+    <div class="section-title">Datos Generales</div>
+    <hr class="section-line">
+
+    <div class="field">
+      <label>Fecha <span class="req">*</span></label>
+      <input type="date" id="fecha" required>
+    </div>
+
+    <div class="field">
+      <label>Responsable <span class="req">*</span></label>
+      <select id="responsable" required>
+        <option value="">Seleccionar</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Puesto <span class="req">*</span></label>
+      <select id="puesto" required>
+        <option value="">Seleccionar puesto</option>
+        <option>Supervisor Geotecnia</option>
+        <option>Supervisor de Seguridad</option>
+        <option>Supervisor Civil</option>
+        <option>Supervisor Electromecanico</option>
+        <option>Supervisor Habitabilidad</option>
+        <option>Supervisor Mantenimiento</option>
+      </select>
+    </div>
+
+    <div class="row-2">
+      <div class="field">
+        <label>Sector <span class="req">*</span></label>
+        <select id="sector" required>
+          <option value="">Sector</option>
+          <option>Costa</option>
+          <option>Sierra</option>
+          <option>Selva</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Subcategoria <span class="req">*</span></label>
+        <select id="subcategoria" required>
+          <option value="">Subcat.</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Frente de Trabajo <span class="req">*</span></label>
+      <select id="frente" required disabled>
+        <option value="">Selecciona sector y subcategoria primero</option>
+      </select>
+      <div class="hint">Elige sector y subcategoria para ver los frentes disponibles.</div>
+    </div>
+
+    <!-- ════ TIPO DE REPORTE ════ -->
+    <div class="section-title" style="margin-top:6px">Tipo de Reporte</div>
+    <hr class="section-line">
+
+    <div class="field">
+      <label>Reporte HSE <span class="req">*</span></label>
+      <select id="tipoReporte" required>
+        <option value="">Seleccionar tipo</option>
+        <option>Evaluacion ATS</option>
+        <option>Evaluacion PTS</option>
+        <option>Tarjetas STOP</option>
+        <option>Inspecciones de Seguridad</option>
+        <option>Check List de Conduccion</option>
+      </select>
+    </div>
+
+    <!-- ════ ARCHIVO ════ -->
+    <div class="section-title" style="margin-top:6px">Archivo</div>
+    <hr class="section-line">
+
+    <div class="field">
+      <label>Documento</label>
+      <div class="upload-area" id="uploadArea">
+        <input type="file" id="archivo"
+               accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.zip">
+        <div class="upload-icon">📎</div>
+        <div class="upload-text"><span>Seleccionar archivo</span> o arrastra aqui</div>
+        <div class="upload-sub">PDF, Word, Excel, Imagen — max. 20 MB</div>
+        <div class="file-selected" id="fileInfo"></div>
+      </div>
+    </div>
+
+    <button type="submit" class="btn-submit" id="btnSubmit">Enviar Reporte</button>
+    <div class="alert" id="alerta"></div>
+
+  </form>
+</div>
+
+<script>
+// ── Fecha de hoy ────────────────────────────────────────────────────────────
+(function () {
+  var d = new Date();
+  var y = d.getFullYear();
+  var m = String(d.getMonth() + 1).padStart(2, '0');
+  var dd = String(d.getDate()).padStart(2, '0');
+  document.getElementById('fecha').value = y + '-' + m + '-' + dd;
+})();
+
+// ── Cargar responsables desde el backend ────────────────────────────────────
+google.script.run
+  .withSuccessHandler(function (lista) {
+    var sel = document.getElementById('responsable');
+    lista.forEach(function (s) {
+      var opt = document.createElement('option');
+      opt.value = s.nombre;
+      opt.textContent = s.nombre;
+      sel.appendChild(opt);
+    });
+  })
+  .obtenerSupervisoresHSE();
+
+// ── Subcategorias por sector (todas = Geotecnia) ─────────────────────────────
+var SUBCAT = { Costa: ['Geotecnia'], Sierra: ['Geotecnia'], Selva: ['Geotecnia'] };
+
+document.getElementById('sector').addEventListener('change', function () {
+  var subcSel    = document.getElementById('subcategoria');
+  var frenteSel  = document.getElementById('frente');
+
+  subcSel.innerHTML   = '<option value="">Subcat.</option>';
+  frenteSel.innerHTML = '<option value="">Selecciona sector y subcategoria primero</option>';
+  frenteSel.disabled  = true;
+
+  var opts = SUBCAT[this.value] || [];
+  opts.forEach(function (sc) {
+    var opt = document.createElement('option');
+    opt.value = sc; opt.textContent = sc;
+    subcSel.appendChild(opt);
+  });
+
+  // Si solo hay una opcion, seleccionarla automaticamente
+  if (opts.length === 1) {
+    subcSel.value = opts[0];
+    subcSel.dispatchEvent(new Event('change'));
+  }
+});
+
+// ── Frentes segun sector + subcategoria ─────────────────────────────────────
+document.getElementById('subcategoria').addEventListener('change', function () {
+  var sector    = document.getElementById('sector').value;
+  var subcat    = this.value;
+  var frenteSel = document.getElementById('frente');
+
+  frenteSel.innerHTML = '<option value="">Selecciona sector y subcategoria primero</option>';
+  frenteSel.disabled  = true;
+
+  if (!sector || !subcat) return;
+
+  google.script.run
+    .withSuccessHandler(function (frentes) {
+      frenteSel.innerHTML = '<option value="">Seleccionar frente</option>';
+      frentes.forEach(function (f) {
+        var opt = document.createElement('option');
+        opt.value = f; opt.textContent = f;
+        frenteSel.appendChild(opt);
+      });
+      frenteSel.disabled = false;
+    })
+    .obtenerFrentesHSE(sector, subcat);
+});
+
+// ── Manejo del archivo ───────────────────────────────────────────────────────
+document.getElementById('archivo').addEventListener('change', function () {
+  mostrarArchivo(this.files[0]);
+});
+
+var ua = document.getElementById('uploadArea');
+ua.addEventListener('dragover', function (e) { e.preventDefault(); ua.classList.add('dragover'); });
+ua.addEventListener('dragleave', function ()  { ua.classList.remove('dragover'); });
+ua.addEventListener('drop', function (e) {
+  e.preventDefault();
+  ua.classList.remove('dragover');
+  if (e.dataTransfer && e.dataTransfer.files[0]) {
+    document.getElementById('archivo').files = e.dataTransfer.files;
+    mostrarArchivo(e.dataTransfer.files[0]);
+  }
+});
+
+function mostrarArchivo(file) {
+  var info = document.getElementById('fileInfo');
+  if (file) {
+    info.textContent = '✔ ' + file.name;
+    info.style.display = 'block';
+  } else {
+    info.style.display = 'none';
+  }
+}
+
+// ── Envio del formulario ─────────────────────────────────────────────────────
+document.getElementById('form').addEventListener('submit', function (e) {
+  e.preventDefault();
+
+  var btn    = document.getElementById('btnSubmit');
+  var alerta = document.getElementById('alerta');
+  alerta.style.display = 'none';
+
+  // Validacion manual
+  var campos = ['fecha','responsable','puesto','sector','subcategoria','frente','tipoReporte'];
+  for (var i = 0; i < campos.length; i++) {
+    if (!document.getElementById(campos[i]).value) {
+      mostrarAlerta('err', 'Completa todos los campos obligatorios antes de enviar.');
+      return;
+    }
+  }
+
+  var datos = {
+    fecha:         document.getElementById('fecha').value,
+    responsable:   document.getElementById('responsable').value,
+    puesto:        document.getElementById('puesto').value,
+    sector:        document.getElementById('sector').value,
+    subcategoria:  document.getElementById('subcategoria').value,
+    frente:        document.getElementById('frente').value,
+    tipoReporte:   document.getElementById('tipoReporte').value,
+    archivoBase64: '',
+    mimeType:      '',
+    nombreArchivo: ''
+  };
+
+  var file = document.getElementById('archivo').files[0];
+
+  function enviar() {
+    btn.disabled    = true;
+    btn.innerHTML   = '<span class="spinner"></span>Enviando...';
+
+    google.script.run
+      .withSuccessHandler(function (res) {
+        btn.disabled   = false;
+        btn.textContent = 'Enviar Reporte';
+        if (res.ok) {
+          mostrarAlerta('ok', '✔ Reporte HSE enviado correctamente. El archivo fue guardado en Drive.');
+          resetForm();
+        } else {
+          mostrarAlerta('err', '✖ Error: ' + (res.error || 'Intentalo de nuevo.'));
+        }
+      })
+      .withFailureHandler(function (err) {
+        btn.disabled    = false;
+        btn.textContent = 'Enviar Reporte';
+        mostrarAlerta('err', '✖ Error de conexion: ' + err.message);
+      })
+      .procesarReporteHSE(datos);
+  }
+
+  if (file) {
+    if (file.size > 20 * 1024 * 1024) {
+      mostrarAlerta('err', '✖ El archivo supera el limite de 20 MB.');
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function (ev) {
+      datos.archivoBase64  = ev.target.result.split(',')[1];
+      datos.mimeType       = file.type || 'application/octet-stream';
+      datos.nombreArchivo  = file.name;
+      enviar();
+    };
+    reader.readAsDataURL(file);
+  } else {
+    enviar();
+  }
+});
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function mostrarAlerta(tipo, msg) {
+  var alerta = document.getElementById('alerta');
+  alerta.className     = 'alert ' + tipo;
+  alerta.textContent   = msg;
+  alerta.style.display = 'block';
+  alerta.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function resetForm() {
+  document.getElementById('form').reset();
+  document.getElementById('fileInfo').style.display = 'none';
+  document.getElementById('frente').disabled = true;
+  // Restaurar fecha de hoy
+  var d = new Date();
+  var y = d.getFullYear();
+  var m = String(d.getMonth() + 1).padStart(2, '0');
+  var dd = String(d.getDate()).padStart(2, '0');
+  document.getElementById('fecha').value = y + '-' + m + '-' + dd;
+}
+</script>
+</body>
+</html>
