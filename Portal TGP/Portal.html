@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal TGP — Bureau Veritas</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --azul-oscuro:  #1F3864;
+      --azul-medio:   #2E75B6;
+      --azul-claro:   #D6E4F7;
+      --verde:        #27AE60;
+      --amarillo:     #F39C12;
+      --rojo:         #E74C3C;
+      --gris-bg:      #F0F2F5;
+      --gris-borde:   #DDE3EC;
+      --texto:        #2C3E50;
+      --texto-suave:  #7F8C8D;
+      --blanco:       #FFFFFF;
+    }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: var(--gris-bg);
+      color: var(--texto);
+      min-height: 100vh;
+    }
+
+    /* ── Navbar ── */
+    .navbar {
+      background: var(--azul-oscuro);
+      color: var(--blanco);
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0,0,0,.2);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .navbar-brand { font-size: 15px; font-weight: 700; letter-spacing: .3px; }
+    .navbar-brand span { opacity: .7; font-weight: 400; font-size: 13px; margin-left: 8px; }
+    .navbar-user { font-size: 12px; opacity: .8; cursor: pointer; }
+    .navbar-user:hover { opacity: 1; }
+
+    /* ── Breadcrumb ── */
+    .breadcrumb {
+      padding: 12px 24px;
+      font-size: 13px;
+      color: var(--texto-suave);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .breadcrumb a {
+      color: var(--azul-medio);
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb .sep { opacity: .5; }
+
+    /* ── Main container ── */
+    .main { padding: 0 24px 40px; max-width: 1100px; margin: 0 auto; }
+
+    /* ── Page title ── */
+    .page-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--azul-oscuro);
+      margin: 16px 0 20px;
+    }
+
+    /* ── Cards grid ── */
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    @media(max-width: 768px) {
+      .grid-3, .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    /* ── Sector card ── */
+    .sector-card {
+      background: var(--blanco);
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.07);
+      padding: 24px;
+      cursor: pointer;
+      transition: transform .15s, box-shadow .15s;
+      border-top: 4px solid var(--azul-medio);
+    }
+    .sector-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,.12); }
+    .sector-card .sector-nombre { font-size: 18px; font-weight: 700; color: var(--azul-oscuro); margin-bottom: 16px; }
+    .sector-card .kpi-row { display: flex; justify-content: space-between; margin-bottom: 14px; }
+    .sector-card .kpi { text-align: center; }
+    .sector-card .kpi-val { font-size: 26px; font-weight: 700; color: var(--azul-medio); }
+    .sector-card .kpi-lbl { font-size: 11px; color: var(--texto-suave); text-transform: uppercase; }
+    .sector-card .progress-bar-wrap { background: #e8eef5; border-radius: 8px; height: 8px; overflow: hidden; margin: 8px 0 6px; }
+    .sector-card .progress-bar-fill { height: 100%; border-radius: 8px; transition: width .5s; }
+    .sector-card .progress-label { font-size: 12px; color: var(--texto-suave); text-align: right; }
+    .sector-card .ultima { font-size: 11px; color: var(--texto-suave); margin-top: 10px; }
+    .sector-card .btn-ver { display: block; margin-top: 16px; width: 100%; padding: 9px; background: var(--azul-oscuro); color: var(--blanco); border: none; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; }
+    .sector-card .btn-ver:hover { background: var(--azul-medio); }
+
+    /* ── Frente card ── */
+    .frente-card {
+      background: var(--blanco);
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.06);
+      padding: 18px 20px;
+      cursor: pointer;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .frente-card:hover { transform: translateY(-2px); box-shadow: 0 5px 16px rgba(0,0,0,.10); }
+    .frente-card .frente-nombre { font-size: 13px; font-weight: 700; color: var(--azul-oscuro); margin-bottom: 6px; line-height: 1.4; }
+    .frente-card .frente-meta { font-size: 11px; color: var(--texto-suave); margin-bottom: 10px; }
+    .frente-card .pct-badge {
+      font-size: 22px; font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .frente-card .prog-wrap { background: #e8eef5; border-radius: 6px; height: 6px; overflow: hidden; margin-bottom: 8px; }
+    .frente-card .prog-fill { height: 100%; border-radius: 6px; }
+    .frente-card .frente-actividad { font-size: 11px; color: var(--texto-suave); }
+    .frente-card .btn-detalle { margin-top: 12px; width: 100%; padding: 7px; background: var(--azul-medio); color: var(--blanco); border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .frente-card .btn-detalle:hover { background: var(--azul-oscuro); }
+
+    /* ── Frente detalle ── */
+    .detalle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media(max-width: 768px) { .detalle-grid { grid-template-columns: 1fr; } }
+
+    .panel {
+      background: var(--blanco);
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.06);
+      padding: 20px;
+    }
+    .panel-full { grid-column: 1 / -1; }
+    .panel h3 {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--azul-medio);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 14px;
+      border-bottom: 2px solid var(--azul-claro);
+      padding-bottom: 8px;
+    }
+
+    /* Info general */
+    .info-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+    .info-row:last-child { border-bottom: none; }
+    .info-row b { color: var(--texto-suave); font-weight: 600; }
+
+    /* Avance grande */
+    .avance-grande {
+      text-align: center;
+      padding: 20px 0;
+    }
+    .avance-pct {
+      font-size: 52px;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    .avance-label { font-size: 13px; color: var(--texto-suave); margin-bottom: 16px; }
+    .avance-prog-wrap { background: #e8eef5; border-radius: 10px; height: 12px; overflow: hidden; }
+    .avance-prog-fill { height: 100%; border-radius: 10px; transition: width .6s; }
+
+    /* Actualizar avance */
+    .form-avance { margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .form-avance input[type="number"] {
+      width: 80px; padding: 8px 10px; border: 1.5px solid var(--gris-borde);
+      border-radius: 7px; font-size: 14px;
+    }
+    .form-avance input[type="text"] {
+      flex: 1; min-width: 120px; padding: 8px 10px; border: 1.5px solid var(--gris-borde);
+      border-radius: 7px; font-size: 13px;
+    }
+    .form-avance button {
+      padding: 8px 16px; background: var(--azul-medio); color: var(--blanco);
+      border: none; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    .form-avance button:hover { background: var(--azul-oscuro); }
+
+    /* Chart */
+    .chart-wrap { position: relative; height: 260px; }
+
+    /* Documentos */
+    .doc-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px;
+    }
+    .doc-row:last-child { border-bottom: none; }
+    .doc-nombre { color: var(--texto); }
+    .doc-meta { font-size: 11px; color: var(--texto-suave); }
+    .doc-link { color: var(--azul-medio); text-decoration: none; font-size: 12px; font-weight: 600; }
+    .doc-link:hover { text-decoration: underline; }
+
+    .upload-area {
+      border: 2px dashed var(--gris-borde);
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      position: relative;
+      margin-top: 14px;
+    }
+    .upload-area:hover { border-color: var(--azul-medio); background: #f0f5ff; }
+    .upload-area input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .upload-text { font-size: 13px; color: var(--texto-suave); }
+    .upload-text span { color: var(--azul-medio); font-weight: 600; }
+    .file-sel { font-size: 12px; color: var(--verde); font-weight: 600; margin-top: 6px; display: none; }
+    .btn-subir {
+      margin-top: 10px; width: 100%; padding: 9px; background: var(--azul-oscuro);
+      color: var(--blanco); border: none; border-radius: 7px; font-size: 13px;
+      font-weight: 600; cursor: pointer; display: none;
+    }
+    .btn-subir:hover { background: var(--azul-medio); }
+
+    /* Actividades */
+    .act-row {
+      display: grid;
+      grid-template-columns: 80px 1fr 60px;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 12px;
+      align-items: start;
+    }
+    .act-row:last-child { border-bottom: none; }
+    .act-fecha { color: var(--texto-suave); }
+    .act-nombre { font-weight: 600; color: var(--azul-oscuro); }
+    .act-desc { color: var(--texto); font-size: 11px; }
+    .act-pct { color: var(--azul-medio); font-weight: 700; text-align: right; }
+
+    /* ── Login ── */
+    .login-wrap {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; background: var(--azul-oscuro);
+    }
+    .login-card {
+      background: var(--blanco); border-radius: 14px;
+      padding: 40px 36px; width: 100%; max-width: 380px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.3);
+      text-align: center;
+    }
+    .login-logo { font-size: 36px; margin-bottom: 12px; }
+    .login-title { font-size: 20px; font-weight: 700; color: var(--azul-oscuro); }
+    .login-sub { font-size: 13px; color: var(--texto-suave); margin: 6px 0 24px; }
+    .login-input {
+      width: 100%; padding: 12px 16px; border: 1.5px solid var(--gris-borde);
+      border-radius: 8px; font-size: 15px; text-align: center; letter-spacing: 3px;
+      margin-bottom: 14px;
+    }
+    .login-input:focus { outline: none; border-color: var(--azul-medio); }
+    .login-btn {
+      width: 100%; padding: 12px; background: var(--azul-oscuro); color: var(--blanco);
+      border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer;
+    }
+    .login-btn:hover { background: var(--azul-medio); }
+    .login-error { color: var(--rojo); font-size: 13px; margin-top: 10px; display: none; }
+
+    /* ── Alerts ── */
+    .alert {
+      padding: 10px 14px; border-radius: 7px; font-size: 13px;
+      margin-top: 10px; display: none;
+    }
+    .alert.ok  { background: #e9f7ef; color: #1e8449; border: 1px solid #a9dfbf; }
+    .alert.err { background: #fdedec; color: #c0392b; border: 1px solid #f5b7b1; }
+
+    /* ── Spinner ── */
+    .spinner-wrap { text-align: center; padding: 40px; }
+    .spinner {
+      display: inline-block; width: 36px; height: 36px;
+      border: 3px solid #ddd; border-top-color: var(--azul-medio);
+      border-radius: 50%; animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .vacio { color: var(--texto-suave); font-size: 13px; font-style: italic; padding: 10px 0; }
+
+    /* Color helpers */
+    .c-verde    { color: var(--verde); }
+    .c-amarillo { color: var(--amarillo); }
+    .c-rojo     { color: var(--rojo); }
+    .bg-verde    { background: var(--verde); }
+    .bg-amarillo { background: var(--amarillo); }
+    .bg-rojo     { background: var(--rojo); }
+  </style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// ESTADO Y ROUTER
+// ═══════════════════════════════════════════════════════
+var ESTADO = { vista: 'login', sector: null, frente: null };
+var chartInstance = null;
+
+function ir(vista, sector, frente) {
+  ESTADO.vista  = vista;
+  ESTADO.sector = sector || null;
+  ESTADO.frente = frente || null;
+  render();
+}
+
+function render() {
+  if (chartInstance) { try { chartInstance.destroy(); } catch(e) {} chartInstance = null; }
+  switch (ESTADO.vista) {
+    case 'login':  renderLogin();  break;
+    case 'home':   renderHome();   break;
+    case 'sector': renderSector(); break;
+    case 'frente': renderFrente(); break;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════
+function colorAvance(pct) {
+  return pct >= 80 ? 'var(--verde)' : pct >= 40 ? 'var(--amarillo)' : 'var(--rojo)';
+}
+function classBg(pct) {
+  return pct >= 80 ? 'bg-verde' : pct >= 40 ? 'bg-amarillo' : 'bg-rojo';
+}
+function spinner() {
+  return '<div class="spinner-wrap"><div class="spinner"></div></div>';
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ═══════════════════════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════════════════════
+function renderLogin() {
+  document.getElementById('app').innerHTML =
+    '<div class="login-wrap">' +
+      '<div class="login-card">' +
+        '<div class="login-logo">🏗️</div>' +
+        '<div class="login-title">Portal TGP</div>' +
+        '<div class="login-sub">Bureau Veritas del Perú — Control de Frentes 2026</div>' +
+        '<input id="clave" class="login-input" type="password" placeholder="Clave de acceso">' +
+        '<button class="login-btn" onclick="doLogin()">Ingresar</button>' +
+        '<div id="loginErr" class="login-error">Clave incorrecta. Intenta de nuevo.</div>' +
+      '</div>' +
+    '</div>';
+
+  document.getElementById('clave').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') doLogin();
+  });
+}
+
+function doLogin() {
+  var clave = document.getElementById('clave').value;
+  var err   = document.getElementById('loginErr');
+  err.style.display = 'none';
+
+  google.script.run
+    .withSuccessHandler(function(ok) {
+      if (ok) {
+        sessionStorage.setItem('tgp_auth', '1');
+        ir('home');
+      } else {
+        err.style.display = 'block';
+      }
+    })
+    .verificarClavePortal(clave);
+}
+
+// ═══════════════════════════════════════════════════════
+// HOME
+// ═══════════════════════════════════════════════════════
+function renderHome() {
+  var app = document.getElementById('app');
+  app.innerHTML =
+    navbarHTML('home') +
+    '<div class="main">' +
+      '<div class="page-title">Panel de Control — Frentes de Trabajo</div>' +
+      '<div class="grid-3" id="sectoresGrid">' + spinner() + spinner() + spinner() + '</div>' +
+    '</div>';
+
+  google.script.run
+    .withSuccessHandler(function(data) {
+      var grid = document.getElementById('sectoresGrid');
+      if (!grid) return;
+      grid.innerHTML = data.map(function(s) {
+        var pct = s.avancePromedio || 0;
+        return '<div class="sector-card" onclick="ir(\'sector\',\'' + s.sector + '\')">' +
+          '<div class="sector-nombre">📍 ' + s.sector + '</div>' +
+          '<div class="kpi-row">' +
+            '<div class="kpi"><div class="kpi-val">' + s.numFreentes + '</div><div class="kpi-lbl">Frentes</div></div>' +
+            '<div class="kpi"><div class="kpi-val" style="color:' + colorAvance(pct) + '">' + pct + '%</div><div class="kpi-lbl">Avance promedio</div></div>' +
+          '</div>' +
+          '<div class="progress-bar-wrap"><div class="progress-bar-fill ' + classBg(pct) + '" style="width:' + pct + '%"></div></div>' +
+          '<div class="progress-label">' + pct + '% completado</div>' +
+          '<div class="ultima">📅 Última actividad: ' + esc(s.ultimaActividad) + '</div>' +
+          '<button class="btn-ver">Ver frentes →</button>' +
+        '</div>';
+      }).join('');
+    })
+    .obtenerResumenSectores();
+}
+
+// ═══════════════════════════════════════════════════════
+// SECTOR
+// ═══════════════════════════════════════════════════════
+function renderSector() {
+  var sector = ESTADO.sector;
+  var app    = document.getElementById('app');
+  app.innerHTML =
+    navbarHTML('sector') +
+    breadcrumbHTML([{ label: 'Inicio', vista: 'home' }], sector) +
+    '<div class="main">' +
+      '<div class="page-title">Sector ' + esc(sector) + ' — Frentes de Trabajo</div>' +
+      '<div id="frentesGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">' +
+        spinner() +
+      '</div>' +
+    '</div>';
+
+  google.script.run
+    .withSuccessHandler(function(data) {
+      var grid = document.getElementById('frentesGrid');
+      if (!grid) return;
+      grid.innerHTML = data.map(function(f) {
+        var pct = f.avance || 0;
+        return '<div class="frente-card">' +
+          '<div class="frente-nombre">' + esc(f.nombre) + '</div>' +
+          '<div class="frente-meta">ORDEN: ' + esc(f.orden) + ' | CUENTA: ' + esc(f.cuenta) + '</div>' +
+          '<div class="pct-badge" style="color:' + colorAvance(pct) + '">' + pct + '%</div>' +
+          '<div class="prog-wrap"><div class="prog-fill ' + classBg(pct) + '" style="width:' + pct + '%"></div></div>' +
+          '<div class="frente-actividad">📅 ' + esc(f.ultimaActividad) + '</div>' +
+          '<button class="btn-detalle" onclick="ir(\'frente\',\'' + esc(sector) + '\',\'' + encodeURIComponent(f.nombre) + '\')">Ver detalle →</button>' +
+        '</div>';
+      }).join('');
+    })
+    .obtenerFrentesConAvance(sector);
+}
+
+// ═══════════════════════════════════════════════════════
+// FRENTE DETALLE
+// ═══════════════════════════════════════════════════════
+function renderFrente() {
+  var sector = ESTADO.sector;
+  var frente = decodeURIComponent(ESTADO.frente);
+  var app    = document.getElementById('app');
+
+  app.innerHTML =
+    navbarHTML('frente') +
+    breadcrumbHTML([
+      { label: 'Inicio',          vista: 'home'   },
+      { label: 'Sector ' + sector, sector: sector, vista: 'sector' }
+    ], frente) +
+    '<div class="main">' +
+      '<div class="page-title">' + esc(frente) + '</div>' +
+      '<div class="detalle-grid">' +
+
+        // Info general + Avance
+        '<div class="panel">' +
+          '<h3>Información General</h3>' +
+          '<div id="panelInfo">' + spinner() + '</div>' +
+        '</div>' +
+
+        // Avance manual
+        '<div class="panel">' +
+          '<h3>Avance del Frente</h3>' +
+          '<div id="panelAvance">' + spinner() + '</div>' +
+        '</div>' +
+
+        // Curva de avance (full width)
+        '<div class="panel panel-full">' +
+          '<h3>Curva de Avance</h3>' +
+          '<div class="chart-wrap"><canvas id="curvaChart"></canvas></div>' +
+        '</div>' +
+
+        // Documentación
+        '<div class="panel">' +
+          '<h3>Documentación Técnica</h3>' +
+          '<div id="panelDocs">' + spinner() + '</div>' +
+        '</div>' +
+
+        // Actividades
+        '<div class="panel">' +
+          '<h3>Actividades Recientes</h3>' +
+          '<div id="panelActs">' + spinner() + '</div>' +
+        '</div>' +
+
+      '</div>' +
+    '</div>';
+
+  // Cargar datos en paralelo
+  google.script.run
+    .withSuccessHandler(function(d) { renderPanelInfo(d); renderPanelAvance(d, sector, frente); })
+    .obtenerDetalleFrente(sector, frente);
+
+  google.script.run
+    .withSuccessHandler(function(puntos) { renderCurva(puntos); })
+    .obtenerCurvaAvance(sector, frente);
+
+  google.script.run
+    .withSuccessHandler(function(docs) { renderDocs(docs, sector, frente); })
+    .obtenerDocumentosFrente(sector, frente);
+
+  google.script.run
+    .withSuccessHandler(function(acts) { renderActs(acts); })
+    .obtenerActividadesFrente(sector, frente);
+}
+
+function renderPanelInfo(d) {
+  var el = document.getElementById('panelInfo');
+  if (!el) return;
+  el.innerHTML =
+    '<div class="info-row"><b>Sector</b><span>' + esc(d.sector) + '</span></div>' +
+    '<div class="info-row"><b>Subcategoría</b><span>' + esc(d.subcategoria) + '</span></div>' +
+    '<div class="info-row"><b>Cuenta</b><span>' + esc(d.cuenta) + '</span></div>' +
+    '<div class="info-row"><b>Orden</b><span>' + esc(d.orden) + '</span></div>';
+}
+
+function renderPanelAvance(d, sector, frente) {
+  var el = document.getElementById('panelAvance');
+  if (!el) return;
+  var pct = d.avanceActual || 0;
+  el.innerHTML =
+    '<div class="avance-grande">' +
+      '<div class="avance-pct" style="color:' + colorAvance(pct) + '">' + pct + '%</div>' +
+      '<div class="avance-label">Avance actual del frente</div>' +
+      '<div class="avance-prog-wrap"><div class="avance-prog-fill ' + classBg(pct) + '" style="width:' + pct + '%"></div></div>' +
+    '</div>' +
+    '<div style="font-size:12px;color:var(--texto-suave);margin-top:14px;margin-bottom:4px">Actualizar avance:</div>' +
+    '<div class="form-avance">' +
+      '<input type="number" id="nuevoAvance" min="0" max="100" step="0.5" placeholder="%" value="' + pct + '">' +
+      '<input type="text"   id="obsAvance"   placeholder="Observación (opcional)">' +
+      '<button onclick="guardarAvance(\'' + esc(sector) + '\',\'' + encodeURIComponent(frente) + '\')">Guardar</button>' +
+    '</div>' +
+    '<div id="avanceAlert" class="alert"></div>';
+}
+
+function guardarAvance(sector, frenteEnc) {
+  var frente  = decodeURIComponent(frenteEnc);
+  var pct     = parseFloat(document.getElementById('nuevoAvance').value);
+  var obs     = document.getElementById('obsAvance').value;
+  var alert   = document.getElementById('avanceAlert');
+  alert.style.display = 'none';
+
+  if (isNaN(pct) || pct < 0 || pct > 100) {
+    alert.className = 'alert err';
+    alert.textContent = '✖ Ingresa un porcentaje válido (0-100).';
+    alert.style.display = 'block';
+    return;
+  }
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (res.ok) {
+        alert.className = 'alert ok';
+        alert.textContent = '✔ Avance actualizado correctamente.';
+        alert.style.display = 'block';
+        // Recargar curva
+        google.script.run
+          .withSuccessHandler(function(puntos) { renderCurva(puntos); })
+          .obtenerCurvaAvance(sector, frente);
+      } else {
+        alert.className = 'alert err';
+        alert.textContent = '✖ Error: ' + res.error;
+        alert.style.display = 'block';
+      }
+    })
+    .actualizarAvanceFrente(sector, frente, pct, obs, 'Portal');
+}
+
+function renderCurva(puntos) {
+  var canvas = document.getElementById('curvaChart');
+  if (!canvas) return;
+
+  if (!puntos || puntos.length === 0) {
+    canvas.parentElement.innerHTML = '<div class="vacio">Sin registros de avance aún. Usa el panel de la izquierda para registrar el primer avance.</div>';
+    return;
+  }
+
+  var labels = puntos.map(function(p) {
+    var d = p.fecha.split('-');
+    return d[2] + '/' + d[1] + '/' + d[0].slice(2);
+  });
+  var values = puntos.map(function(p) { return p.avance; });
+
+  if (chartInstance) { try { chartInstance.destroy(); } catch(e) {} }
+
+  chartInstance = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: '% Avance',
+        data: values,
+        borderColor: '#2E75B6',
+        backgroundColor: 'rgba(46,117,182,0.08)',
+        borderWidth: 2.5,
+        pointBackgroundColor: '#2E75B6',
+        pointRadius: 5,
+        fill: true,
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          min: 0, max: 100,
+          ticks: { callback: function(v) { return v + '%'; } },
+          grid: { color: 'rgba(0,0,0,.05)' }
+        },
+        x: { grid: { color: 'rgba(0,0,0,.05)' } }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) { return ctx.parsed.y + '% de avance'; }
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderDocs(docs, sector, frente) {
+  var el = document.getElementById('panelDocs');
+  if (!el) return;
+
+  var lista = docs.length === 0
+    ? '<div class="vacio">Sin documentos cargados aún.</div>'
+    : docs.map(function(d) {
+        return '<div class="doc-row">' +
+          '<div><div class="doc-nombre">' + esc(d.nombre) + '</div>' +
+          '<div class="doc-meta">' + d.fecha + ' — ' + d.tamano + '</div></div>' +
+          '<a class="doc-link" href="' + d.url + '" target="_blank">Abrir ↗</a>' +
+        '</div>';
+      }).join('');
+
+  el.innerHTML = lista +
+    '<div class="upload-area" id="uploadArea">' +
+      '<input type="file" id="docFile" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.dwg,.zip">' +
+      '<div class="upload-text"><span>Seleccionar archivo</span> o arrastra aquí</div>' +
+      '<div class="upload-text" style="font-size:11px;margin-top:3px">PDF, Word, Excel, Imagen, DWG</div>' +
+      '<div id="fileSel" class="file-sel"></div>' +
+    '</div>' +
+    '<button id="btnSubir" class="btn-subir" onclick="subirDoc(\'' + esc(sector) + '\',\'' + encodeURIComponent(frente) + '\')">Subir documento</button>' +
+    '<div id="docAlert" class="alert"></div>';
+
+  document.getElementById('docFile').addEventListener('change', function() {
+    var f = this.files[0];
+    if (f) {
+      document.getElementById('fileSel').textContent = '✔ ' + f.name;
+      document.getElementById('fileSel').style.display = 'block';
+      document.getElementById('btnSubir').style.display = 'block';
+    }
+  });
+
+  // Drag & drop
+  var ua = document.getElementById('uploadArea');
+  ua.addEventListener('dragover', function(e) { e.preventDefault(); ua.style.borderColor = 'var(--azul-medio)'; });
+  ua.addEventListener('dragleave', function()  { ua.style.borderColor = ''; });
+  ua.addEventListener('drop', function(e) {
+    e.preventDefault(); ua.style.borderColor = '';
+    if (e.dataTransfer && e.dataTransfer.files[0]) {
+      document.getElementById('docFile').files = e.dataTransfer.files;
+      document.getElementById('fileSel').textContent = '✔ ' + e.dataTransfer.files[0].name;
+      document.getElementById('fileSel').style.display = 'block';
+      document.getElementById('btnSubir').style.display = 'block';
+    }
+  });
+}
+
+function subirDoc(sector, frenteEnc) {
+  var frente  = decodeURIComponent(frenteEnc);
+  var file    = document.getElementById('docFile').files[0];
+  var alert   = document.getElementById('docAlert');
+  alert.style.display = 'none';
+
+  if (!file) {
+    alert.className = 'alert err';
+    alert.textContent = '✖ Selecciona un archivo primero.';
+    alert.style.display = 'block';
+    return;
+  }
+  if (file.size > 20 * 1024 * 1024) {
+    alert.className = 'alert err';
+    alert.textContent = '✖ El archivo supera los 20 MB.';
+    alert.style.display = 'block';
+    return;
+  }
+
+  var btn = document.getElementById('btnSubir');
+  btn.textContent = 'Subiendo...';
+  btn.disabled    = true;
+
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    var datos = {
+      sector:        sector,
+      frente:        frente,
+      archivoBase64: ev.target.result.split(',')[1],
+      mimeType:      file.type || 'application/octet-stream',
+      nombreArchivo: file.name
+    };
+    google.script.run
+      .withSuccessHandler(function(res) {
+        btn.textContent = 'Subir documento';
+        btn.disabled    = false;
+        if (res.ok) {
+          alert.className = 'alert ok';
+          alert.textContent = '✔ Archivo subido: ' + res.nombre;
+          alert.style.display = 'block';
+          // Recargar lista
+          google.script.run
+            .withSuccessHandler(function(docs) { renderDocs(docs, sector, frente); })
+            .obtenerDocumentosFrente(sector, frente);
+        } else {
+          alert.className = 'alert err';
+          alert.textContent = '✖ Error: ' + res.error;
+          alert.style.display = 'block';
+        }
+      })
+      .subirDocumentoFrente(datos);
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderActs(acts) {
+  var el = document.getElementById('panelActs');
+  if (!el) return;
+  if (!acts || acts.length === 0) {
+    el.innerHTML = '<div class="vacio">Sin actividades registradas para este frente.</div>';
+    return;
+  }
+  el.innerHTML = acts.map(function(a) {
+    return '<div class="act-row">' +
+      '<div class="act-fecha">' + esc(a.fecha) + '</div>' +
+      '<div><div class="act-nombre">' + esc(a.responsable) + '</div>' +
+        '<div class="act-desc">' + esc(a.descripcion || a.puesto) + '</div></div>' +
+      '<div class="act-pct">' + esc(a.avance) + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// COMPONENTES REUTILIZABLES
+// ═══════════════════════════════════════════════════════
+function navbarHTML(vista) {
+  var salir = vista !== 'login'
+    ? '<span class="navbar-user" onclick="ir(\'login\')">Cerrar sesión ↩</span>'
+    : '';
+  return '<nav class="navbar">' +
+    '<div class="navbar-brand">🏗️ Portal TGP <span>Bureau Veritas del Perú</span></div>' +
+    salir +
+  '</nav>';
+}
+
+function breadcrumbHTML(items, actual) {
+  var html = '<div class="breadcrumb">';
+  items.forEach(function(item, i) {
+    html += '<a onclick="ir(\'' + item.vista + '\'' +
+      (item.sector ? ',\'' + item.sector + '\'' : '') + ')">' + esc(item.label) + '</a>' +
+      '<span class="sep">›</span>';
+  });
+  html += '<span>' + esc(actual) + '</span></div>';
+  return html;
+}
+
+// ─── INICIO ──────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
