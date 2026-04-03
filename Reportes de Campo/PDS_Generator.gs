@@ -127,8 +127,9 @@ function construirPDS(hoja, sector, fecha, reportes) {
     .setHorizontalAlignment("center").setVerticalAlignment("middle");
   hoja.setRowHeight(f, 50);
   try {
-    var logoBlob = DriveApp.getFileById(ID_LOGO_TGP).getBlob();
-    hoja.insertImage(logoBlob, 1, f, 5, 5);
+    var logoUrl  = "https://drive.google.com/uc?export=download&id=" + ID_LOGO_TGP;
+    var logoBlob = UrlFetchApp.fetch(logoUrl).getBlob().setContentType("image/png");
+    hoja.insertImage(logoBlob, 1, f, 4, 4);
   } catch(e) { Logger.log("Logo TGP no disponible: " + e); }
   f++;
 
@@ -264,7 +265,8 @@ function construirPDS(hoja, sector, fecha, reportes) {
   // Imagen de firma Yuri Arangoitia
   hoja.setRowHeight(f, 60);
   try {
-    var firmaBlob = DriveApp.getFileById(ID_FIRMA_YURI).getBlob();
+    var firmaUrl  = "https://drive.google.com/uc?export=download&id=" + ID_FIRMA_YURI;
+    var firmaBlob = UrlFetchApp.fetch(firmaUrl).getBlob().setContentType("image/png");
     hoja.insertImage(firmaBlob, 1, f, 5, 2);
   } catch(e) { Logger.log("Firma no disponible: " + e); }
   f++;
@@ -293,8 +295,6 @@ function construirPDS(hoja, sector, fecha, reportes) {
     .setBorder(true, true, true, true, true, true,
                "#AAAAAA", SpreadsheetApp.BorderStyle.SOLID);
 
-  // Ocultar líneas de cuadrícula
-  hoja.getParent().setSpreadsheetTheme(SpreadsheetApp.newTheme());
   SpreadsheetApp.flush();
 }
 
