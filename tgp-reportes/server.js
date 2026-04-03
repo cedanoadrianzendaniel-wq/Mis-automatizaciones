@@ -22,6 +22,7 @@ app.use(express.static(path.join(__dirname, "public")));
 const EMAIL_COORDINADOR = process.env.EMAIL_COORDINADOR ||
   "yuri.arangoitia@bureauveritas.com, daniel.cedano@bureauveritas.com, gustavo.fernandez@bureauveritas.com, fiorella.diaz@bureauveritas.com";
 const CARPETA_RAIZ      = process.env.CARPETA_RAIZ || "Reportes de Campo 2026";
+  const CARPETA_RAIZ_ID   = process.env.CARPETA_RAIZ_ID || "";
 const CLAVE_DASHBOARD   = process.env.CLAVE_DASHBOARD || "campo2026";
 const SPREADSHEET_ID    = process.env.SPREADSHEET_ID || "";
 
@@ -102,18 +103,22 @@ async function carpetaEnPadre(drive, nombre, padreId) {
 }
 
 async function obtenerCarpetaDrive(drive, sector, subcategoria, frente, tipo, fecha) {
-  const qRaiz = `name='${CARPETA_RAIZ}' and mimeType='application/vnd.google-apps.folder' and 'root' in parents and trashed=false`;
-  const raizRes = await drive.files.list({ q: qRaiz, fields: "files(id)", pageSize: 1 });
-  let raizId;
-  if (raizRes.data.files.length > 0) {
-    raizId = raizRes.data.files[0].id;
-  } else {
-    const r = await drive.files.create({
-      requestBody: { name: CARPETA_RAIZ, mimeType: "application/vnd.google-apps.folder" },
-      fields: "id"
-    });
-    raizId = r.data.id;
-  }
+      let raizId;
+      if (CARPETA_RAIZ_ID) {
+              raizId = CARPETA_RAIZ_ID;
+      } else {
+              const qRaiz = `name='${CARPETA_RAIZ}' and mimeType='application/vnd.google-apps.folder' and 'root' in parents and trashed=false`;
+              const raizRes = await drive.files.list({ q: qRaiz, fields: "files(id)", pageSize: 1 });
+              if (raizRes.data.files.length > 0) {
+                        raizId = raizRes.data.files[0].id;
+              } else {
+                        const r = await drive.files.create({
+                                    requestBody: { name: CARPETA_RAIZ, mimeType: "application/vnd.google-apps.folder" },
+                                    fields: "id"
+                        });
+                        raizId = r.data.id;
+              }
+      }
   const sectorId = await carpetaEnPadre(drive, sector,       raizId);
   const subcatId = await carpetaEnPadre(drive, subcategoria, sectorId);
   const frenteId = await carpetaEnPadre(drive, frente,       subcatId);
