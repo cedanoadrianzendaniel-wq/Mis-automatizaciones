@@ -456,6 +456,41 @@ function obtenerActividadesFrente(sector, frente) {
   } catch(e) { return []; }
 }
 
+// ─── DÍAS POR SUPERVISOR ─────────────────────────────────────────────────────
+function obtenerDiasPorSupervisor(sector, frente) {
+  try {
+    var ss = abrirSheetCampo();
+    if (!ss) return [];
+    var hoja = ss.getSheetByName("RAW_DATA");
+    if (!hoja || hoja.getLastRow() <= 1) return [];
+    var filas = hoja.getRange(2, 1, hoja.getLastRow()-1, 10).getValues();
+
+    // Agrupar fechas únicas por supervisor
+    var mapa = {}; // { supervisor: Set(fechas) }
+    filas.forEach(function(r) {
+      var filaSector = String(r[4]).trim();
+      var filaFrente = String(r[6]).trim();
+      if (filaSector.toLowerCase() !== sector.toLowerCase()) return;
+      if (filaFrente !== frente) return;
+      var supervisor = String(r[2]).trim();
+      if (!supervisor) return;
+      var fecha = r[1] instanceof Date
+        ? Utilities.formatDate(r[1], "America/Lima", "yyyy-MM-dd")
+        : String(r[1]).substring(0, 10);
+      if (!mapa[supervisor]) mapa[supervisor] = {};
+      mapa[supervisor][fecha] = true;
+    });
+
+    // Convertir a array ordenado por días desc
+    var resultado = [];
+    Object.keys(mapa).forEach(function(sup) {
+      resultado.push({ supervisor: sup, dias: Object.keys(mapa[sup]).length });
+    });
+    resultado.sort(function(a, b) { return b.dias - a.dias; });
+    return resultado;
+  } catch(e) { Logger.log("obtenerDiasPorSupervisor: " + e); return []; }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════════════════════════════════════
