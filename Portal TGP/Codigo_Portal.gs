@@ -12,6 +12,18 @@ var CARPETA_DOCS   = "Portal TGP";
 var FECHA_INICIO   = "2026-02-01";
 var FECHA_FIN      = "2029-01-31";
 
+// IDs de sheets externos (cuenta tgpcontroldocumentos@gmail.com)
+// IMPORTANTE: Compartir ambos sheets con daniel.cedano@bureauveritas.com (rol Lector)
+var ID_SHEET_CAMPO = "1iJV_dbAhc46U6RY2v3CBX4sqSqMT0pCimPJhYWMmSNg";
+var ID_SHEET_HSE   = "1PcAV6or6EkSbUC3BOtq6xMrgsHLZDEE4y8Eza_zIPZM";
+
+function abrirSheetCampo() {
+  try { return SpreadsheetApp.openById(ID_SHEET_CAMPO); } catch(e) { return null; }
+}
+function abrirSheetHSE() {
+  try { return SpreadsheetApp.openById(ID_SHEET_HSE); } catch(e) { return null; }
+}
+
 // ─── FRENTES POR SECTOR ──────────────────────────────────────────────────────
 var FRENTES_PORTAL = {
   "Costa": {
@@ -133,7 +145,7 @@ function obtenerResumenSeguridad() {
 
 function calcularCumplimientoHSE() {
   try {
-    var ss = buscarSheet(SHEET_HSE);
+    var ss = abrirSheetHSE();
     if (!ss) return { pct: 0, porTipo: {}, recientes: [] };
     var hoja = ss.getSheetByName("RAW_DATA");
     if (!hoja || hoja.getLastRow() <= 1) return { pct: 0, porTipo: {}, recientes: [] };
@@ -425,7 +437,7 @@ function subirDocumentoFrente(datos) {
 
 function obtenerActividadesFrente(sector, frente) {
   try {
-    var ss = buscarSheet(SHEET_CAMPO);
+    var ss = abrirSheetCampo();
     if (!ss) return [];
     var hoja = ss.getSheetByName("RAW_DATA");
     if (!hoja || hoja.getLastRow() <= 1) return [];
@@ -505,7 +517,7 @@ function obtenerUltimoAvance(sector, frente) {
 
 function obtenerUltimaActSector(sector) {
   try {
-    var ss = buscarSheet(SHEET_CAMPO);
+    var ss = abrirSheetCampo();
     if (!ss) return "-";
     var hoja = ss.getSheetByName("RAW_DATA");
     if (!hoja || hoja.getLastRow() <= 1) return "-";
@@ -521,7 +533,7 @@ function obtenerUltimaActSector(sector) {
 
 function obtenerUltimaActFrente(sector, frente) {
   try {
-    var ss = buscarSheet(SHEET_CAMPO);
+    var ss = abrirSheetCampo();
     if (!ss) return "Sin actividad";
     var hoja = ss.getSheetByName("RAW_DATA");
     if (!hoja || hoja.getLastRow() <= 1) return "Sin actividad";
