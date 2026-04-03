@@ -1,6 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// SISTEMA DE REPORTES DE CAMPO — server.js v5 (OAuth2)
-// Migrado desde Service Account a OAuth2 (tgp.reportes.campo@gmail.com)
+// SISTEMA DE REPORTES DE CAMPO — server.js v6 (OAuth2 + diagnostico)
 // ═══════════════════════════════════════════════════════════════════════════
 
 require("dotenv").config();
@@ -252,6 +251,42 @@ app.post("/api/verificar-clave", (req, res) => {
   res.json({ ok: String(clave).trim() === CLAVE_DASHBOARD });
 });
 
+// ─── DIAGNOSTICO ───────────────────────────────────────────────────────────────
+app.get("/api/diagnostico", async (req, res) => {
+  const resultado = {
+    env: {
+      CLIENT_ID: process.env.GOOGLE_CLIENT_ID ? "OK" : "FALTA",
+      CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET ? "OK" : "FALTA",
+      REFRESH_TOKEN: process.env.GOOGLE_REFRESH_TOKEN ? "OK (" + process.env.GOOGLE_REFRESH_TOKEN.substring(0,10) + "...)" : "FALTA",
+      SPREADSHEET_ID: process.env.SPREADSHEET_ID || "FALTA"
+    },
+    drive: null,
+    sheets: null
+  };
+  try {
+    const auth = getGoogleAuth();
+    const drive = google.drive({ version: "v3", auth });
+    const r = await drive.files.list({ pageSize: 1, fields: "files(id,name)" });
+    resultado.drive = { ok: true, archivos: r.data.files.length };
+  } catch (e) {
+    resultado.drive = { ok: false, error: e.message, code: e.code };
+  }
+  try {
+    const auth = getGoogleAuth();
+    const sheets = google.sheets({ version: "v4", auth });
+    const spreadsheetId = process.env.SPREADSHEET_ID;
+    if (spreadsheetId) {
+      await sheets.spreadsheets.get({ spreadsheetId });
+      resultado.sheets = { ok: true };
+    } else {
+      resultado.sheets = { ok: false, error: "SPREADSHEET_ID no configurado" };
+    }
+  } catch (e) {
+    resultado.sheets = { ok: false, error: e.message, code: e.code };
+  }
+  res.json(resultado);
+});
+
 app.post("/api/reporte", async (req, res) => {
   const datos = req.body;
   try {
@@ -262,7 +297,9 @@ app.post("/api/reporte", async (req, res) => {
     const drive = google.drive({ version: "v3", auth });
     const sheets = google.sheets({ version: "v4", auth });
     if (datos.archivoBase64 && datos.archivoBase64.length > 100) {
+      console.log("[Drive] Creando carpeta...");
       const carpetaId = await obtenerCarpetaDrive(drive, datos.sector, datos.subcategoria, datos.frente, datos.tipoReporte, hoy);
+      console.log("[Drive] Carpeta OK:", carpetaId);
       const buffer = Buffer.from(datos.archivoBase64, "base64");
       const uploadRes = await drive.files.create({
         requestBody: {
@@ -274,12 +311,15 @@ app.post("/api/reporte", async (req, res) => {
         supportsAllDrives: true
       });
       urlArchivo = uploadRes.data.webViewLink || "";
+      console.log("[Drive] Archivo subido:", urlArchivo);
     }
+    console.log("[Sheets] Registrando...");
     await registrarEnSheet(sheets, datos, urlArchivo, ahora, hoy);
+    console.log("[Sheets] OK");
     await enviarEmail(datos, urlArchivo, ahora);
     res.json({ ok: true });
   } catch (err) {
-    console.error("Error procesarReporte:", err.message);
+    console.error("[ERROR] procesarReporte:", err.message, "| code:", err.code, "| status:", err.status);
     res.json({ ok: false, error: err.message });
   }
 });
@@ -304,9 +344,9 @@ app.get("/api/datos", async (req, res) => {
 });
 
 app.get("/health", (req, res) => {
-  res.json({ status: "ok", version: "5.0.0", time: new Date().toISOString() });
+  res.json({ status: "ok", version: "6.0.0", time: new Date().toISOString() });
 });
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`TGP Reportes de Campo v5 (OAuth2) corriendo en puerto ${PORT}`);
+  console.log(`TGP Reportes de Campo v6 (OAuth2+diag) corriendo en puerto ${PORT}`);
 });
