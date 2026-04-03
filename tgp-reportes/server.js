@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// SISTEMA DE REPORTES DE CAMPO — server.js v6 (OAuth2 + diagnostico)
+// SISTEMA DE REPORTES DE CAMPO — server.js v7 (email no bloquea)
 // ═══════════════════════════════════════════════════════════════════════════
 
 require("dotenv").config();
@@ -297,9 +297,7 @@ app.post("/api/reporte", async (req, res) => {
     const drive = google.drive({ version: "v3", auth });
     const sheets = google.sheets({ version: "v4", auth });
     if (datos.archivoBase64 && datos.archivoBase64.length > 100) {
-      console.log("[Drive] Creando carpeta...");
       const carpetaId = await obtenerCarpetaDrive(drive, datos.sector, datos.subcategoria, datos.frente, datos.tipoReporte, hoy);
-      console.log("[Drive] Carpeta OK:", carpetaId);
       const buffer = Buffer.from(datos.archivoBase64, "base64");
       const uploadRes = await drive.files.create({
         requestBody: {
@@ -311,15 +309,17 @@ app.post("/api/reporte", async (req, res) => {
         supportsAllDrives: true
       });
       urlArchivo = uploadRes.data.webViewLink || "";
-      console.log("[Drive] Archivo subido:", urlArchivo);
     }
-    console.log("[Sheets] Registrando...");
     await registrarEnSheet(sheets, datos, urlArchivo, ahora, hoy);
-    console.log("[Sheets] OK");
-    await enviarEmail(datos, urlArchivo, ahora);
+    // Email no bloquea: si falla el email, el reporte ya fue guardado
+    try {
+      await enviarEmail(datos, urlArchivo, ahora);
+    } catch (emailErr) {
+      console.warn("[Email] Fallo (no critico):", emailErr.message);
+    }
     res.json({ ok: true });
   } catch (err) {
-    console.error("[ERROR] procesarReporte:", err.message, "| code:", err.code, "| status:", err.status);
+    console.error("[ERROR] procesarReporte:", err.message);
     res.json({ ok: false, error: err.message });
   }
 });
@@ -344,9 +344,9 @@ app.get("/api/datos", async (req, res) => {
 });
 
 app.get("/health", (req, res) => {
-  res.json({ status: "ok", version: "6.0.0", time: new Date().toISOString() });
+  res.json({ status: "ok", version: "7.0.0", time: new Date().toISOString() });
 });
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`TGP Reportes de Campo v6 (OAuth2+diag) corriendo en puerto ${PORT}`);
+  console.log(`TGP Reportes de Campo v7 corriendo en puerto ${PORT}`);
 });
