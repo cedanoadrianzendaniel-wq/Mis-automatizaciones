@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Coordinador</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#EEF2F7;min-height:100vh}
+.topbar{background:#1F3864;color:white;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.topbar h1{font-size:15px}
+.topbar span{font-size:11px;opacity:.8}
+.login-wrap{display:flex;justify-content:center;align-items:center;min-height:80vh}
+.login-card{background:white;border-radius:14px;padding:32px;width:320px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.12)}
+.login-card h2{color:#1F3864;font-size:18px;margin-bottom:8px}
+.login-card p{font-size:12px;color:#6B7280;margin-bottom:20px}
+.login-card input{width:100%;padding:12px;border:1.5px solid #D1D5DB;border-radius:8px;font-size:15px;margin-bottom:12px;text-align:center;outline:none}
+.login-card input:focus{border-color:#2E75B6}
+.login-card button{width:100%;padding:13px;background:#1F3864;color:white;border:none;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer}
+.login-card button:hover{background:#2E75B6}
+.err-msg{color:#DC2626;font-size:12px;margin-top:10px;min-height:18px}
+#dashScreen{display:none}
+.content{padding:16px;max-width:1100px;margin:0 auto}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+@media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{background:white;border-radius:10px;padding:14px;text-align:center;box-shadow:0 1px 6px rgba(0,0,0,.07)}
+.stat .num{font-size:26px;font-weight:bold;color:#1F3864}
+.stat .lbl{font-size:11px;color:#6B7280;margin-top:2px}
+.resumen-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+@media(max-width:700px){.resumen-grid{grid-template-columns:1fr}}
+.res-card{background:white;border-radius:10px;padding:14px;box-shadow:0 1px 6px rgba(0,0,0,.07)}
+.res-card h3{font-size:12px;font-weight:bold;color:#1F3864;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #BDD7EE}
+.res-row{display:flex;justify-content:space-between;font-size:11px;padding:4px 0;border-bottom:1px solid #F3F4F6}
+.res-row .val{font-weight:bold;color:#1F3864}
+.filtros{background:white;border-radius:10px;padding:14px;margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;box-shadow:0 1px 6px rgba(0,0,0,.07)}
+.filtros select,.filtros input{padding:8px 10px;border:1.5px solid #D1D5DB;border-radius:7px;font-size:12px;background:#FAFAFA;flex:1;min-width:110px;outline:none}
+.filtros button{padding:8px 14px;background:#1F3864;color:white;border:none;border-radius:7px;font-size:12px;cursor:pointer;font-weight:bold}
+.filtros button.sec{background:#F3F4F6;color:#374151}
+.tabla-wrap{background:white;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.07);overflow:hidden}
+.tabla-head{background:#1F3864;color:white;padding:12px 16px;font-size:12px;font-weight:bold;display:flex;justify-content:space-between;align-items:center}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#EEF2F7;padding:9px 10px;text-align:left;font-size:11px;color:#374151;font-weight:bold;border-bottom:1px solid #E5E7EB}
+td{padding:8px 10px;border-bottom:1px solid #F3F4F6;vertical-align:top;max-width:200px;word-break:break-word}
+tr:hover td{background:#F9FAFB}
+.badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:bold}
+.b-costa{background:#DBEAFE;color:#1D4ED8}
+.b-sierra{background:#D1FAE5;color:#065F46}
+.b-selva{background:#FEF3C7;color:#92400E}
+.frente-tag{display:inline-block;background:#F0F7FF;border:1px solid #BDD7EE;border-radius:4px;padding:1px 6px;font-size:10px;color:#1F3864}
+.link-arch{color:#2E75B6;text-decoration:none;font-size:11px}
+.msg{text-align:center;padding:40px;color:#9CA3AF;font-size:13px}
+.pagination{display:flex;justify-content:center;gap:8px;padding:14px;flex-wrap:wrap}
+.pag-btn{padding:6px 12px;border:1px solid #D1D5DB;border-radius:6px;background:white;cursor:pointer;font-size:12px}
+.pag-btn.activo{background:#1F3864;color:white;border-color:#1F3864}
+.back-link{display:block;text-align:center;margin-top:12px;font-size:12px;color:#6B7280}
+.back-link a{color:#2E75B6}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>Dashboard Coordinador - Reportes de Campo 2026</h1>
+  <span id="ultimaAct"></span>
+</div>
+
+<div id="loginScreen">
+  <div class="login-wrap">
+    <div class="login-card">
+      <h2>Acceso Coordinador</h2>
+      <p>Ingresa la clave de acceso</p>
+      <input type="password" id="clave" placeholder="clave de acceso" onkeydown="if(event.key==='Enter') login()">
+      <button onclick="login()">Ingresar</button>
+      <div class="err-msg" id="errLogin"></div>
+    </div>
+  </div>
+</div>
+
+<div id="dashScreen">
+  <div class="content">
+    <div class="stats">
+      <div class="stat"><div class="num" id="stTotal">0</div><div class="lbl">Total reportes</div></div>
+      <div class="stat"><div class="num" id="stHoy">0</div><div class="lbl">Reportes hoy</div></div>
+      <div class="stat"><div class="num" id="stSemana">0</div><div class="lbl">Esta semana</div></div>
+      <div class="stat"><div class="num" id="stMes">0</div><div class="lbl">Este mes</div></div>
+    </div>
+    <div class="resumen-grid" id="resumenSectores"></div>
+    <div class="filtros">
+      <select id="fSector" onchange="filtrar()">
+        <option value="">Todos los sectores</option>
+        <option>Costa</option><option>Sierra</option><option>Selva</option>
+      </select>
+      <select id="fFrente" onchange="filtrar()"><option value="">Todos los frentes</option></select>
+      <input type="date" id="fFecha" onchange="filtrar()">
+      <button onclick="limpiarFiltros()">Limpiar</button>
+      <button class="sec" onclick="cargarDatos()">Actualizar</button>
+    </div>
+    <div class="tabla-wrap">
+      <div class="tabla-head">
+        <span>Reportes recibidos</span>
+        <span id="contadorFiltro"></span>
+      </div>
+      <div id="tablaArea"><div class="msg">Cargando reportes...</div></div>
+    </div>
+    <div id="paginacion" class="pagination"></div>
+    <p class="back-link"><a href="/">Volver al formulario</a></p>
+  </div>
+</div>
+
+<script>
+var todosReportes = [], reportesFiltrados = [];
+var paginaActual = 1, POR_PAGINA = 15;
+
+function login() {
+  var clave = document.getElementById("clave").value;
+  if (!clave) { document.getElementById("errLogin").textContent = "Ingresa la clave"; return; }
+  document.getElementById("errLogin").textContent = "Verificando...";
+  fetch("/api/verificar-clave", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ clave: clave }) })
+  .then(function(r){ return r.json(); })
+  .then(function(res) {
+    if (res.ok) {
+      document.getElementById("loginScreen").style.display = "none";
+      document.getElementById("dashScreen").style.display  = "block";
+      cargarDatos();
+    } else { document.getElementById("errLogin").textContent = "Clave incorrecta"; }
+  })
+  .catch(function() { document.getElementById("errLogin").textContent = "Error de conexion"; });
+}
+
+function cargarDatos() {
+  document.getElementById("tablaArea").innerHTML = '<div class="msg">Cargando...</div>';
+  fetch("/api/datos")
+    .then(function(r){ return r.json(); })
+    .then(function(res) {
+      if (!res || res.error) { document.getElementById("tablaArea").innerHTML = '<div class="msg">Error al cargar datos</div>'; return; }
+      todosReportes = res.reportes || [];
+      document.getElementById("ultimaAct").textContent = "Actualizado: " + new Date().toLocaleTimeString();
+      actualizarStats(); actualizarResumenSectores(); actualizarFiltroFrente(); filtrar();
+    })
+    .catch(function() { document.getElementById("tablaArea").innerHTML = '<div class="msg">Error al cargar</div>'; });
+}
+
+function actualizarStats() {
+  var hoy = new Date().toISOString().substring(0,10);
+  var mes = new Date().toISOString().substring(0,7);
+  var sem = semanaActual();
+  document.getElementById("stTotal").textContent  = todosReportes.length;
+  document.getElementById("stHoy").textContent    = todosReportes.filter(function(r){ return String(r.fecha).substring(0,10) === hoy; }).length;
+  document.getElementById("stSemana").textContent = todosReportes.filter(function(r){ return String(r.semana) === String(sem); }).length;
+  document.getElementById("stMes").textContent    = todosReportes.filter(function(r){ return String(r.fecha).substring(0,7) === mes; }).length;
+}
+
+function semanaActual() {
+  var d = new Date(), ini = new Date(d.getFullYear(), 0, 1);
+  return Math.ceil(((d - ini) / 86400000 + ini.getDay() + 1) / 7);
+}
+
+function actualizarResumenSectores() {
+  var hoy = new Date().toISOString().substring(0,10);
+  var html = "";
+  ["Costa","Sierra","Selva"].forEach(function(sec) {
+    var tot  = todosReportes.filter(function(r){ return r.sector === sec; }).length;
+    var hoyC = todosReportes.filter(function(r){ return r.sector === sec && String(r.fecha).substring(0,10) === hoy; }).length;
+    html += '<div class="res-card"><h3>' + sec + '</h3>';
+    html += '<div class="res-row"><span>Total</span><span class="val">' + tot + '</span></div>';
+    html += '<div class="res-row"><span style="color:#059669">Hoy</span><span class="val" style="color:#059669">' + hoyC + '</span></div>';
+    html += '</div>';
+  });
+  document.getElementById("resumenSectores").innerHTML = html;
+}
+
+function actualizarFiltroFrente() {
+  var sel = document.getElementById("fFrente");
+  sel.innerHTML = '<option value="">Todos los frentes</option>';
+  var vistos = {};
+  todosReportes.forEach(function(r) {
+    if (r.frente && !vistos[r.frente]) {
+      vistos[r.frente] = 1;
+      var op = document.createElement("option"); op.value = r.frente; op.textContent = r.frente; sel.appendChild(op);
+    }
+  });
+}
+
+function filtrar() {
+  var sec = document.getElementById("fSector").value;
+  var frente = document.getElementById("fFrente").value;
+  var fecha = document.getElementById("fFecha").value;
+  reportesFiltrados = todosReportes.filter(function(r) {
+    if (sec    && r.sector !== sec)                          return false;
+    if (frente && r.frente !== frente)                       return false;
+    if (fecha  && String(r.fecha).substring(0,10) !== fecha) return false;
+    return true;
+  });
+  paginaActual = 1; renderTabla();
+}
+
+function limpiarFiltros() {
+  ["fSector","fFrente","fFecha"].forEach(function(id){ document.getElementById(id).value = ""; });
+  filtrar();
+}
+
+function renderTabla() {
+  var ini = (paginaActual - 1) * POR_PAGINA;
+  var pag = reportesFiltrados.slice(ini, ini + POR_PAGINA);
+  document.getElementById("contadorFiltro").textContent = reportesFiltrados.length + " registros";
+  if (pag.length === 0) { document.getElementById("tablaArea").innerHTML='<div class="msg">No hay reportes con estos filtros</div>'; document.getElementById("paginacion").innerHTML=""; return; }
+  var html = "<table><thead><tr><th>Fecha</th><th>Responsable</th><th>Sector</th><th>Frente de Trabajo</th><th>Archivo</th></tr></thead><tbody>";
+  pag.forEach(function(r) {
+    var bSec = "b-" + (r.sector||"").toLowerCase();
+    var arch = r.link ? '<a class="link-arch" href="' + r.link + '" target="_blank">Ver archivo</a>' : "-";
+    html += "<tr><td>" + String(r.fecha).substring(0,10) + "</td><td><b>" + (r.responsable||"-") + "</b></td><td><span class='badge " + bSec + "'>" + (r.sector||"-") + "</span></td><td><span class='frente-tag'>" + (r.frente||"-") + "</span></td><td>" + arch + "</td></tr>";
+  });
+  html += "</tbody></table>";
+  document.getElementById("tablaArea").innerHTML = html;
+  renderPaginacion();
+}
+
+function renderPaginacion() {
+  var total = Math.ceil(reportesFiltrados.length / POR_PAGINA);
+  if (total <= 1) { document.getElementById("paginacion").innerHTML = ""; return; }
+  var html = "";
+  for (var i = 1; i <= total; i++) {
+    html += '<button class="pag-btn ' + (i===paginaActual?"activo":"") + '" onclick="irPagina(' + i + ')">' + i + '</button>';
+  }
+  document.getElementById("paginacion").innerHTML = html;
+}
+
+function irPagina(n) { paginaActual = n; renderTabla(); window.scrollTo(0,0); }
+</script>
+</body>
+</html>
