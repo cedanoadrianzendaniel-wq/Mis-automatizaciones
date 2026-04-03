@@ -48,35 +48,41 @@ var PDS_BLANCO      = "#FFFFFF";
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ─── FUNCIÓN PRINCIPAL ────────────────────────────────────────────────────────
+// Genera o actualiza el tab del día dentro del archivo mensual del sector
 function generarPDS(sector, fecha) {
   try {
-    // 1. Leer todos los reportes del sector + fecha desde RAW_DATA
     var reportes = obtenerReportesPorSectorFecha(sector, fecha);
     if (reportes.length === 0) return null;
 
-    // 2. Obtener/crear carpeta: Parte Diario / Sector / Fecha
-    var carpeta = obtenerCarpetaPDS(sector, fecha);
+    // Carpeta: Parte Diario / Sector
+    var carpeta = obtenerCarpetaPDS(sector);
 
-    // 3. Eliminar PDS anterior si existe (se regenera con datos actualizados)
-    var nombre = "PDS_" + sector + "_" + fecha;
+    // Archivo mensual: PDS_Costa_2026-04
+    var mes    = fecha.substring(0, 7); // "2026-04"
+    var nombre = "PDS_" + sector + "_" + mes;
+
+    // Buscar archivo existente o crear nuevo
+    var pdsSS;
     var existentes = carpeta.getFilesByName(nombre);
-    while (existentes.hasNext()) {
-      existentes.next().setTrashed(true);
+    if (existentes.hasNext()) {
+      pdsSS = SpreadsheetApp.open(existentes.next());
+    } else {
+      pdsSS    = SpreadsheetApp.create(nombre);
+      var file = DriveApp.getFileById(pdsSS.getId());
+      carpeta.addFile(file);
+      DriveApp.getRootFolder().removeFile(file);
     }
 
-    // 4. Crear nuevo Spreadsheet
-    var pdsSS   = SpreadsheetApp.create(nombre);
-    var pdsHoja = pdsSS.getActiveSheet();
-    pdsHoja.setName("PDS");
+    // Tab por fecha: "01-Abr-26"
+    var tabNombre = formatearFechaPDS(fecha);
+    var pdsHoja   = pdsSS.getSheetByName(tabNombre);
+    if (pdsHoja) {
+      pdsHoja.clear(); // regenerar con datos actualizados
+    } else {
+      pdsHoja = pdsSS.insertSheet(tabNombre);
+    }
 
-    // 5. Mover a la carpeta correcta
-    var pdsFile = DriveApp.getFileById(pdsSS.getId());
-    carpeta.addFile(pdsFile);
-    DriveApp.getRootFolder().removeFile(pdsFile);
-
-    // 6. Construir el PDS
     construirPDS(pdsHoja, sector, fecha, reportes);
-
     return pdsSS.getUrl();
 
   } catch (err) {
@@ -85,11 +91,38 @@ function generarPDS(sector, fecha) {
   }
 }
 
+// ─── REGENERAR HISTÓRICOS ─────────────────────────────────────────────────────
+// Ejecutar una sola vez para generar PDS de todos los días anteriores
+function regenerarTodosPDS() {
+  var ss   = abrirOCrearSheet();
+  var hoja = ss.getSheetByName("RAW_DATA");
+  if (!hoja || hoja.getLastRow() <= 1) { Logger.log("Sin datos"); return; }
+
+  var filas = hoja.getRange(2, 1, hoja.getLastRow() - 1, 10).getValues();
+  var combinaciones = {};
+
+  filas.forEach(function(r) {
+    var fecha = r[1] instanceof Date
+      ? Utilities.formatDate(r[1], "America/Lima", "yyyy-MM-dd")
+      : String(r[1]).substring(0, 10);
+    var sector = String(r[4]).trim();
+    if (fecha && sector) combinaciones[sector + "|" + fecha] = { sector: sector, fecha: fecha };
+  });
+
+  var keys = Object.keys(combinaciones);
+  Logger.log("Combinaciones encontradas: " + keys.length);
+  keys.forEach(function(k) {
+    var c = combinaciones[k];
+    var url = generarPDS(c.sector, c.fecha);
+    Logger.log(c.sector + " | " + c.fecha + " → " + (url || "sin datos"));
+  });
+  Logger.log("Regeneracion completada");
+}
+
 // ─── CARPETA PARTE DIARIO ─────────────────────────────────────────────────────
-function obtenerCarpetaPDS(sector, fecha) {
-  var raiz  = carpetaEnPadre("Parte Diario",  DriveApp.getRootFolder());
-  var sec   = carpetaEnPadre(sector,           raiz);
-  return      carpetaEnPadre(fecha,            sec);
+function obtenerCarpetaPDS(sector) {
+  var raiz = carpetaEnPadre("Parte Diario", DriveApp.getRootFolder());
+  return carpetaEnPadre(sector, raiz);
 }
 
 // ─── LEER RAW_DATA FILTRADO ───────────────────────────────────────────────────
