@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reporte de Campo</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#EEF2F7;min-height:100vh;padding:16px}
+.wrap{max-width:540px;margin:0 auto}
+.header{background:linear-gradient(135deg,#1F3864,#2E75B6);color:white;padding:20px;border-radius:12px;margin-bottom:20px;text-align:center}
+.header h1{font-size:18px;margin-bottom:4px}
+.header p{font-size:11px;opacity:.8}
+.card{background:white;border-radius:12px;padding:20px;margin-bottom:14px;box-shadow:0 1px 8px rgba(0,0,0,.08)}
+.card-title{font-size:12px;font-weight:bold;color:#1F3864;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #BDD7EE}
+label{display:block;font-size:12px;font-weight:bold;color:#374151;margin-bottom:4px;margin-top:12px}
+label:first-of-type{margin-top:0}
+select,input[type=text],input[type=date],input[type=number],textarea{width:100%;padding:10px 12px;border:1.5px solid #D1D5DB;border-radius:8px;font-size:13px;color:#111;background:#FAFAFA;outline:none;transition:border .2s}
+select:focus,input:focus,textarea:focus{border-color:#2E75B6;background:white}
+textarea{resize:vertical;min-height:72px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.req{color:#DC2626}
+.frente-hint{font-size:10px;color:#9CA3AF;margin-top:3px}
+.tipo-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.tipo-btn{padding:12px;border:2px solid #D1D5DB;border-radius:10px;background:#FAFAFA;cursor:pointer;font-size:12px;text-align:left;transition:all .2s;display:flex;align-items:center;gap:8px}
+.tipo-btn:hover{border-color:#2E75B6;background:#EFF6FF}
+.tipo-btn.activo{border-color:#1F3864;background:#EFF6FF;font-weight:bold}
+.tipo-btn .icono{font-size:20px;width:24px;text-align:center}
+.seccion{display:none;margin-top:4px}
+.seccion.visible{display:block}
+.upload-zone{border:2px dashed #2E75B6;border-radius:10px;padding:20px;text-align:center;cursor:pointer;background:#F0F7FF;transition:background .2s;margin-top:6px}
+.upload-zone:hover{background:#DBEEFF}
+.upload-zone .uico{font-size:28px;margin-bottom:6px}
+.upload-zone p{color:#2E75B6;font-size:13px}
+.upload-zone small{color:#9CA3AF;font-size:11px}
+.fname{font-size:12px;color:#059669;margin-top:8px;font-weight:bold}
+#fileInput{display:none}
+.btn{width:100%;padding:15px;background:#1F3864;color:white;border:none;border-radius:10px;font-size:15px;font-weight:bold;cursor:pointer;margin-top:4px;transition:background .2s}
+.btn:hover{background:#2E75B6}
+.btn:disabled{background:#9CA3AF;cursor:not-allowed}
+.progress{display:none;margin-top:16px}
+.pbar{height:8px;background:#E5E7EB;border-radius:8px;overflow:hidden}
+.pfill{height:100%;background:linear-gradient(90deg,#1F3864,#2E75B6);width:0%;transition:width .3s;border-radius:8px}
+.ptxt{font-size:12px;color:#2E75B6;text-align:center;margin-top:6px}
+.resultado{display:none;padding:16px;border-radius:10px;margin-top:14px;text-align:center}
+.ok{background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7}
+.err{background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5}
+.ok h3{font-size:15px;margin-bottom:4px}
+.link-dash{display:block;text-align:center;margin-top:16px;font-size:12px;color:#6B7280}
+.link-dash a{color:#2E75B6}
+.ruta-preview{background:#F0F7FF;border:1px solid #BDD7EE;border-radius:8px;padding:10px;font-size:11px;color:#1F3864;margin-top:10px;display:none}
+.ruta-preview b{display:block;margin-bottom:4px;font-size:10px;color:#6B7280;text-transform:uppercase}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <h1>Reporte de Campo</h1>
+    <p>Sistema de registro - Operaciones TGP</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Tipo de Reporte <span class="req">*</span></div>
+    <div class="tipo-grid">
+      <button class="tipo-btn" onclick="seleccionarTipo('diario',this)">
+        <span class="icono">📊</span><div><b>Reporte Diario</b></div>
+      </button>
+      <button class="tipo-btn" onclick="seleccionarTipo('semanal',this)">
+        <span class="icono">📅</span><div><b>Reporte Semanal</b></div>
+      </button>
+      <button class="tipo-btn" onclick="seleccionarTipo('final',this)">
+        <span class="icono">📋</span><div><b>Reporte Final</b></div>
+      </button>
+      <button class="tipo-btn" onclick="seleccionarTipo('mensual',this)">
+        <span class="icono">📆</span><div><b>Reporte Mensual</b></div>
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Datos Generales</div>
+    <label>Fecha <span class="req">*</span></label>
+    <input type="date" id="fecha">
+    <label>Responsable <span class="req">*</span></label>
+    <select id="responsable" onchange="autocompletarSector()">
+      <option value="">Cargando...</option>
+    </select>
+    <label>Puesto <span class="req">*</span></label>
+    <select id="puesto">
+      <option value="">Seleccionar puesto</option>
+      <option>SUPERVISOR GEOTECNIA SENIOR</option>
+      <option>SUPERVISOR GEOTECNIA SEMI SENIOR</option>
+      <option>SUPERVISOR GEOTECNIA JUNIOR</option>
+      <option>SUPERVISOR ELECTROMECANICO</option>
+      <option>SUPERVISOR CIVIL</option>
+      <option>SUPERVISOR SEGURIDAD</option>
+    </select>
+    <div class="row2">
+      <div>
+        <label>Sector <span class="req">*</span></label>
+        <select id="sector" onchange="actualizarFrentes()">
+          <option value="">Sector</option>
+          <option>Costa</option>
+          <option>Sierra</option>
+          <option>Selva</option>
+        </select>
+      </div>
+      <div>
+        <label>Subcategoria <span class="req">*</span></label>
+        <select id="subcategoria" onchange="actualizarFrentes()">
+          <option value="">Subcat.</option>
+          <option>Geotecnia</option>
+        </select>
+      </div>
+    </div>
+    <label>Frente de Trabajo <span class="req">*</span></label>
+    <select id="frente" onchange="mostrarRuta(); actualizarCuentaOrden()">
+      <option value="">Selecciona sector y subcategoria primero</option>
+    </select>
+    <p class="frente-hint" id="frenteHint">Elige sector y subcategoria para ver los frentes disponibles</p>
+    <div class="row2">
+      <div>
+        <label>Cuenta</label>
+        <select id="cuenta"><option value="">Seleccionar cuenta</option></select>
+      </div>
+      <div>
+        <label>Orden</label>
+        <select id="orden"><option value="">Seleccionar orden</option></select>
+      </div>
+    </div>
+    <div class="ruta-preview" id="rutaPreview">
+      <b>El archivo se guardara en:</b>
+      <span id="rutaTexto"></span>
+    </div>
+  </div>
+
+  <div class="card" id="cardMovilidad" style="display:none">
+    <div class="card-title">Movilidad</div>
+    <div class="row2">
+      <div>
+        <label>Camioneta</label>
+        <select id="camioneta" onchange="mostrarPlacaOtro()">
+          <option value="No">No</option>
+          <option value="BDV-878">BDV-878</option>
+          <option value="BDV-807">BDV-807</option>
+          <option value="BUJ-832">BUJ-832</option>
+          <option value="BUK-783">BUK-783</option>
+          <option value="BUK-723">BUK-723</option>
+          <option value="BVD-793">BVD-793</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
+      <div>
+        <label>Placa</label>
+        <input type="text" id="placa" placeholder="Placa asignada" style="text-transform:uppercase" readonly>
+        <input type="text" id="placaOtro" placeholder="Ingrese placa" style="text-transform:uppercase;display:none;margin-top:4px">
+      </div>
+    </div>
+    <div class="row2" style="margin-top:4px">
+      <div><label>KM Inicial</label><input type="number" id="kmInicial" placeholder="0" min="0" step="1"></div>
+      <div><label>KM Final</label><input type="number" id="kmFinal" placeholder="0" min="0" step="1"></div>
+    </div>
+    <div class="row2" style="margin-top:4px">
+      <div><label>Origen</label><input type="text" id="origen" placeholder="Ej: Lima"></div>
+      <div><label>Destino</label><input type="text" id="destino" placeholder="Ej: KP 45+200"></div>
+    </div>
+  </div>
+
+  <div class="card" id="cardGastos" style="display:none">
+    <div class="card-title">Gastos Logisticos</div>
+    <div class="row2">
+      <div><label>Alimentacion</label><select id="alimentacion"><option value="No">No</option><option value="Si">Si</option></select></div>
+      <div><label>Hospedaje</label><select id="hospedaje"><option value="No">No</option><option value="Si">Si</option></select></div>
+    </div>
+  </div>
+
+  <div class="card seccion" id="sec-diario">
+    <div class="card-title">Detalle Reporte Diario</div>
+    <label>Actividad desarrollada <span class="req">*</span></label>
+    <textarea id="actividad" placeholder="Describe las actividades desarrolladas hoy..."></textarea>
+    <label>% de avance acumulado</label>
+    <input type="number" id="avance" placeholder="Ej: 74.20" min="0" max="100" step="0.01" style="width:100%;padding:10px 12px;border:1.5px solid #D1D5DB;border-radius:8px;font-size:15px;font-weight:bold;color:#1F3864;background:#F0F7FF">
+    <p style="font-size:10px;color:#9CA3AF;margin-top:3px">Valor entre 0 y 100. Acepta decimales.</p>
+    <label>Observaciones</label>
+    <textarea id="problemas" placeholder="Observaciones o impedimentos (opcional)"></textarea>
+  </div>
+
+  <div class="card seccion" id="sec-semanal">
+    <div class="card-title">Reporte Semanal</div>
+    <label>% de Avance de Obra</label>
+    <input type="number" id="avanceSemanal" placeholder="Ej: 74.20" min="0" max="100" step="0.01" style="width:100%;padding:10px 12px;border:1.5px solid #D1D5DB;border-radius:8px;font-size:15px;font-weight:bold;color:#1F3864;background:#F0F7FF">
+    <p style="font-size:10px;color:#9CA3AF;margin-top:3px">Valor entre 0 y 100. Acepta decimales.</p>
+    <label>Observaciones</label>
+    <textarea id="obsSemanal" placeholder="Observaciones (opcional)"></textarea>
+  </div>
+
+  <div class="card seccion" id="sec-final">
+    <div class="card-title">Reporte Final</div>
+    <label>% de Avance de Obra</label>
+    <input type="number" id="avanceFinal" placeholder="Ej: 100.00" min="0" max="100" step="0.01" style="width:100%;padding:10px 12px;border:1.5px solid #D1D5DB;border-radius:8px;font-size:15px;font-weight:bold;color:#1F3864;background:#F0F7FF">
+    <p style="font-size:10px;color:#9CA3AF;margin-top:3px">Valor entre 0 y 100. Acepta decimales.</p>
+    <label>Observaciones</label>
+    <textarea id="obsFinal" placeholder="Observaciones (opcional)"></textarea>
+  </div>
+
+  <div class="card seccion" id="sec-mensual">
+    <div class="card-title">Reporte Mensual</div>
+    <label>% de Avance de Obra</label>
+    <input type="number" id="avanceMensual" placeholder="Ej: 74.20" min="0" max="100" step="0.01" style="width:100%;padding:10px 12px;border:1.5px solid #D1D5DB;border-radius:8px;font-size:15px;font-weight:bold;color:#1F3864;background:#F0F7FF">
+    <p style="font-size:10px;color:#9CA3AF;margin-top:3px">Valor entre 0 y 100. Acepta decimales.</p>
+    <label>Observaciones</label>
+    <textarea id="obsMensual" placeholder="Observaciones (opcional)"></textarea>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Adjuntar Archivo</div>
+    <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+      <div class="uico">📁</div>
+      <p>Toca aqui para seleccionar un archivo</p>
+      <small>PDF, JPG, PNG, Excel - max. 50 MB</small>
+      <div class="fname" id="nombreArchivo"></div>
+    </div>
+    <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.docx" onchange="mostrarArchivo(this)">
+  </div>
+
+  <button class="btn" id="btnEnviar" onclick="enviar()">Enviar Reporte</button>
+
+  <div class="progress" id="progreso">
+    <div class="pbar"><div class="pfill" id="pfill"></div></div>
+    <p class="ptxt" id="ptxt">Enviando...</p>
+  </div>
+
+  <div class="resultado" id="resultado"></div>
+  <p class="link-dash">Eres el coordinador? <a href="/dashboard">Ir al Dashboard</a></p>
+</div>
+
+<script>
+var supervisoresCache = [];
+var tipoActual = "";
+
+var FRENTES_LOCAL = {
+  "Costa_Geotecnia": ["SOPORTE A INGENIERIA","VIAL","URGENCIA VIAL KP 472+700 AL KP 482+000","KP 714+155 AL KP 730+698","MG KP 519+526 AL KP 540+839"],
+  "Sierra_Geotecnia": ["MG KP 170+000 AL KP 179+850","MG KP 179+850 AL KP 194+000","MG KP 194+000 AL KP 209+360","APOYO A INGENIERIA"],
+  "Selva_Geotecnia": ["M.G. KP 43+830 - KP 53+000 - ETAPA 1","M.G. KP 0+000 - KP 12+000 - ETAPA 1","M.G. KP 25+000 - KP 35+000","TAI KP 112+300","Reparacion de F.O. KP61+150","Perforaciones del KP126","Perforaciones del KP55+118","Apoyo / Ingenieria"]
+};
+
+var CUENTAS_ORDENES = {
+  "SOPORTE A INGENIERIA":                    { cuenta: "63800018", orden: "TGGA/COS-26-02-01" },
+  "VIAL":                                    { cuenta: "63800018", orden: "TG3CDV1" },
+  "URGENCIA VIAL KP 472+700 AL KP 482+000":  { cuenta: "63440004", orden: "TGCI-2644" },
+  "KP 714+155 AL KP 730+698":                { cuenta: "63440002", orden: "TGEO-2629" },
+  "MG KP 519+526 AL KP 540+839":             { cuenta: "63440002", orden: "TGEO-2631" },
+  "MG KP 170+000 AL KP 179+850":             { cuenta: "63440002", orden: "TGEO-2621" },
+  "MG KP 179+850 AL KP 194+000":             { cuenta: "63440002", orden: "TGEO-2622" },
+  "MG KP 194+000 AL KP 209+360":             { cuenta: "63440002", orden: "TGEO-2623" },
+  "APOYO A INGENIERIA":                      { cuenta: "63290002", orden: "TGGA/SIE-26-02-02" },
+  "M.G. KP 43+830 - KP 53+000 - ETAPA 1":   { cuenta: "63800018", orden: "TGEO-2610" },
+  "M.G. KP 0+000 - KP 12+000 - ETAPA 1":    { cuenta: "63800018", orden: "TGEO-2606" },
+  "M.G. KP 25+000 - KP 35+000":             { cuenta: "63800018", orden: "TGEO-2608" },
+  "TAI KP 112+300":                          { cuenta: "63800018", orden: "TGEO-2601" },
+  "Reparacion de F.O. KP61+150":             { cuenta: "63800018", orden: "TG1CDV1" },
+  "Perforaciones del KP126":                 { cuenta: "63800018", orden: "TGGA/SEL-25-08-07" },
+  "Perforaciones del KP55+118":              { cuenta: "63800018", orden: "TGGA/SEL-26-02-01" },
+  "Apoyo / Ingenieria":                      { cuenta: "63800018", orden: "TGGA/SEL-26-03-01" }
+};
+
+fetch("/api/supervisores")
+  .then(function(r){ return r.json(); })
+  .then(function(lista) {
+    supervisoresCache = lista;
+    var sel = document.getElementById("responsable");
+    sel.innerHTML = '<option value="">Seleccionar</option>';
+    lista.forEach(function(s) {
+      var op = document.createElement("option");
+      op.value = s.nombre; op.textContent = s.nombre;
+      sel.appendChild(op);
+    });
+  })
+  .catch(function(){ document.getElementById("responsable").innerHTML = '<option value="">Error al cargar</option>'; });
+
+document.getElementById("fecha").valueAsDate = new Date();
+
+function autocompletarSector() {
+  var nombre = document.getElementById("responsable").value;
+  var s = supervisoresCache.find(function(x){ return x.nombre === nombre; });
+  if (s && s.sector) {
+    document.getElementById("sector").value = s.sector;
+    document.getElementById("subcategoria").value = s.subcategoria || "Geotecnia";
+    actualizarFrentes();
+  }
+}
+
+function actualizarFrentes() {
+  var sector = document.getElementById("sector").value;
+  var subcat = document.getElementById("subcategoria").value;
+  var sel = document.getElementById("frente");
+  var hint = document.getElementById("frenteHint");
+  sel.innerHTML = '<option value="">Seleccionar frente</option>';
+  if (!sector || !subcat) { hint.textContent = "Elige sector y subcategoria para ver los frentes disponibles"; document.getElementById("rutaPreview").style.display="none"; return; }
+  var key = sector + "_" + subcat;
+  var frentes = FRENTES_LOCAL[key] || [];
+  if (frentes.length === 0) { sel.innerHTML = '<option value="">Sin frentes configurados</option>'; hint.textContent = "No hay frentes para esta combinacion"; return; }
+  frentes.forEach(function(f) { var op = document.createElement("option"); op.value = f; op.textContent = f; sel.appendChild(op); });
+  hint.textContent = frentes.length + " frente(s) disponibles para " + sector + " / " + subcat;
+  mostrarRuta(); actualizarCuentaOrden();
+}
+
+function mostrarRuta() {
+  var sector = document.getElementById("sector").value;
+  var subcat = document.getElementById("subcategoria").value;
+  var frente = document.getElementById("frente").value;
+  var div = document.getElementById("rutaPreview");
+  if (sector && subcat && frente) {
+    var hoy = new Date().toISOString().substring(0,10);
+    document.getElementById("rutaTexto").textContent = "Reportes de Campo 2026 / " + sector + " / " + subcat + " / " + frente + " / " + hoy;
+    div.style.display = "block";
+  } else { div.style.display = "none"; }
+  actualizarCuentaOrden();
+}
+
+function actualizarCuentaOrden() {
+  var frente = document.getElementById("frente").value;
+  var selCuenta = document.getElementById("cuenta");
+  var selOrden = document.getElementById("orden");
+  selCuenta.innerHTML = '<option value="">Seleccionar cuenta</option>';
+  selOrden.innerHTML = '<option value="">Seleccionar orden</option>';
+  if (!frente) return;
+  var data = CUENTAS_ORDENES[frente];
+  if (data) {
+    var opC = document.createElement("option"); opC.value = data.cuenta; opC.textContent = data.cuenta; opC.selected = true; selCuenta.appendChild(opC);
+    var opO = document.createElement("option"); opO.value = data.orden; opO.textContent = data.orden; opO.selected = true; selOrden.appendChild(opO);
+  }
+}
+
+function mostrarPlacaOtro() {
+  var cam = document.getElementById("camioneta").value;
+  var placa = document.getElementById("placa"); var placaOtro = document.getElementById("placaOtro");
+  if (cam === "No") { placa.value=""; placa.style.display="block"; placa.readOnly=true; placa.placeholder="Placa asignada"; placaOtro.style.display="none"; placaOtro.value=""; }
+  else if (cam === "Otro") { placa.style.display="none"; placa.value=""; placaOtro.style.display="block"; placaOtro.value=""; placaOtro.focus(); }
+  else { placa.value=cam; placa.style.display="block"; placa.readOnly=true; placaOtro.style.display="none"; placaOtro.value=""; }
+}
+
+function seleccionarTipo(tipo, btn) {
+  tipoActual = tipo;
+  document.querySelectorAll(".tipo-btn").forEach(function(b){ b.classList.remove("activo"); });
+  btn.classList.add("activo");
+  document.querySelectorAll(".seccion").forEach(function(s){ s.classList.remove("visible"); });
+  document.getElementById("sec-" + tipo).classList.add("visible");
+  document.getElementById("cardMovilidad").style.display = (tipo === "diario") ? "block" : "none";
+  document.getElementById("cardGastos").style.display = (tipo === "diario") ? "block" : "none";
+}
+
+function mostrarArchivo(input) { document.getElementById("nombreArchivo").textContent = input.files[0] ? input.files[0].name : ""; }
+
+function validar() {
+  if (!document.getElementById("fecha").value) { alert("Selecciona la fecha"); return false; }
+  if (!document.getElementById("responsable").value) { alert("Selecciona tu nombre"); return false; }
+  if (!document.getElementById("puesto").value) { alert("Selecciona tu puesto"); return false; }
+  if (!document.getElementById("sector").value) { alert("Selecciona el sector"); return false; }
+  if (!document.getElementById("subcategoria").value) { alert("Selecciona la subcategoria"); return false; }
+  if (!document.getElementById("frente").value) { alert("Selecciona el frente de trabajo"); return false; }
+  if (!tipoActual) { alert("Selecciona el tipo de reporte"); return false; }
+  if (tipoActual==="diario" && !document.getElementById("actividad").value.trim()) { alert("Describe la actividad"); return false; }
+  return true;
+}
+
+function enviar() {
+  if (!validar()) return;
+  var archivo = document.getElementById("fileInput").files[0];
+  if (archivo && archivo.size > 50*1024*1024) { alert("El archivo supera 50 MB"); return; }
+  document.getElementById("btnEnviar").disabled = true;
+  document.getElementById("btnEnviar").textContent = "Enviando...";
+  document.getElementById("progreso").style.display = "block";
+  document.getElementById("resultado").style.display = "none";
+  animar();
+  var tipoLabels = { diario:"Reporte Diario", semanal:"Reporte Semanal", final:"Reporte Final", mensual:"Reporte Mensual" };
+  var descripcion = "";
+  if (tipoActual==="diario") descripcion = document.getElementById("actividad").value;
+  if (tipoActual==="semanal") descripcion = document.getElementById("obsSemanal").value;
+  if (tipoActual==="final") descripcion = document.getElementById("obsFinal").value;
+  if (tipoActual==="mensual") descripcion = document.getElementById("obsMensual").value;
+  var rawAvance = "";
+  if (tipoActual==="diario") rawAvance = document.getElementById("avance").value;
+  if (tipoActual==="semanal") rawAvance = document.getElementById("avanceSemanal").value;
+  if (tipoActual==="final") rawAvance = document.getElementById("avanceFinal").value;
+  if (tipoActual==="mensual") rawAvance = document.getElementById("avanceMensual").value;
+  var datos = {
+    fecha: document.getElementById("fecha").value,
+    responsable: document.getElementById("responsable").value,
+    puesto: document.getElementById("puesto").value,
+    sector: document.getElementById("sector").value,
+    subcategoria: document.getElementById("subcategoria").value,
+    frente: document.getElementById("frente").value,
+    camioneta: document.getElementById("camioneta").value === "No" ? "No" : "Si",
+    placa: document.getElementById("camioneta").value === "Otro" ? document.getElementById("placaOtro").value : document.getElementById("placa").value,
+    kmInicial: document.getElementById("kmInicial").value,
+    kmFinal: document.getElementById("kmFinal").value,
+    origen: document.getElementById("origen").value,
+    destino: document.getElementById("destino").value,
+    alimentacion: document.getElementById("alimentacion").value,
+    hospedaje: document.getElementById("hospedaje").value,
+    tipoReporte: tipoLabels[tipoActual],
+    descripcion: descripcion,
+    avance: rawAvance ? parseFloat(rawAvance).toString() : "",
+    problemas: tipoActual==="diario" ? document.getElementById("problemas").value : "",
+    requiereOficina: "No", notas: "",
+    nombreArchivo: archivo ? archivo.name : "",
+    mimeType: archivo ? (archivo.type || "application/octet-stream") : "",
+    archivoBase64: ""
+  };
+  function enviarDatos(base64) {
+    datos.archivoBase64 = base64;
+    fetch("/api/reporte", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(datos) })
+    .then(function(r){ return r.json(); })
+    .then(function(res) {
+      document.getElementById("btnEnviar").disabled=false; document.getElementById("btnEnviar").textContent="Enviar Reporte";
+      document.getElementById("progreso").style.display="none";
+      var d = document.getElementById("resultado"); d.style.display="block";
+      if (res.ok) { d.className="resultado ok"; d.innerHTML="<h3>Reporte enviado correctamente</h3><p>El coordinador fue notificado.</p>"; limpiar(); }
+      else { d.className="resultado err"; d.innerHTML="<p>Error: "+(res.error||"Error desconocido")+"</p>"; }
+    })
+    .catch(function(err) {
+      document.getElementById("btnEnviar").disabled=false; document.getElementById("btnEnviar").textContent="Enviar Reporte";
+      document.getElementById("progreso").style.display="none";
+      var d=document.getElementById("resultado"); d.style.display="block"; d.className="resultado err"; d.innerHTML="<p>Error de conexion: "+err.message+"</p>";
+    });
+  }
+  if (archivo) { var r=new FileReader(); r.onload=function(e){ enviarDatos(e.target.result.split(",")[1]); }; r.readAsDataURL(archivo); }
+  else { enviarDatos(""); }
+}
+
+function animar() {
+  var fill=document.getElementById("pfill"), txt=document.getElementById("ptxt"), pct=0;
+  var msgs=["Preparando...","Guardando en Drive...","Notificando coordinador...","Registrando..."];
+  var iv=setInterval(function(){ pct=Math.min(pct+Math.random()*18,88); fill.style.width=pct+"%"; txt.textContent=msgs[Math.floor(pct/25)]||"Procesando..."; if(pct>=88) clearInterval(iv); },350);
+}
+
+function limpiar() {
+  tipoActual="";
+  document.querySelectorAll(".tipo-btn").forEach(function(b){ b.classList.remove("activo"); });
+  document.querySelectorAll(".seccion").forEach(function(s){ s.classList.remove("visible"); });
+  ["actividad","problemas","obsSemanal","avanceSemanal","avanceFinal","obsFinal","avanceMensual","obsMensual","placa","kmInicial","kmFinal","origen","destino","avance"].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=""; });
+  ["camioneta","alimentacion","hospedaje"].forEach(function(id){ document.getElementById(id).value="No"; });
+  document.getElementById("placaOtro").style.display="none"; document.getElementById("placaOtro").value="";
+  document.getElementById("placa").style.display="block"; document.getElementById("placa").readOnly=true; document.getElementById("placa").placeholder="Placa asignada";
+  document.getElementById("fileInput").value=""; document.getElementById("nombreArchivo").textContent="";
+  document.getElementById("cardMovilidad").style.display="none"; document.getElementById("cardGastos").style.display="none";
+}
+</script>
+</body>
+</html>
