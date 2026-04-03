@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 // ─── IDs DE IMÁGENES EN DRIVE ────────────────────────────────────────────────
-var ID_LOGO_TGP    = "1FYOlDe4EdLD6DiK-wu-MqhBtsK8WrL8f";
+var ID_LOGO_TGP    = "1xzkhhOpG1tPwUvMTqiEz-y5pgjXufVTB";
 var ID_FIRMA_YURI  = "1zhEKAF6qQrSJBn-U5MiIT6Bk-Zr6H19V";
 
 // ─── TABLA CUENTA / ORDEN POR FRENTE ─────────────────────────────────────────
@@ -128,7 +128,7 @@ function construirPDS(hoja, sector, fecha, reportes) {
   hoja.setRowHeight(f, 50);
   try {
     var logoUrl  = "https://drive.google.com/uc?export=download&id=" + ID_LOGO_TGP;
-    var logoBlob = UrlFetchApp.fetch(logoUrl).getBlob().setContentType("image/png");
+    var logoBlob = UrlFetchApp.fetch(logoUrl).getBlob().setContentType("image/jpeg");
     hoja.insertImage(logoBlob, 1, f, 4, 4);
   } catch(e) { Logger.log("Logo TGP no disponible: " + e); }
   f++;
