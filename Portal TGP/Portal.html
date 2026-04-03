@@ -315,7 +315,7 @@ function login(){
   google.script.run.withSuccessHandler(function(ok){
     if(ok){$('loginView').style.display='none';$('appView').style.display='block';loadTab('Tablero');loadAlertCount();}
     else{$('loginErr').style.display='block';}
-  }).withFailureHandler(function(e){alert('Error: '+e.message);}).validarClave(c);
+  }).withFailureHandler(function(e){alert('Error: '+e.message);}).verificarClavePortal(c);
 }
 function logout(){$('appView').style.display='none';$('loginView').style.display='flex';$('inputClave').value='';$('loginErr').style.display='none';}
 
