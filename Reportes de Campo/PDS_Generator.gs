@@ -126,10 +126,7 @@ function construirPDS(hoja, sector, fecha, reportes) {
     .setFontSize(14).setFontWeight("bold")
     .setHorizontalAlignment("center").setVerticalAlignment("middle");
   hoja.setRowHeight(f, 50);
-  try {
-    var logoBlob = DriveApp.getFileById(ID_LOGO_TGP).getBlob();
-    hoja.insertImage(logoBlob, 1, f);
-  } catch(e) { Logger.log("Logo TGP no disponible: " + e); }
+  // Logo TGP pendiente de configurar
   f++;
 
   // ── DATOS GENERALES ───────────────────────────────────────────────────────
