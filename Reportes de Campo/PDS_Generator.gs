@@ -157,16 +157,16 @@ function construirPDS(hoja, sector, fecha, reportes) {
 
   var f = 1; // fila actual
 
-  // ── TÍTULO con logo TGP ──────────────────────────────────────────────────
-  estiloBloque(hoja, f, 1, 1, 10, "", PDS_AZUL_OSCURO, 14, true, "center");
+  // ── TÍTULO ────────────────────────────────────────────────────────────────
+  // Cols 1-2: espacio logo | Cols 3-8: título | Cols 9-10: espacio
+  hoja.getRange(f, 1, 1, 2).merge().setBackground(PDS_AZUL_OSCURO);
   hoja.getRange(f, 3, 1, 6).merge()
     .setValue("PARTE DIARIO DE SERVICIOS")
-    .setBackground(PDS_AZUL_OSCURO)
-    .setFontColor(PDS_BLANCO)
+    .setBackground(PDS_AZUL_OSCURO).setFontColor(PDS_BLANCO)
     .setFontSize(14).setFontWeight("bold")
     .setHorizontalAlignment("center").setVerticalAlignment("middle");
+  hoja.getRange(f, 9, 1, 2).merge().setBackground(PDS_AZUL_OSCURO);
   hoja.setRowHeight(f, 50);
-  // Logo TGP pendiente de configurar
   f++;
 
   // ── DATOS GENERALES ───────────────────────────────────────────────────────
