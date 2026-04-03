@@ -28,11 +28,11 @@ var CUENTAS_ORDENES = {
 };
 
 // ─── COLORES PDS ──────────────────────────────────────────────────────────────
-var PDS_AZUL_OSCURO  = "#1F3864";
-var PDS_AZUL_MEDIO  = "#2E75B6";
-var PDS_AZUL_COL    = "#4472C4";
-var PDS_AZUL_CLARO  = "#D6E4F7";
-var PDS_GRIS_FILA   = "#EBF3FB";
+var PDS_AZUL_OSCURO  = "#1A5276";
+var PDS_AZUL_MEDIO  = "#1F6B8E";
+var PDS_AZUL_COL    = "#2E86AB";
+var PDS_AZUL_CLARO  = "#D6EAF8";
+var PDS_GRIS_FILA   = "#EBF5FB";
 var PDS_BLANCO      = "#FFFFFF";
 
 // ─── INTEGRACIÓN: llamar desde procesarReporte() ──────────────────────────────
