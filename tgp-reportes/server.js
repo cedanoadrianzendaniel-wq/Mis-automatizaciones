@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// SISTEMA DE REPORTES DE CAMPO — server.js v4 (Node.js + Express)
-// Migrado desde Google Apps Script
+// SISTEMA DE REPORTES DE CAMPO — server.js v5 (OAuth2)
+// Migrado desde Service Account a OAuth2 (tgp.reportes.campo@gmail.com)
 // ═══════════════════════════════════════════════════════════════════════════
 
 require("dotenv").config();
@@ -22,7 +22,7 @@ app.use(express.static(path.join(__dirname, "public")));
 const EMAIL_COORDINADOR = process.env.EMAIL_COORDINADOR ||
   "yuri.arangoitia@bureauveritas.com, daniel.cedano@bureauveritas.com, gustavo.fernandez@bureauveritas.com, fiorella.diaz@bureauveritas.com";
 const CARPETA_RAIZ      = process.env.CARPETA_RAIZ || "Reportes de Campo 2026";
-  const CARPETA_RAIZ_ID   = process.env.CARPETA_RAIZ_ID || "";
+const CARPETA_RAIZ_ID   = process.env.CARPETA_RAIZ_ID || "";
 const CLAVE_DASHBOARD   = process.env.CLAVE_DASHBOARD || "campo2026";
 const SPREADSHEET_ID    = process.env.SPREADSHEET_ID || "";
 
@@ -73,29 +73,25 @@ const SUPERVISORES = [
   { nombre: "CARLOS PUENTE",             sector: "", subcategoria: "" }
 ];
 
-// ─── GOOGLE AUTH (Service Account) ──────────────────────────────────────────
+// ─── GOOGLE AUTH (OAuth2) ────────────────────────────────────────────────────
 function getGoogleAuth() {
-  const credentials = process.env.GOOGLE_CREDENTIALS_JSON
-    ? JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON)
-    : null;
-  if (!credentials) {
-    throw new Error("GOOGLE_CREDENTIALS_JSON no configurado en .env");
-  }
-  return new google.auth.GoogleAuth({
-    credentials,
-    scopes: [
-      "https://www.googleapis.com/auth/drive",
-      "https://www.googleapis.com/auth/spreadsheets"
-    ]
+  const oauth2Client = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    "https://developers.google.com/oauthplayground"
+  );
+  oauth2Client.setCredentials({
+    refresh_token: process.env.GOOGLE_REFRESH_TOKEN
   });
+  return oauth2Client;
 }
 
 // ─── DRIVE: obtener o crear carpeta ─────────────────────────────────────────
 async function carpetaEnPadre(drive, nombre, padreId) {
   const q = `name='${nombre}' and mimeType='application/vnd.google-apps.folder' and '${padreId}' in parents and trashed=false`;
-  const res = await drive.files.list({ 
-    q, 
-    fields: "files(id)", 
+  const res = await drive.files.list({
+    q,
+    fields: "files(id)",
     pageSize: 1,
     supportsAllDrives: true,
     includeItemsFromAllDrives: true
@@ -109,24 +105,23 @@ async function carpetaEnPadre(drive, nombre, padreId) {
   return created.data.id;
 }
 
-
 async function obtenerCarpetaDrive(drive, sector, subcategoria, frente, tipo, fecha) {
-      let raizId;
-      if (CARPETA_RAIZ_ID) {
-              raizId = CARPETA_RAIZ_ID;
-      } else {
-              const qRaiz = `name='${CARPETA_RAIZ}' and mimeType='application/vnd.google-apps.folder' and 'root' in parents and trashed=false`;
-              const raizRes = await drive.files.list({ q: qRaiz, fields: "files(id)", pageSize: 1 });
-              if (raizRes.data.files.length > 0) {
-                        raizId = raizRes.data.files[0].id;
-              } else {
-                        const r = await drive.files.create({
-                                    requestBody: { name: CARPETA_RAIZ, mimeType: "application/vnd.google-apps.folder" },
-                                    fields: "id"
-                        });
-                        raizId = r.data.id;
-              }
-      }
+  let raizId;
+  if (CARPETA_RAIZ_ID) {
+    raizId = CARPETA_RAIZ_ID;
+  } else {
+    const qRaiz = `name='${CARPETA_RAIZ}' and mimeType='application/vnd.google-apps.folder' and 'root' in parents and trashed=false`;
+    const raizRes = await drive.files.list({ q: qRaiz, fields: "files(id)", pageSize: 1 });
+    if (raizRes.data.files.length > 0) {
+      raizId = raizRes.data.files[0].id;
+    } else {
+      const r = await drive.files.create({
+        requestBody: { name: CARPETA_RAIZ, mimeType: "application/vnd.google-apps.folder" },
+        fields: "id"
+      });
+      raizId = r.data.id;
+    }
+  }
   const sectorId = await carpetaEnPadre(drive, sector,       raizId);
   const subcatId = await carpetaEnPadre(drive, subcategoria, sectorId);
   const frenteId = await carpetaEnPadre(drive, frente,       subcatId);
@@ -264,9 +259,8 @@ app.post("/api/reporte", async (req, res) => {
     const hoy = fechaCorta();
     let urlArchivo = "";
     const auth = getGoogleAuth();
-    const client = await auth.getClient();
-    const drive = google.drive({ version: "v3", auth: client });
-    const sheets = google.sheets({ version: "v4", auth: client });
+    const drive = google.drive({ version: "v3", auth });
+    const sheets = google.sheets({ version: "v4", auth });
     if (datos.archivoBase64 && datos.archivoBase64.length > 100) {
       const carpetaId = await obtenerCarpetaDrive(drive, datos.sector, datos.subcategoria, datos.frente, datos.tipoReporte, hoy);
       const buffer = Buffer.from(datos.archivoBase64, "base64");
@@ -295,8 +289,7 @@ app.get("/api/datos", async (req, res) => {
   if (!spreadsheetId) return res.json({ reportes: [] });
   try {
     const auth = getGoogleAuth();
-    const client = await auth.getClient();
-    const sheets = google.sheets({ version: "v4", auth: client });
+    const sheets = google.sheets({ version: "v4", auth });
     const result = await sheets.spreadsheets.values.get({ spreadsheetId, range: "RAW_DATA!A2:W" });
     const filas = result.data.values || [];
     const reportes = filas.map(r => ({
@@ -311,9 +304,9 @@ app.get("/api/datos", async (req, res) => {
 });
 
 app.get("/health", (req, res) => {
-  res.json({ status: "ok", version: "4.0.0", time: new Date().toISOString() });
+  res.json({ status: "ok", version: "5.0.0", time: new Date().toISOString() });
 });
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`TGP Reportes de Campo v4 corriendo en puerto ${PORT}`);
+  console.log(`TGP Reportes de Campo v5 (OAuth2) corriendo en puerto ${PORT}`);
 });
