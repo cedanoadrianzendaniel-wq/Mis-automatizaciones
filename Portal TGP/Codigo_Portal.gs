@@ -106,8 +106,25 @@ function obtenerKPIsTablero() {
     var alertas    = calcularAlertas(tareas);
     var numAlertas = alertas.length;
 
-    // Cumplimiento HSE (últimos 30 días)
+    // Cumplimiento HSE — conteos por tipo
     var hse = calcularCumplimientoHSE();
+    var TIPOS_HSE = ["Evaluacion ATS","Evaluacion PTS","Tarjetas STOP","Inspecciones de Seguridad","Check List de Conduccion"];
+    var hseConteos = TIPOS_HSE.map(function(t) {
+      return { tipo: t, cantidad: hse.porTipo[t] || 0 };
+    });
+
+    // Resumen por sector para Panel de Control
+    var porSector = ["Costa","Sierra","Selva"].map(function(s) {
+      var frentes = FRENTES_PORTAL[s].frentes;
+      var sum = 0;
+      frentes.forEach(function(f) { sum += obtenerUltimoAvance(s, f.nombre); });
+      return {
+        sector:        s,
+        totalFrentes:  frentes.length,
+        avancePromedio: frentes.length > 0 ? Math.round(sum / frentes.length) : 0,
+        ultimaActividad: obtenerUltimaActSector(s)
+      };
+    });
 
     return {
       fechaInicio:     FECHA_INICIO,
@@ -121,7 +138,9 @@ function obtenerKPIsTablero() {
       tareasCompletadas: completadT,
       pctTareas:       pctTareas,
       alertasActivas:  numAlertas,
-      cumplimientoHSE: hse.pct
+      totalHSE:        hse.total || 0,
+      hseConteos:      hseConteos,
+      porSector:       porSector
     };
   } catch(e) {
     Logger.log("obtenerKPIsTablero: " + e);
@@ -334,6 +353,7 @@ function obtenerResumenSectores() {
       var avancePromedio = Math.round(avances.reduce(function(a,b){ return a+b; }, 0) / avances.length);
       return {
         sector:          sector,
+        totalFrentes:    frentes.length,
         numFrentes:      frentes.length,
         avancePromedio:  avancePromedio,
         ultimaActividad: obtenerUltimaActSector(sector)
