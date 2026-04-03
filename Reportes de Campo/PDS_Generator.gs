@@ -73,16 +73,23 @@ function generarPDS(sector, fecha) {
       DriveApp.getRootFolder().removeFile(file);
     }
 
-    // Tab por fecha: "01-Abr-26"
-    var tabNombre = formatearFechaPDS(fecha);
+    // Tab por fecha: "2026-04-01"
+    var tabNombre = fecha; // formato simple yyyy-MM-dd sin caracteres especiales
     var pdsHoja   = pdsSS.getSheetByName(tabNombre);
     if (pdsHoja) {
-      pdsHoja.clear(); // regenerar con datos actualizados
-    } else {
-      pdsHoja = pdsSS.insertSheet(tabNombre);
+      // Eliminar y recrear para evitar conflictos con imágenes previas
+      pdsSS.deleteSheet(pdsHoja);
     }
+    pdsHoja = pdsSS.insertSheet(tabNombre, 0); // posicion 0 = primera pestaña
+
+    // Eliminar la hoja por defecto "Hoja 1" / "Sheet1" si existe
+    ["Hoja 1", "Sheet1", "Hoja1"].forEach(function(n) {
+      var h = pdsSS.getSheetByName(n);
+      if (h && pdsSS.getSheets().length > 1) pdsSS.deleteSheet(h);
+    });
 
     construirPDS(pdsHoja, sector, fecha, reportes);
+    SpreadsheetApp.flush();
     return pdsSS.getUrl();
 
   } catch (err) {
