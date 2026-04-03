@@ -93,14 +93,22 @@ function getGoogleAuth() {
 // ─── DRIVE: obtener o crear carpeta ─────────────────────────────────────────
 async function carpetaEnPadre(drive, nombre, padreId) {
   const q = `name='${nombre}' and mimeType='application/vnd.google-apps.folder' and '${padreId}' in parents and trashed=false`;
-  const res = await drive.files.list({ q, fields: "files(id)", pageSize: 1 });
+  const res = await drive.files.list({ 
+    q, 
+    fields: "files(id)", 
+    pageSize: 1,
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true
+  });
   if (res.data.files.length > 0) return res.data.files[0].id;
   const created = await drive.files.create({
     requestBody: { name: nombre, mimeType: "application/vnd.google-apps.folder", parents: [padreId] },
-    fields: "id"
+    fields: "id",
+    supportsAllDrives: true
   });
   return created.data.id;
 }
+
 
 async function obtenerCarpetaDrive(drive, sector, subcategoria, frente, tipo, fecha) {
       let raizId;
