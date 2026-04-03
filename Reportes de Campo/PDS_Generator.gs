@@ -291,12 +291,7 @@ function construirPDS(hoja, sector, fecha, reportes) {
   hoja.getRange(f, 6, 1, 5).merge().setValue("Firma:").setFontWeight("bold");
   f++;
 
-  // Imagen de firma Yuri Arangoitia
-  hoja.setRowHeight(f, 60);
-  try {
-    var firmaBlob = DriveApp.getFileById(ID_FIRMA_YURI).getBlob();
-    hoja.insertImage(firmaBlob, 1, f);
-  } catch(e) { Logger.log("Firma no disponible: " + e); }
+  hoja.setRowHeight(f, 60); // espacio para firma manual
   f++;
 
   // Línea punteada y datos del firmante
