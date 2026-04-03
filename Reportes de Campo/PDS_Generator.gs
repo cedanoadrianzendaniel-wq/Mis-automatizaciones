@@ -3,6 +3,10 @@
 // Se agrega al proyecto de Reportes de Campo (mismo Apps Script)
 // ═══════════════════════════════════════════════════════════════════════════
 
+// ─── IDs DE IMÁGENES EN DRIVE ────────────────────────────────────────────────
+var ID_LOGO_TGP    = "1FYOlDe4EdLD6DiK-wu-MqhBtsK8WrL8f";
+var ID_FIRMA_YURI  = "1zhEKAF6qQrSJBn-U5MiIT6Bk-Zr6H19V";
+
 // ─── TABLA CUENTA / ORDEN POR FRENTE ─────────────────────────────────────────
 var CUENTAS_ORDENES = {
   // COSTA
@@ -113,9 +117,19 @@ function construirPDS(hoja, sector, fecha, reportes) {
 
   var f = 1; // fila actual
 
-  // ── TÍTULO ───────────────────────────────────────────────────────────────
-  estiloBloque(hoja, f, 1, 1, 10, "PARTE DIARIO DE SERVICIOS", PDS_AZUL_OSCURO, 14, true, "center");
-  hoja.setRowHeight(f, 38);
+  // ── TÍTULO con logo TGP ──────────────────────────────────────────────────
+  estiloBloque(hoja, f, 1, 1, 10, "", PDS_AZUL_OSCURO, 14, true, "center");
+  hoja.getRange(f, 3, 1, 6).merge()
+    .setValue("PARTE DIARIO DE SERVICIOS")
+    .setBackground(PDS_AZUL_OSCURO)
+    .setFontColor(PDS_BLANCO)
+    .setFontSize(14).setFontWeight("bold")
+    .setHorizontalAlignment("center").setVerticalAlignment("middle");
+  hoja.setRowHeight(f, 50);
+  try {
+    var logoBlob = DriveApp.getFileById(ID_LOGO_TGP).getBlob();
+    hoja.insertImage(logoBlob, 1, f, 5, 5);
+  } catch(e) { Logger.log("Logo TGP no disponible: " + e); }
   f++;
 
   // ── DATOS GENERALES ───────────────────────────────────────────────────────
@@ -247,14 +261,20 @@ function construirPDS(hoja, sector, fecha, reportes) {
   hoja.getRange(f, 6, 1, 5).merge().setValue("Firma:").setFontWeight("bold");
   f++;
 
-  hoja.setRowHeight(f, 50); f++; // espacio firma BV
-  hoja.setRowHeight(f, 50); f++; // espacio firma TGP
+  // Imagen de firma Yuri Arangoitia
+  hoja.setRowHeight(f, 60);
+  try {
+    var firmaBlob = DriveApp.getFileById(ID_FIRMA_YURI).getBlob();
+    hoja.insertImage(firmaBlob, 1, f, 5, 2);
+  } catch(e) { Logger.log("Firma no disponible: " + e); }
+  f++;
 
+  // Línea punteada y datos del firmante
   hoja.getRange(f, 1, 1, 5).merge()
-    .setValue("Nombre: Yuri Arangoitia. R\nIng. Yuri Arangoitia Rendon\nJefe de Supervisión (BV)\nReg. CIP N° 206381")
-    .setWrap(true).setFontSize(9);
+    .setValue("........................................\nIng. Yuri Arangoitia Rendon\nJefe de Supervisión (BV)\nReg. CIP N° 206381")
+    .setWrap(true).setFontSize(9).setHorizontalAlignment("center");
   hoja.getRange(f, 6, 1, 5).merge().setValue("Nombre:").setFontWeight("bold");
-  hoja.setRowHeight(f, 55);
+  hoja.setRowHeight(f, 60);
 
   // ── ANCHOS DE COLUMNA ─────────────────────────────────────────────────────
   hoja.setColumnWidth(1,  40);   // N
