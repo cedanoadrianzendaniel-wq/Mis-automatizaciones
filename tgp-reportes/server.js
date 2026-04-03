@@ -276,7 +276,8 @@ app.post("/api/reporte", async (req, res) => {
           description: `${datos.responsable} | ${datos.frente} | ${datos.descripcion}`
         },
         media: { mimeType: datos.mimeType || "application/octet-stream", body: require("stream").Readable.from(buffer) },
-        fields: "id,webViewLink"
+        fields: "id,webViewLink",
+        supportsAllDrives: true
       });
       urlArchivo = uploadRes.data.webViewLink || "";
     }
