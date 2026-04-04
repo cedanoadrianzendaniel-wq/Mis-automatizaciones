@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// SISTEMA DE REPORTES DE CAMPO — server.js v10 (+ HSE + PDS + Portal)
+// SISTEMA DE REPORTES DE CAMPO — server.js v10.1 (+ HSE + PDS + Portal Gestion)
 // ═══════════════════════════════════════════════════════════════════════════
 
 require("dotenv").config();
@@ -553,11 +553,261 @@ app.get("/api/datos-hse", async (req, res) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════════════════
+// PORTAL TGP-BV — ENDPOINTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+const fs = require("fs");
+const PORTAL_DATA_FILE = path.join(__dirname, "portal-data.json");
+
+// Utilidades para portal-data.json
+function readPortalData() {
+  try {
+    if (fs.existsSync(PORTAL_DATA_FILE)) {
+      return JSON.parse(fs.readFileSync(PORTAL_DATA_FILE, "utf8"));
+    }
+  } catch (e) { console.warn("[Portal] Error leyendo portal-data.json:", e.message); }
+  return { certificaciones: {}, ganttFiles: {}, fechasInicioFrente: {} };
+}
+
+function writePortalData(data) {
+  fs.writeFileSync(PORTAL_DATA_FILE, JSON.stringify(data, null, 2), "utf8");
+}
+
+// Cache para RAW_DATA (evita llamadas excesivas a Google)
+let rawDataCache = { campo: null, hse: null, timestamp: 0 };
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+
+async function getCachedData() {
+  const now = Date.now();
+  if (rawDataCache.campo && (now - rawDataCache.timestamp) < CACHE_TTL) {
+    return rawDataCache;
+  }
+  const auth   = getGoogleAuth();
+  const sheets = google.sheets({ version: "v4", auth });
+
+  let campoDatos = [];
+  if (SPREADSHEET_ID) {
+    try {
+      const r = await sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID, range: "RAW_DATA!A2:W"
+      });
+      campoDatos = r.data.values || [];
+    } catch (e) { console.warn("[Cache] Error campo:", e.message); }
+  }
+
+  let hseDatos = [];
+  if (SPREADSHEET_ID_HSE) {
+    try {
+      const r = await sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID_HSE, range: "RAW_DATA!A2:K"
+      });
+      hseDatos = r.data.values || [];
+    } catch (e) { console.warn("[Cache] Error HSE:", e.message); }
+  }
+
+  rawDataCache = { campo: campoDatos, hse: hseDatos, timestamp: now };
+  return rawDataCache;
+}
+
+// ─── GET /api/portal/resumen ────────────────────────────────────────────────
+app.get("/api/portal/resumen", async (req, res) => {
+  try {
+    const cached = await getCachedData();
+    const filas = cached.campo || [];
+    const filasHSE = cached.hse || [];
+    const portalData = readPortalData();
+    const hoy = fechaCorta();
+    const mes = hoy.substring(0, 7);
+    const hace7 = new Date(Date.now() - 7 * 86400000).toISOString().substring(0, 10);
+    const hace48h = new Date(Date.now() - 48 * 3600000).toISOString().substring(0, 10);
+
+    // Reportes formateados
+    const reportesCampo = filas.map(r => ({
+      fecha: r[1]||"", responsable: r[2]||"", sector: r[4]||"",
+      frente: r[6]||"", tipoReporte: r[15]||"", avance: parseFloat(r[17])||0,
+      link: r[21]||"", semana: r[22]||""
+    })).reverse();
+
+    const reportesHSE = filasHSE.map(r => ({
+      fecha: r[1]||"", responsable: r[2]||"", sector: r[4]||"",
+      frente: r[6]||"", tipoReporte: r[7]||"", link: r[9]||"", semana: r[10]||""
+    })).reverse();
+
+    // Calcular datos por sector
+    const sectores = {};
+    const alertas = [];
+
+    ["Costa", "Sierra", "Selva"].forEach(sector => {
+      const frentesDelSector = FRENTES[`${sector}_Geotecnia`] || [];
+      const reportesSector = filas.filter(r => r[4] === sector);
+      const reportesMes = reportesSector.filter(r => (r[1]||"").substring(0,7) === mes).length;
+
+      // Ultimo reporte del sector
+      const fechas = reportesSector.map(r => r[1]||"").filter(f => f).sort().reverse();
+      const ultimoReporte = fechas[0] ? fechas[0].substring(0,10) : "-";
+
+      // Supervisores activos (ultimos 7 dias)
+      const supsSet = new Set();
+      reportesSector.filter(r => (r[1]||"") >= hace7).forEach(r => { if(r[2]) supsSet.add(r[2]); });
+
+      // Datos por frente
+      const frentesData = {};
+      let sumaAvance = 0;
+      let frentesConAvance = 0;
+      let frentesActivos = 0;
+
+      frentesDelSector.forEach(frente => {
+        const repFrente = filas.filter(r => r[4] === sector && r[6] === frente);
+        const repFrenteReciente = repFrente.filter(r => (r[1]||"") >= hace7);
+
+        // Avance: tomar el ultimo % reportado
+        const conAvance = repFrente.filter(r => r[17] && parseFloat(r[17]) > 0)
+          .sort((a,b) => (b[1]||"").localeCompare(a[1]||""));
+        const avance = conAvance.length > 0 ? parseFloat(conAvance[0][17]) : 0;
+
+        if (avance > 0) { sumaAvance += avance; frentesConAvance++; }
+        if (repFrenteReciente.length > 0) frentesActivos++;
+
+        // Supervisores en este frente
+        const supsFrSet = new Set();
+        repFrenteReciente.forEach(r => { if(r[2]) supsFrSet.add(r[2]); });
+
+        // Dias activo (desde primer reporte)
+        const fechasFrente = repFrente.map(r => r[1]||"").filter(f=>f).sort();
+        const primerReporte = fechasFrente[0] || "";
+        const diasActivo = primerReporte
+          ? Math.round((new Date() - new Date(primerReporte)) / 86400000)
+          : 0;
+
+        const ultimoRepFrente = fechasFrente.length > 0
+          ? fechasFrente[fechasFrente.length-1].substring(0,10) : "-";
+
+        // Alertas
+        if (repFrente.length > 0 && ultimoRepFrente < hace48h) {
+          alertas.push({
+            severity: "high",
+            message: sector + " / " + frente.substring(0,35) + " — Sin reportes en 48+ horas"
+          });
+        }
+
+        frentesData[frente] = {
+          avance: avance,
+          supervisores: Array.from(supsFrSet),
+          diasActivo: diasActivo,
+          ultimoReporte: ultimoRepFrente,
+          totalReportes: repFrente.length
+        };
+      });
+
+      const avanceSector = frentesConAvance > 0 ? sumaAvance / frentesConAvance : 0;
+
+      sectores[sector] = {
+        avance: avanceSector,
+        frentesActivos: frentesActivos,
+        supervisores: Array.from(supsSet),
+        reportesMes: reportesMes,
+        ultimoReporte: ultimoReporte,
+        frentes: frentesData
+      };
+    });
+
+    // Avance global
+    const avances = Object.values(sectores).map(s => s.avance).filter(a => a > 0);
+    const avanceGlobal = avances.length > 0 ? avances.reduce((a,b)=>a+b,0) / avances.length : 0;
+
+    // Alertas adicionales: supervisores inactivos
+    SUPERVISORES.forEach(sup => {
+      const repSup = filas.filter(r => r[2] === sup.nombre);
+      if (repSup.length > 0) {
+        const ultimoSup = repSup.map(r => r[1]||"").sort().reverse()[0] || "";
+        const hace72h = new Date(Date.now() - 72 * 3600000).toISOString().substring(0, 10);
+        if (ultimoSup < hace72h) {
+          alertas.push({
+            severity: "low",
+            message: sup.nombre + " — Sin actividad en 72+ horas"
+          });
+        }
+      }
+    });
+
+    // Curvas S por sector (agrupado por semana)
+    const scurves = {};
+    ["Costa", "Sierra", "Selva"].forEach(sector => {
+      const repSector = filas.filter(r => r[4] === sector && r[17] && parseFloat(r[17]) > 0);
+      const porSemana = {};
+      repSector.forEach(r => {
+        const sem = r[22] || "0";
+        const av = parseFloat(r[17]) || 0;
+        if (!porSemana[sem] || av > porSemana[sem]) porSemana[sem] = av;
+      });
+      const semanas = Object.keys(porSemana).sort((a,b) => parseInt(a)-parseInt(b));
+      scurves[sector] = {
+        labels: semanas.map(s => "Sem " + s),
+        real: semanas.map(s => porSemana[s]),
+        planificado: semanas.map(() => 0) // sin datos planificados aun
+      };
+    });
+
+    res.json({
+      reportesCampo, reportesHSE, sectores, avanceGlobal, alertas, scurves
+    });
+  } catch (err) {
+    console.error("[Portal] Error resumen:", err.message);
+    res.json({ error: err.message, sectores: {}, alertas: [], scurves: {}, reportesCampo: [], reportesHSE: [] });
+  }
+});
+
+// ─── GET /api/portal/certificaciones ────────────────────────────────────────
+app.get("/api/portal/certificaciones", (req, res) => {
+  const data = readPortalData();
+  res.json(data.certificaciones || {});
+});
+
+// ─── POST /api/portal/certificacion ─────────────────────────────────────────
+app.post("/api/portal/certificacion", (req, res) => {
+  try {
+    const data = readPortalData();
+    data.certificaciones = req.body;
+    writePortalData(data);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[Portal] Error guardando certificacion:", err.message);
+    res.json({ ok: false, error: err.message });
+  }
+});
+
+// ─── GET /api/portal/gantt-list ─────────────────────────────────────────────
+app.get("/api/portal/gantt-list", (req, res) => {
+  const data = readPortalData();
+  res.json(data.ganttFiles || {});
+});
+
+// ─── POST /api/portal/gantt-upload ──────────────────────────────────────────
+app.post("/api/portal/gantt-upload", (req, res) => {
+  try {
+    const { sector, filename, mimeType, base64 } = req.body;
+    const data = readPortalData();
+    if (!data.ganttFiles) data.ganttFiles = {};
+    data.ganttFiles[sector] = {
+      filename, mimeType, base64, uploadDate: fechaCorta()
+    };
+    writePortalData(data);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[Portal] Error subiendo gantt:", err.message);
+    res.json({ ok: false, error: err.message });
+  }
+});
+
+// Servir templates (logos)
+app.use("/templates", express.static(path.join(__dirname, "templates")));
+
 // ─── HEALTH ──────────────────────────────────────────────────────────────────
 app.get("/health", (req, res) => {
-  res.json({ status: "ok", version: "10.0.0", time: new Date().toISOString() });
+  res.json({ status: "ok", version: "10.1.0", time: new Date().toISOString() });
 });
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`TGP Reportes v10 corriendo en puerto ${PORT}`);
+  console.log(`TGP Reportes v10.1 corriendo en puerto ${PORT}`);
 });
