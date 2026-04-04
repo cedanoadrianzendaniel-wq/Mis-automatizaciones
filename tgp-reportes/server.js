@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// SISTEMA DE REPORTES DE CAMPO — server.js v9 (+ HSE + PDS)
+// SISTEMA DE REPORTES DE CAMPO — server.js v10 (+ HSE + PDS + Portal)
 // ═══════════════════════════════════════════════════════════════════════════
 
 require("dotenv").config();
@@ -349,6 +349,9 @@ app.post("/api/verificar-clave", (req, res) => {
   res.json({ ok: String(clave).trim() === CLAVE_DASHBOARD });
 });
 
+// ─── RUTA — PORTAL ───────────────────────────────────────────────────────────
+app.get("/portal", (req, res) => res.sendFile(path.join(__dirname, "public", "portal.html")));
+
 // ─── RUTAS — HSE ─────────────────────────────────────────────────────────────
 app.get("/hse", (req, res) => res.sendFile(path.join(__dirname, "public", "formulario-hse.html")));
 
@@ -520,7 +523,7 @@ app.get("/api/datos", async (req, res) => {
     const filas = result.data.values || [];
     const reportes = filas.map(r => ({
       fecha: r[1] || "", responsable: r[2] || "", sector: r[4] || "",
-      frente: r[6] || "", link: r[21] || "", semana: r[22] || ""
+      frente: r[6] || "", tipoReporte: r[15] || "", link: r[21] || "", semana: r[22] || ""
     })).reverse();
     res.json({ reportes });
   } catch (err) {
@@ -529,11 +532,32 @@ app.get("/api/datos", async (req, res) => {
   }
 });
 
+// ─── GET /api/datos-hse — HSE ────────────────────────────────────────────────
+app.get("/api/datos-hse", async (req, res) => {
+  if (!SPREADSHEET_ID_HSE) return res.json({ reportes: [] });
+  try {
+    const auth   = getGoogleAuth();
+    const sheets = google.sheets({ version: "v4", auth });
+    const result = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID_HSE, range: "RAW_DATA!A2:K"
+    });
+    const filas = result.data.values || [];
+    const reportes = filas.map(r => ({
+      fecha: r[1] || "", responsable: r[2] || "", sector: r[4] || "",
+      frente: r[6] || "", tipoReporte: r[7] || "", link: r[9] || "", semana: r[10] || ""
+    })).reverse();
+    res.json({ reportes });
+  } catch (err) {
+    console.error("Error obtenerDatosHSE:", err.message);
+    res.json({ error: err.message });
+  }
+});
+
 // ─── HEALTH ──────────────────────────────────────────────────────────────────
 app.get("/health", (req, res) => {
-  res.json({ status: "ok", version: "9.0.0", time: new Date().toISOString() });
+  res.json({ status: "ok", version: "10.0.0", time: new Date().toISOString() });
 });
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`TGP Reportes v9 corriendo en puerto ${PORT}`);
+  console.log(`TGP Reportes v10 corriendo en puerto ${PORT}`);
 });
