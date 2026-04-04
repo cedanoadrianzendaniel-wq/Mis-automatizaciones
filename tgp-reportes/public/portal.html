@@ -3,661 +3,683 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Portal TGP — Coordinacion de Campo</title>
+<title>Portal TGP - BV</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
 /* ═══════════════════════════════════════════════════════════════════════════
-   PORTAL TGP — ESTILOS
+   PORTAL TGP - BV — Gestion de Obra
    ═══════════════════════════════════════════════════════════════════════════ */
 :root {
-  --navy: #1F3864;
-  --navy-light: #2E4A7A;
-  --accent: #2E75B6;
-  --accent-hover: #3D8BD4;
-  --bg: #F0F2F5;
-  --card: #FFFFFF;
-  --text: #1E293B;
-  --text-soft: #64748B;
-  --text-muted: #94A3B8;
-  --border: #E2E8F0;
-  --shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
-  --shadow-md: 0 4px 6px rgba(0,0,0,.05), 0 2px 4px rgba(0,0,0,.04);
-  --shadow-lg: 0 10px 25px rgba(0,0,0,.08);
-  --radius: 12px;
-  --radius-sm: 8px;
-  --costa: #3B82F6;
-  --costa-bg: #EFF6FF;
-  --sierra: #10B981;
-  --sierra-bg: #ECFDF5;
-  --selva: #F59E0B;
-  --selva-bg: #FFFBEB;
-  --hse-color: #EF4444;
-  --hse-bg: #FEF2F2;
+  --navy: #1F3864; --navy-light: #2E4A7A; --accent: #2E75B6;
+  --bg: #F0F2F5; --card: #FFFFFF; --text: #1E293B; --text-soft: #64748B; --text-muted: #94A3B8;
+  --border: #E2E8F0; --shadow: 0 1px 3px rgba(0,0,0,.06); --shadow-md: 0 4px 8px rgba(0,0,0,.06);
+  --radius: 12px; --radius-sm: 8px;
+  --costa: #3B82F6; --costa-bg: #EFF6FF;
+  --sierra: #10B981; --sierra-bg: #ECFDF5;
+  --selva: #F59E0B; --selva-bg: #FFFBEB;
+  --danger: #EF4444; --success: #10B981; --warning: #F59E0B;
 }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);min-height:100vh;color:var(--text)}
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); min-height: 100vh; color: var(--text); }
+/* ─── LOGIN ───────────────────────────────────────────────────────────── */
+.login-overlay{min-height:100vh;display:flex;justify-content:center;align-items:center;
+  background:linear-gradient(135deg,var(--navy) 0%,#0F1D3A 50%,var(--navy-light) 100%);position:relative;overflow:hidden}
+.login-overlay::before{content:'';position:absolute;width:600px;height:600px;
+  background:radial-gradient(circle,rgba(46,117,182,.15) 0%,transparent 70%);top:-200px;right:-100px}
+.login-card{background:var(--card);border-radius:16px;padding:40px 36px;width:400px;max-width:92vw;
+  text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.15);position:relative;z-index:1;animation:fadeUp .5s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.login-logos{display:flex;justify-content:center;align-items:center;gap:20px;margin-bottom:20px}
+.login-logos img{height:50px;object-fit:contain}
+.login-logos .sep{width:2px;height:40px;background:var(--border)}
+.login-card h2{color:var(--navy);font-size:18px;margin-bottom:4px}
+.login-card p{font-size:12px;color:var(--text-soft);margin-bottom:24px}
+.login-card input{width:100%;padding:14px 16px;border:2px solid var(--border);border-radius:10px;
+  font-size:15px;text-align:center;outline:none;background:#F8FAFC;transition:border-color .2s}
+.login-card input:focus{border-color:var(--accent);background:#fff}
+.btn-primary{width:100%;padding:14px;background:linear-gradient(135deg,var(--navy),var(--accent));
+  color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;margin-top:12px;transition:all .2s}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(31,56,100,.3)}
+.err-msg{color:var(--danger);font-size:12px;margin-top:10px;min-height:18px}
 
-/* ─── TOPBAR ──────────────────────────────────────────────────────────────── */
-.topbar {
-  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
-  color: white; padding: 0 24px; height: 60px;
-  display: flex; align-items: center; justify-content: space-between;
-  box-shadow: 0 2px 10px rgba(31,56,100,.3);
-  position: sticky; top: 0; z-index: 100;
-}
-.topbar-left { display: flex; align-items: center; gap: 12px; }
-.topbar-logo {
-  width: 36px; height: 36px; background: rgba(255,255,255,.15);
-  border-radius: 8px; display: flex; align-items: center; justify-content: center;
-  font-weight: 800; font-size: 13px; letter-spacing: -0.5px;
-}
-.topbar h1 { font-size: 16px; font-weight: 600; letter-spacing: -0.3px; }
-.topbar-right { display: flex; align-items: center; gap: 16px; }
-.topbar-time { font-size: 11px; opacity: .7; }
-.btn-logout {
-  background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2);
-  color: white; padding: 6px 14px; border-radius: 6px; font-size: 12px;
-  cursor: pointer; transition: all .2s;
-}
-.btn-logout:hover { background: rgba(255,255,255,.22); }
+/* ─── MAIN LAYOUT ─────────────────────────────────────────────────────── */
+#dashScreen{display:none}
+.header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy-light) 100%);color:#fff;
+  padding:16px 24px;box-shadow:0 2px 10px rgba(31,56,100,.3);position:sticky;top:0;z-index:100}
+.header-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.header-left{display:flex;align-items:center;gap:16px}
+.header-left img{height:36px;object-fit:contain;filter:brightness(0) invert(1)}
+.header-left .sep{width:1px;height:30px;background:rgba(255,255,255,.3)}
+.header-left h1{font-size:18px;font-weight:700;letter-spacing:-.3px}
+.header-right{display:flex;align-items:center;gap:14px;font-size:11px;opacity:.85}
+.btn-logout{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;
+  padding:6px 14px;border-radius:6px;font-size:11px;cursor:pointer;transition:all .2s}
+.btn-logout:hover{background:rgba(255,255,255,.22)}
 
-/* ─── LOGIN ───────────────────────────────────────────────────────────────── */
-.login-overlay {
-  min-height: 100vh; display: flex; justify-content: center; align-items: center;
-  background: linear-gradient(135deg, var(--navy) 0%, #0F1D3A 50%, var(--navy-light) 100%);
-  position: relative; overflow: hidden;
-}
-.login-overlay::before {
-  content: ''; position: absolute; width: 600px; height: 600px;
-  background: radial-gradient(circle, rgba(46,117,182,.15) 0%, transparent 70%);
-  top: -200px; right: -100px;
-}
-.login-overlay::after {
-  content: ''; position: absolute; width: 400px; height: 400px;
-  background: radial-gradient(circle, rgba(46,117,182,.1) 0%, transparent 70%);
-  bottom: -100px; left: -50px;
-}
-.login-card {
-  background: var(--card); border-radius: 16px; padding: 40px 36px;
-  width: 380px; max-width: 92vw; text-align: center; box-shadow: var(--shadow-lg);
-  position: relative; z-index: 1;
-  animation: fadeUp .5s ease;
-}
-@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-.login-icon {
-  width: 56px; height: 56px; margin: 0 auto 16px;
-  background: linear-gradient(135deg, var(--navy), var(--accent));
-  border-radius: 14px; display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 4px 12px rgba(46,117,182,.3);
-}
-.login-icon svg { width: 28px; height: 28px; fill: white; }
-.login-card h2 { color: var(--navy); font-size: 20px; margin-bottom: 4px; }
-.login-card p { font-size: 13px; color: var(--text-soft); margin-bottom: 24px; }
-.input-wrap { position: relative; margin-bottom: 16px; }
-.input-wrap input {
-  width: 100%; padding: 14px 16px; border: 2px solid var(--border); border-radius: 10px;
-  font-size: 15px; text-align: center; outline: none; transition: border-color .2s;
-  background: #F8FAFC;
-}
-.input-wrap input:focus { border-color: var(--accent); background: white; }
-.btn-primary {
-  width: 100%; padding: 14px; background: linear-gradient(135deg, var(--navy), var(--accent));
-  color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 600;
-  cursor: pointer; transition: all .2s; letter-spacing: .3px;
-}
-.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(31,56,100,.3); }
-.btn-primary:active { transform: translateY(0); }
-.err-msg { color: #DC2626; font-size: 12px; margin-top: 12px; min-height: 18px; }
+/* Contract Bar */
+.contract-bar{margin-top:12px;background:rgba(255,255,255,.1);border-radius:8px;padding:10px 14px}
+.contract-info{display:flex;justify-content:space-between;font-size:11px;margin-bottom:6px;opacity:.9}
+.contract-track{height:6px;background:rgba(255,255,255,.15);border-radius:3px;overflow:hidden}
+.contract-fill{height:100%;background:linear-gradient(90deg,#10B981,#3B82F6);border-radius:3px;transition:width 1s}
 
-/* ─── DASHBOARD LAYOUT ────────────────────────────────────────────────────── */
-#dashScreen { display: none; }
-.content { padding: 20px 24px; max-width: 1200px; margin: 0 auto; }
+/* ─── NAV TABS ────────────────────────────────────────────────────────── */
+.nav-tabs{background:var(--card);border-bottom:1px solid var(--border);padding:0 24px;
+  display:flex;gap:0;overflow-x:auto;box-shadow:var(--shadow)}
+.nav-tab{padding:14px 20px;border:none;background:transparent;font-size:13px;font-weight:600;
+  color:var(--text-soft);cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;white-space:nowrap}
+.nav-tab:hover{color:var(--text);background:#F8FAFC}
+.nav-tab.active{color:var(--navy);border-bottom-color:var(--accent)}
+@media(max-width:600px){.nav-tab{padding:12px 14px;font-size:12px}}
 
-/* ─── STATS ROW ───────────────────────────────────────────────────────────── */
-.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
-@media(max-width: 768px) { .stats { grid-template-columns: repeat(2, 1fr); } }
-@media(max-width: 480px) { .stats { grid-template-columns: 1fr; } }
-.stat {
-  background: var(--card); border-radius: var(--radius); padding: 20px;
-  box-shadow: var(--shadow); transition: all .2s; position: relative; overflow: hidden;
-}
-.stat:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
-.stat::after {
-  content: ''; position: absolute; top: 0; right: 0; width: 80px; height: 80px;
-  background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
-  opacity: .04; border-radius: 0 12px 0 80px;
-}
-.stat .num { font-size: 32px; font-weight: 700; color: var(--navy); line-height: 1; }
-.stat .lbl { font-size: 12px; color: var(--text-soft); margin-top: 4px; font-weight: 500; }
-.stat .icon-mini {
-  position: absolute; top: 16px; right: 16px; width: 32px; height: 32px;
-  background: var(--bg); border-radius: 8px; display: flex; align-items: center;
-  justify-content: center;
-}
-.stat .icon-mini svg { width: 16px; height: 16px; fill: var(--text-soft); }
+/* ─── CONTENT ─────────────────────────────────────────────────────────── */
+.content{padding:20px 24px;max-width:1300px;margin:0 auto}
+.section{display:none}.section.active{display:block}
 
-/* ─── TABS ────────────────────────────────────────────────────────────────── */
-.tabs-container { margin-bottom: 20px; }
-.tabs {
-  display: inline-flex; background: var(--card); border-radius: 10px;
-  padding: 4px; box-shadow: var(--shadow); gap: 4px;
-}
-.tab-btn {
-  padding: 10px 24px; border: none; border-radius: 8px; font-size: 13px;
-  font-weight: 600; cursor: pointer; transition: all .2s;
-  background: transparent; color: var(--text-soft); position: relative;
-}
-.tab-btn:hover { color: var(--text); background: var(--bg); }
-.tab-btn.active { background: var(--navy); color: white; box-shadow: 0 2px 8px rgba(31,56,100,.3); }
-.tab-btn .tab-badge {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-width: 20px; height: 18px; border-radius: 9px; font-size: 10px;
-  padding: 0 5px; margin-left: 6px; font-weight: 700;
-}
-.tab-btn.active .tab-badge { background: rgba(255,255,255,.2); color: white; }
-.tab-btn:not(.active) .tab-badge { background: var(--bg); color: var(--text-soft); }
+/* ─── KPI CARDS ───────────────────────────────────────────────────────── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
+@media(max-width:900px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.kpi-grid{grid-template-columns:1fr}}
+.kpi{background:var(--card);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);
+  border-left:4px solid var(--accent);transition:all .2s}
+.kpi:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.kpi .num{font-size:28px;font-weight:700;color:var(--navy);line-height:1}
+.kpi .lbl{font-size:11px;color:var(--text-soft);margin-top:4px;font-weight:500;text-transform:uppercase;letter-spacing:.4px}
+.kpi.green{border-left-color:var(--success)}.kpi.amber{border-left-color:var(--warning)}.kpi.red{border-left-color:var(--danger)}
 
-/* ─── SECTOR CARDS ────────────────────────────────────────────────────────── */
-.resumen-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
-@media(max-width: 700px) { .resumen-grid { grid-template-columns: 1fr; } }
-.res-card {
-  background: var(--card); border-radius: var(--radius); padding: 20px;
-  box-shadow: var(--shadow); border-left: 4px solid var(--border); transition: all .2s;
-}
-.res-card:hover { box-shadow: var(--shadow-md); }
-.res-card.sector-costa  { border-left-color: var(--costa); }
-.res-card.sector-sierra { border-left-color: var(--sierra); }
-.res-card.sector-selva  { border-left-color: var(--selva); }
-.res-card h3 {
-  font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 12px;
-  display: flex; align-items: center; gap: 8px;
-}
-.sector-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.res-card.sector-costa .sector-dot  { background: var(--costa); }
-.res-card.sector-sierra .sector-dot { background: var(--sierra); }
-.res-card.sector-selva .sector-dot  { background: var(--selva); }
-.res-row {
-  display: flex; justify-content: space-between; align-items: center;
-  font-size: 12px; padding: 6px 0; border-bottom: 1px solid #F1F5F9;
-}
-.res-row:last-child { border-bottom: none; }
-.res-row .val { font-weight: 700; color: var(--navy); }
-.res-row .val.green { color: var(--sierra); }
+/* ─── SECTOR OVERVIEW CARDS ───────────────────────────────────────────── */
+.sector-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}
+@media(max-width:800px){.sector-grid{grid-template-columns:1fr}}
+.sector-card{background:var(--card);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);transition:all .2s;cursor:pointer}
+.sector-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.sector-card-head{padding:16px 20px;color:#fff;display:flex;justify-content:space-between;align-items:center}
+.sector-card-head.costa{background:linear-gradient(135deg,#2563EB,#3B82F6)}
+.sector-card-head.sierra{background:linear-gradient(135deg,#059669,#10B981)}
+.sector-card-head.selva{background:linear-gradient(135deg,#D97706,#F59E0B)}
+.sector-card-head h3{font-size:16px;font-weight:700}
+.sector-card-head .pct{font-size:24px;font-weight:800}
+.sector-card-body{padding:16px 20px}
+.sector-row{display:flex;justify-content:space-between;padding:6px 0;font-size:12px;border-bottom:1px solid #F1F5F9}
+.sector-row:last-child{border-bottom:none}
+.sector-row .val{font-weight:700;color:var(--navy)}
 
-/* ─── FILTER BAR ──────────────────────────────────────────────────────────── */
-.filtros {
-  background: var(--card); border-radius: var(--radius); padding: 16px 20px;
-  margin-bottom: 16px; display: flex; gap: 10px; flex-wrap: wrap;
-  align-items: center; box-shadow: var(--shadow);
-}
-.filtros label { font-size: 12px; font-weight: 600; color: var(--text-soft); white-space: nowrap; }
-.filtros select, .filtros input[type="date"] {
-  padding: 9px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
-  font-size: 12px; background: #F8FAFC; flex: 1; min-width: 130px;
-  outline: none; color: var(--text); transition: border-color .2s;
-  font-family: inherit;
-}
-.filtros select:focus, .filtros input[type="date"]:focus { border-color: var(--accent); }
-.filtros .btn-filter {
-  padding: 9px 18px; border: none; border-radius: var(--radius-sm);
-  font-size: 12px; cursor: pointer; font-weight: 600; transition: all .2s;
-}
-.btn-filter.primary { background: var(--navy); color: white; }
-.btn-filter.primary:hover { background: var(--navy-light); }
-.btn-filter.secondary { background: var(--bg); color: var(--text-soft); }
-.btn-filter.secondary:hover { background: var(--border); }
+/* ─── ALERTS PANEL ────────────────────────────────────────────────────── */
+.alerts-panel{background:var(--card);border-radius:var(--radius);padding:20px;margin-bottom:20px;box-shadow:var(--shadow)}
+.alerts-panel h3{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.alert-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);
+  margin-bottom:6px;font-size:12px}
+.alert-item.high{background:#FEF2F2;border-left:3px solid var(--danger);color:#991B1B}
+.alert-item.medium{background:var(--selva-bg);border-left:3px solid var(--warning);color:#92400E}
+.alert-item.low{background:var(--costa-bg);border-left:3px solid var(--costa);color:#1E40AF}
+.alert-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.alert-item.high .alert-dot{background:var(--danger)}
+.alert-item.medium .alert-dot{background:var(--warning)}
+.alert-item.low .alert-dot{background:var(--costa)}
 
-/* ─── TABLE ───────────────────────────────────────────────────────────────── */
-.tabla-wrap {
-  background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
-  overflow: hidden;
-}
-.tabla-head {
-  background: linear-gradient(135deg, var(--navy), var(--navy-light));
-  color: white; padding: 14px 20px; font-size: 13px; font-weight: 600;
-  display: flex; justify-content: space-between; align-items: center;
-}
-.tabla-head .contador { font-size: 11px; opacity: .8; font-weight: 400; }
-.table-scroll { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-th {
-  background: #F8FAFC; padding: 12px 16px; text-align: left; font-size: 11px;
-  color: var(--text-soft); font-weight: 600; border-bottom: 2px solid var(--border);
-  text-transform: uppercase; letter-spacing: .5px; white-space: nowrap;
-}
-td {
-  padding: 12px 16px; border-bottom: 1px solid #F1F5F9;
-  vertical-align: middle; max-width: 220px; word-break: break-word;
-}
-tr { transition: background .15s; }
-tr:hover td { background: #F8FAFC; }
+/* ─── FRENTE CARDS ────────────────────────────────────────────────────── */
+.frente-list{display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:20px}
+.frente-card{background:var(--card);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);transition:all .2s}
+.frente-card:hover{box-shadow:var(--shadow-md)}
+.frente-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.frente-name{font-size:14px;font-weight:700;color:var(--navy);flex:1}
+.frente-pct{font-size:22px;font-weight:800;color:var(--navy)}
+.progress-bar{height:8px;background:#E5E7EB;border-radius:4px;overflow:hidden;margin-bottom:12px}
+.progress-fill{height:100%;border-radius:4px;transition:width .8s ease}
+.progress-fill.low{background:var(--danger)}.progress-fill.mid{background:var(--warning)}.progress-fill.high{background:var(--success)}
+.frente-meta{display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:var(--text-soft)}
+.frente-meta span{display:flex;align-items:center;gap:4px}
+.frente-supervisors{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap}
+.sup-badge{padding:3px 8px;background:#F0F4FF;border:1px solid #DBEAFE;border-radius:12px;font-size:10px;color:var(--navy);font-weight:600}
 
-/* ─── BADGES ──────────────────────────────────────────────────────────────── */
-.badge {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
-}
-.b-costa  { background: var(--costa-bg); color: var(--costa); }
-.b-sierra { background: var(--sierra-bg); color: var(--sierra); }
-.b-selva  { background: var(--selva-bg); color: var(--selva); }
-.frente-tag {
-  display: inline-block; background: #F0F4FF; border: 1px solid #DBEAFE;
-  border-radius: 6px; padding: 3px 8px; font-size: 11px; color: var(--navy);
-  max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.tipo-tag {
-  display: inline-flex; padding: 3px 8px; border-radius: 6px;
-  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .3px;
-}
-.tipo-campo { background: #EFF6FF; color: #2563EB; }
-.tipo-hse   { background: var(--hse-bg); color: var(--hse-color); }
+/* ─── CHART CONTAINER ─────────────────────────────────────────────────── */
+.chart-section{background:var(--card);border-radius:var(--radius);padding:20px;margin-bottom:20px;box-shadow:var(--shadow)}
+.chart-section h3{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:16px}
+.chart-wrap{position:relative;height:300px}
 
-.link-arch {
-  color: var(--accent); text-decoration: none; font-size: 12px;
-  font-weight: 600; display: inline-flex; align-items: center; gap: 4px;
-  transition: color .2s;
-}
-.link-arch:hover { color: var(--navy); }
-.link-arch svg { width: 14px; height: 14px; fill: currentColor; }
+/* ─── CERTIFICATION TABLE ─────────────────────────────────────────────── */
+.cert-section{background:var(--card);border-radius:var(--radius);padding:20px;margin-bottom:20px;box-shadow:var(--shadow)}
+.cert-section h3{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:16px}
+.cert-table{width:100%;border-collapse:collapse;font-size:13px}
+.cert-table th{background:#F8FAFC;padding:10px 12px;text-align:left;font-size:11px;color:var(--text-soft);
+  font-weight:600;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid var(--border)}
+.cert-table td{padding:10px 12px;border-bottom:1px solid #F1F5F9}
+.cert-input{width:120px;padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;
+  text-align:right;outline:none;font-family:inherit}
+.cert-input:focus{border-color:var(--accent)}
+.btn-save{padding:8px 20px;background:var(--navy);color:#fff;border:none;border-radius:var(--radius-sm);
+  font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;margin-top:12px}
+.btn-save:hover{background:var(--accent)}
 
-/* ─── PAGINATION ──────────────────────────────────────────────────────────── */
-.pagination { display: flex; justify-content: center; gap: 6px; padding: 16px; flex-wrap: wrap; }
-.pag-btn {
-  padding: 8px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
-  background: var(--card); cursor: pointer; font-size: 12px; font-weight: 500;
-  color: var(--text-soft); transition: all .2s;
-}
-.pag-btn:hover { border-color: var(--accent); color: var(--accent); }
-.pag-btn.activo { background: var(--navy); color: white; border-color: var(--navy); }
+/* ─── GANTT ───────────────────────────────────────────────────────────── */
+.gantt-section{background:var(--card);border-radius:var(--radius);padding:20px;margin-bottom:20px;box-shadow:var(--shadow)}
+.gantt-section h3{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:12px}
+.gantt-upload{border:2px dashed var(--border);border-radius:var(--radius-sm);padding:30px;text-align:center;
+  color:var(--text-muted);font-size:13px;cursor:pointer;transition:all .2s}
+.gantt-upload:hover{border-color:var(--accent);color:var(--accent);background:#F8FAFC}
+.gantt-upload input{display:none}
+.gantt-preview{margin-top:12px;text-align:center}
+.gantt-preview img{max-width:100%;border-radius:var(--radius-sm);border:1px solid var(--border)}
 
-/* ─── EMPTY STATE ─────────────────────────────────────────────────────────── */
-.msg {
-  text-align: center; padding: 48px 20px; color: var(--text-muted); font-size: 14px;
-}
-.msg svg { width: 48px; height: 48px; fill: var(--border); margin-bottom: 12px; }
+/* ─── SPINNER ─────────────────────────────────────────────────────────── */
+.spinner{display:inline-block;width:18px;height:18px;border:2.5px solid var(--border);
+  border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.msg{text-align:center;padding:40px;color:var(--text-muted);font-size:13px}
 
-/* ─── LOADING SPINNER ─────────────────────────────────────────────────────── */
-.spinner { display: inline-block; width: 20px; height: 20px; border: 2.5px solid var(--border);
-  border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* ─── RESPONSIVE ──────────────────────────────────────────────────────────── */
-@media(max-width: 600px) {
-  .topbar { padding: 0 16px; }
-  .topbar h1 { font-size: 13px; }
-  .content { padding: 12px; }
-  .filtros { padding: 12px; }
-  td, th { padding: 8px 10px; }
-  .tab-btn { padding: 8px 14px; font-size: 12px; }
-}
+/* ─── UTILS ───────────────────────────────────────────────────────────── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:800px){.grid-2{grid-template-columns:1fr}}
+.mb-16{margin-bottom:16px}
+.badge{display:inline-flex;padding:3px 8px;border-radius:12px;font-size:10px;font-weight:600}
+.b-costa{background:var(--costa-bg);color:var(--costa)}.b-sierra{background:var(--sierra-bg);color:var(--sierra)}
+.b-selva{background:var(--selva-bg);color:var(--selva)}
+@media(max-width:600px){.content{padding:12px}.header{padding:12px 16px}}
 </style>
 </head>
 <body>
 
-<!-- ═══════════════ LOGIN SCREEN ═══════════════ -->
+<!-- ════════════════ LOGIN ════════════════ -->
 <div id="loginScreen">
   <div class="login-overlay">
     <div class="login-card">
-      <div class="login-icon">
-        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+      <div class="login-logos">
+        <img src="/templates/logo_tgp.png" alt="TGP" style="height:55px">
+        <div class="sep"></div>
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Bureau_Veritas_logo.svg/200px-Bureau_Veritas_logo.svg.png" alt="Bureau Veritas" style="height:45px">
       </div>
-      <h2>Portal TGP</h2>
-      <p>Coordinacion de Campo y Seguridad</p>
-      <div class="input-wrap">
-        <input type="password" id="clave" placeholder="Clave de acceso"
-               onkeydown="if(event.key==='Enter') login()">
-      </div>
+      <h2>Portal TGP - BV</h2>
+      <p>Gestion de Obra — Coordinacion de Campo</p>
+      <input type="password" id="clave" placeholder="Clave de acceso" onkeydown="if(event.key==='Enter') login()">
       <button class="btn-primary" onclick="login()">Ingresar</button>
       <div class="err-msg" id="errLogin"></div>
     </div>
   </div>
 </div>
 
-<!-- ═══════════════ DASHBOARD ═══════════════ -->
+<!-- ════════════════ DASHBOARD ════════════════ -->
 <div id="dashScreen">
-  <div class="topbar">
-    <div class="topbar-left">
-      <div class="topbar-logo">TGP</div>
-      <h1>Portal Coordinacion — Reportes 2026</h1>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-top">
+      <div class="header-left">
+        <img src="/templates/logo_tgp.png" alt="TGP" style="height:32px">
+        <div class="sep"></div>
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Bureau_Veritas_logo.svg/200px-Bureau_Veritas_logo.svg.png" alt="BV" style="height:28px;filter:brightness(0) invert(1)">
+        <h1>PORTAL TGP - BV</h1>
+      </div>
+      <div class="header-right">
+        <span id="ultimaAct"></span>
+        <button class="btn-logout" onclick="logout()">Cerrar sesion</button>
+      </div>
     </div>
-    <div class="topbar-right">
-      <span class="topbar-time" id="ultimaAct"></span>
-      <button class="btn-logout" onclick="logout()">Cerrar sesion</button>
+    <div class="contract-bar">
+      <div class="contract-info">
+        <span>Contrato: 01/02/2026 — 31/01/2029</span>
+        <span id="contractPct">0% transcurrido</span>
+      </div>
+      <div class="contract-track"><div class="contract-fill" id="contractFill" style="width:0%"></div></div>
+      <div class="contract-info" style="margin-top:4px">
+        <span id="contractDaysElapsed">0 dias transcurridos</span>
+        <span id="contractDaysLeft">1095 dias restantes</span>
+      </div>
     </div>
+  </div>
+
+  <!-- NAV -->
+  <div class="nav-tabs">
+    <button class="nav-tab active" data-section="resumen" onclick="showSection('resumen')">Resumen General</button>
+    <button class="nav-tab" data-section="costa" onclick="showSection('costa')">Costa</button>
+    <button class="nav-tab" data-section="sierra" onclick="showSection('sierra')">Sierra</button>
+    <button class="nav-tab" data-section="selva" onclick="showSection('selva')">Selva</button>
+    <button class="nav-tab" data-section="certificaciones" onclick="showSection('certificaciones')">Certificaciones</button>
+    <button class="nav-tab" data-section="curvas" onclick="showSection('curvas')">Curva S</button>
   </div>
 
   <div class="content">
 
-    <!-- STATS -->
-    <div class="stats">
-      <div class="stat">
-        <div class="icon-mini"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 2l5 5h-5V4zM6 20V4h5v7h7v9H6z"/></svg></div>
-        <div class="num" id="stTotal">-</div>
-        <div class="lbl">Total reportes</div>
-      </div>
-      <div class="stat">
-        <div class="icon-mini"><svg viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z"/></svg></div>
-        <div class="num" id="stHoy">-</div>
-        <div class="lbl">Reportes hoy</div>
-      </div>
-      <div class="stat">
-        <div class="icon-mini"><svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg></div>
-        <div class="num" id="stSemana">-</div>
-        <div class="lbl">Esta semana</div>
-      </div>
-      <div class="stat">
-        <div class="icon-mini"><svg viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6h-6z"/></svg></div>
-        <div class="num" id="stMes">-</div>
-        <div class="lbl">Este mes</div>
-      </div>
-    </div>
-
-    <!-- TABS -->
-    <div class="tabs-container">
-      <div class="tabs">
-        <button class="tab-btn active" data-tab="campo" onclick="cambiarTab('campo')">
-          Reportes de Campo <span class="tab-badge" id="badgeCampo">0</span>
-        </button>
-        <button class="tab-btn" data-tab="hse" onclick="cambiarTab('hse')">
-          Reportes HSE <span class="tab-badge" id="badgeHse">0</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- RESUMEN SECTORES -->
-    <div class="resumen-grid" id="resumenSectores"></div>
-
-    <!-- FILTROS -->
-    <div class="filtros">
-      <label>Filtrar:</label>
-      <select id="fSector" onchange="filtrar()">
-        <option value="">Todos los sectores</option>
-        <option>Costa</option>
-        <option>Sierra</option>
-        <option>Selva</option>
-      </select>
-      <select id="fFrente" onchange="filtrar()">
-        <option value="">Todos los frentes</option>
-      </select>
-      <input type="date" id="fFecha" onchange="filtrar()">
-      <button class="btn-filter secondary" onclick="limpiarFiltros()">Limpiar</button>
-      <button class="btn-filter primary" onclick="cargarDatos()">
-        <span id="btnActText">Actualizar</span>
-      </button>
-    </div>
-
-    <!-- TABLA -->
-    <div class="tabla-wrap">
-      <div class="tabla-head">
-        <span id="tablaTitle">Reportes de Campo</span>
-        <span class="contador" id="contadorFiltro"></span>
-      </div>
-      <div class="table-scroll">
-        <div id="tablaArea">
-          <div class="msg">
-            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
-            <br>Cargando reportes...
-          </div>
+    <!-- ═══════ RESUMEN GENERAL ═══════ -->
+    <div class="section active" id="sec-resumen">
+      <div class="kpi-grid" id="kpiArea"></div>
+      <div class="sector-grid" id="sectorCards"></div>
+      <div class="grid-2">
+        <div class="alerts-panel" id="alertsPanel">
+          <h3>&#9888; Alertas Activas</h3>
+          <div id="alertsList"><div class="msg">Cargando...</div></div>
+        </div>
+        <div class="chart-section">
+          <h3>Avance General por Sector</h3>
+          <div class="chart-wrap"><canvas id="chartGeneral"></canvas></div>
         </div>
       </div>
     </div>
-    <div id="paginacion" class="pagination"></div>
+
+    <!-- ═══════ SECTOR VIEWS ═══════ -->
+    <div class="section" id="sec-costa">
+      <h2 style="font-size:18px;color:var(--navy);margin-bottom:16px">Sector Costa — Frentes de Trabajo</h2>
+      <div class="frente-list" id="frentesListCosta"></div>
+      <div class="gantt-section">
+        <h3>Cronograma Gantt — Costa</h3>
+        <div class="gantt-upload" onclick="this.querySelector('input').click()">
+          <input type="file" accept="image/*,.xlsx,.xls,.pdf" onchange="uploadGantt('Costa',this)">
+          Click para cargar cronograma (imagen, Excel o PDF)
+        </div>
+        <div class="gantt-preview" id="ganttPreviewCosta"></div>
+      </div>
+    </div>
+
+    <div class="section" id="sec-sierra">
+      <h2 style="font-size:18px;color:var(--navy);margin-bottom:16px">Sector Sierra — Frentes de Trabajo</h2>
+      <div class="frente-list" id="frentesListSierra"></div>
+      <div class="gantt-section">
+        <h3>Cronograma Gantt — Sierra</h3>
+        <div class="gantt-upload" onclick="this.querySelector('input').click()">
+          <input type="file" accept="image/*,.xlsx,.xls,.pdf" onchange="uploadGantt('Sierra',this)">
+          Click para cargar cronograma (imagen, Excel o PDF)
+        </div>
+        <div class="gantt-preview" id="ganttPreviewSierra"></div>
+      </div>
+    </div>
+
+    <div class="section" id="sec-selva">
+      <h2 style="font-size:18px;color:var(--navy);margin-bottom:16px">Sector Selva — Frentes de Trabajo</h2>
+      <div class="frente-list" id="frentesListSelva"></div>
+      <div class="gantt-section">
+        <h3>Cronograma Gantt — Selva</h3>
+        <div class="gantt-upload" onclick="this.querySelector('input').click()">
+          <input type="file" accept="image/*,.xlsx,.xls,.pdf" onchange="uploadGantt('Selva',this)">
+          Click para cargar cronograma (imagen, Excel o PDF)
+        </div>
+        <div class="gantt-preview" id="ganttPreviewSelva"></div>
+      </div>
+    </div>
+
+    <!-- ═══════ CERTIFICACIONES ═══════ -->
+    <div class="section" id="sec-certificaciones">
+      <div class="cert-section">
+        <h3>Certificacion Mensual por Sector (S/.)</h3>
+        <div style="overflow-x:auto">
+          <table class="cert-table">
+            <thead><tr><th>Mes</th><th>Costa</th><th>Sierra</th><th>Selva</th><th>Total</th></tr></thead>
+            <tbody id="certBody"></tbody>
+          </table>
+        </div>
+        <button class="btn-save" onclick="guardarCertificaciones()">Guardar Certificaciones</button>
+      </div>
+    </div>
+
+    <!-- ═══════ CURVA S ═══════ -->
+    <div class="section" id="sec-curvas">
+      <div class="grid-2">
+        <div class="chart-section">
+          <h3>Curva S — Costa</h3>
+          <div class="chart-wrap"><canvas id="scurveCosta"></canvas></div>
+        </div>
+        <div class="chart-section">
+          <h3>Curva S — Sierra</h3>
+          <div class="chart-wrap"><canvas id="scurveSierra"></canvas></div>
+        </div>
+      </div>
+      <div class="chart-section">
+        <h3>Curva S — Selva</h3>
+        <div class="chart-wrap"><canvas id="scurveSelva"></canvas></div>
+      </div>
+    </div>
 
   </div>
 </div>
 
-<!-- ═══════════════ JAVASCRIPT ═══════════════ -->
+<!-- ════════════════ JAVASCRIPT ════════════════ -->
 <script>
-(function() {
-  "use strict";
+(function(){
+"use strict";
 
-  // ─── STATE ────────────────────────────────────────────────────────────────
-  var datosCampo = [], datosHSE = [];
-  var reportesFiltrados = [];
-  var tabActual = "campo";
-  var paginaActual = 1;
-  var POR_PAGINA = 15;
+// ─── STATE ─────────────────────────────────────────────────────────────
+var datosCampo = [], datosHSE = [];
+var certificaciones = {};
+var ganttFiles = {};
+var charts = {};
 
-  // ─── LOGIN ────────────────────────────────────────────────────────────────
-  window.login = function() {
-    var clave = document.getElementById("clave").value.trim();
-    if (!clave) { document.getElementById("errLogin").textContent = "Ingresa la clave"; return; }
-    document.getElementById("errLogin").textContent = "";
+// ─── CONTRACT DATES ────────────────────────────────────────────────────
+var CONTRACT_START = new Date('2026-02-01');
+var CONTRACT_END   = new Date('2029-01-31');
 
-    fetch("/api/verificar-clave", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ clave: clave })
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      if (data.ok) {
+function updateContractBar() {
+  var now = new Date();
+  var totalDays = Math.round((CONTRACT_END - CONTRACT_START) / 86400000);
+  var elapsed = Math.max(0, Math.round((now - CONTRACT_START) / 86400000));
+  var remaining = Math.max(0, totalDays - elapsed);
+  var pct = Math.min(100, Math.max(0, (elapsed / totalDays) * 100));
+
+  document.getElementById("contractFill").style.width = pct.toFixed(1) + "%";
+  document.getElementById("contractPct").textContent = pct.toFixed(1) + "% transcurrido";
+  document.getElementById("contractDaysElapsed").textContent = elapsed + " dias transcurridos";
+  document.getElementById("contractDaysLeft").textContent = remaining + " dias restantes";
+}
+
+// ─── FRENTES (mirrors server) ──────────────────────────────────────────
+var FRENTES = {
+  "Costa": ["SOPORTE A INGENIERIA","VIAL","URGENCIA VIAL KP 472+700 AL KP 482+000","KP 714+155 AL KP 730+698","MG KP 519+526 AL KP 540+839"],
+  "Sierra": ["MG KP 170+000 AL KP 179+850","MG KP 179+850 AL KP 194+000","MG KP 194+000 AL KP 209+360","APOYO A INGENIERIA"],
+  "Selva": ["M.G. KP 43+830 - KP 53+000 - ETAPA 1","M.G. KP 0+000 - KP 12+000 - ETAPA 1","M.G. KP 25+000 - KP 35+000","TAI KP 112+300","Reparacion de F.O. KP61+150","Perforaciones del KP126","Perforaciones del KP55+118","Apoyo / Ingenieria"]
+};
+
+// ─── LOGIN ─────────────────────────────────────────────────────────────
+window.login = function() {
+  var clave = document.getElementById("clave").value.trim();
+  if (!clave) { document.getElementById("errLogin").textContent = "Ingresa la clave"; return; }
+  document.getElementById("errLogin").textContent = "";
+  fetch("/api/verificar-clave", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({clave:clave}) })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.ok) {
         document.getElementById("loginScreen").style.display = "none";
-        document.getElementById("dashScreen").style.display  = "block";
-        cargarDatos();
+        document.getElementById("dashScreen").style.display = "block";
+        updateContractBar();
+        cargarTodo();
       } else {
         document.getElementById("errLogin").textContent = "Clave incorrecta";
       }
-    })
-    .catch(function() {
-      document.getElementById("errLogin").textContent = "Error de conexion";
-    });
-  };
+    }).catch(function(){ document.getElementById("errLogin").textContent = "Error de conexion"; });
+};
 
-  window.logout = function() {
-    document.getElementById("dashScreen").style.display  = "none";
-    document.getElementById("loginScreen").style.display = "block";
-    document.getElementById("clave").value = "";
-    datosCampo = []; datosHSE = [];
-  };
+window.logout = function() {
+  document.getElementById("dashScreen").style.display = "none";
+  document.getElementById("loginScreen").style.display = "block";
+  document.getElementById("clave").value = "";
+};
 
-  // ─── CARGAR DATOS ─────────────────────────────────────────────────────────
-  window.cargarDatos = function() {
-    document.getElementById("btnActText").innerHTML = '<span class="spinner"></span>';
-    document.getElementById("tablaArea").innerHTML =
-      '<div class="msg"><span class="spinner"></span><br>Cargando reportes...</div>';
+// ─── NAVIGATION ────────────────────────────────────────────────────────
+window.showSection = function(id) {
+  document.querySelectorAll(".section").forEach(function(s){ s.classList.remove("active"); });
+  document.querySelectorAll(".nav-tab").forEach(function(t){ t.classList.remove("active"); });
+  document.getElementById("sec-" + id).classList.add("active");
+  document.querySelector('.nav-tab[data-section="'+id+'"]').classList.add("active");
+};
 
-    // Cargar ambos en paralelo
-    Promise.all([
-      fetch("/api/datos").then(function(r) { return r.json(); }),
-      fetch("/api/datos-hse").then(function(r) { return r.json(); }).catch(function() { return { reportes: [] }; })
-    ]).then(function(results) {
-      datosCampo = (results[0].reportes || []);
-      datosHSE   = (results[1].reportes || []);
+// ─── LOAD ALL DATA ─────────────────────────────────────────────────────
+function cargarTodo() {
+  Promise.all([
+    fetch("/api/portal/resumen").then(function(r){ return r.json(); }),
+    fetch("/api/portal/certificaciones").then(function(r){ return r.json(); }).catch(function(){ return {}; }),
+    fetch("/api/portal/gantt-list").then(function(r){ return r.json(); }).catch(function(){ return {}; })
+  ]).then(function(results) {
+    var resumen = results[0];
+    certificaciones = results[1] || {};
+    ganttFiles = results[2] || {};
 
-      document.getElementById("ultimaAct").textContent =
-        "Actualizado: " + new Date().toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" });
-      document.getElementById("btnActText").textContent = "Actualizar";
+    datosCampo = resumen.reportesCampo || [];
+    datosHSE = resumen.reportesHSE || [];
 
-      document.getElementById("badgeCampo").textContent = datosCampo.length;
-      document.getElementById("badgeHse").textContent   = datosHSE.length;
+    document.getElementById("ultimaAct").textContent = "Actualizado: " + new Date().toLocaleTimeString("es-PE",{hour:"2-digit",minute:"2-digit"});
 
-      actualizarStats();
-      actualizarResumenSectores();
-      actualizarFiltroFrente();
-      filtrar();
-    }).catch(function() {
-      document.getElementById("tablaArea").innerHTML = '<div class="msg">Error al cargar datos</div>';
-      document.getElementById("btnActText").textContent = "Actualizar";
-    });
-  };
+    renderKPIs(resumen);
+    renderSectorCards(resumen);
+    renderAlerts(resumen);
+    renderChartGeneral(resumen);
+    renderFrentesDetail("Costa", resumen);
+    renderFrentesDetail("Sierra", resumen);
+    renderFrentesDetail("Selva", resumen);
+    renderCertificaciones();
+    renderSCurves(resumen);
+    renderGantts();
+  }).catch(function(err) {
+    console.error("Error cargando portal:", err);
+  });
+}
 
-  // ─── TABS ─────────────────────────────────────────────────────────────────
-  window.cambiarTab = function(tab) {
-    tabActual = tab;
-    document.querySelectorAll(".tab-btn").forEach(function(btn) {
-      btn.classList.toggle("active", btn.dataset.tab === tab);
-    });
-    document.getElementById("tablaTitle").textContent =
-      tab === "campo" ? "Reportes de Campo" : "Reportes HSE";
-    paginaActual = 1;
-    actualizarStats();
-    actualizarResumenSectores();
-    actualizarFiltroFrente();
-    filtrar();
-  };
+// ─── KPIs ──────────────────────────────────────────────────────────────
+function renderKPIs(res) {
+  var total = datosCampo.length + datosHSE.length;
+  var hoy = new Date().toISOString().substring(0,10);
+  var hoyCount = datosCampo.filter(function(r){ return String(r.fecha).substring(0,10)===hoy; }).length;
+  var avanceGlobal = res.avanceGlobal || 0;
+  var frentesActivos = 0;
+  ["Costa","Sierra","Selva"].forEach(function(s){ frentesActivos += (res.sectores[s] || {}).frentesActivos || 0; });
 
-  function datosActuales() {
-    return tabActual === "campo" ? datosCampo : datosHSE;
+  document.getElementById("kpiArea").innerHTML =
+    '<div class="kpi"><div class="num">' + total + '</div><div class="lbl">Total Reportes</div></div>' +
+    '<div class="kpi green"><div class="num">' + hoyCount + '</div><div class="lbl">Reportes Hoy</div></div>' +
+    '<div class="kpi amber"><div class="num">' + frentesActivos + '</div><div class="lbl">Frentes Activos</div></div>' +
+    '<div class="kpi"><div class="num">' + avanceGlobal.toFixed(1) + '%</div><div class="lbl">Avance Global</div></div>';
+}
+
+// ─── SECTOR CARDS ──────────────────────────────────────────────────────
+function renderSectorCards(res) {
+  var html = "";
+  ["Costa","Sierra","Selva"].forEach(function(sec) {
+    var s = res.sectores[sec] || {};
+    var color = sec.toLowerCase();
+    html += '<div class="sector-card" onclick="showSection(\'' + color + '\')">' +
+      '<div class="sector-card-head ' + color + '">' +
+        '<h3>' + sec + '</h3><span class="pct">' + (s.avance || 0).toFixed(1) + '%</span>' +
+      '</div><div class="sector-card-body">' +
+        '<div class="sector-row"><span>Frentes activos</span><span class="val">' + (s.frentesActivos||0) + '</span></div>' +
+        '<div class="sector-row"><span>Supervisores</span><span class="val">' + (s.supervisores||[]).length + '</span></div>' +
+        '<div class="sector-row"><span>Reportes este mes</span><span class="val">' + (s.reportesMes||0) + '</span></div>' +
+        '<div class="sector-row"><span>Ultimo reporte</span><span class="val">' + (s.ultimoReporte||"-") + '</span></div>' +
+      '</div></div>';
+  });
+  document.getElementById("sectorCards").innerHTML = html;
+}
+
+// ─── ALERTS ────────────────────────────────────────────────────────────
+function renderAlerts(res) {
+  var alertas = res.alertas || [];
+  if (alertas.length === 0) {
+    document.getElementById("alertsList").innerHTML = '<div style="text-align:center;padding:20px;color:var(--success);font-size:13px">Sin alertas activas</div>';
+    return;
   }
+  var html = "";
+  alertas.forEach(function(a) {
+    html += '<div class="alert-item ' + a.severity + '"><span class="alert-dot"></span>' + a.message + '</div>';
+  });
+  document.getElementById("alertsList").innerHTML = html;
+}
 
-  // ─── STATS ────────────────────────────────────────────────────────────────
-  function actualizarStats() {
-    var datos = datosActuales();
-    var hoy = new Date().toISOString().substring(0, 10);
-    var mes = new Date().toISOString().substring(0, 7);
-    var sem = semanaActual();
+// ─── GENERAL CHART ─────────────────────────────────────────────────────
+function renderChartGeneral(res) {
+  var ctx = document.getElementById("chartGeneral");
+  if (charts.general) charts.general.destroy();
+  var sectores = ["Costa","Sierra","Selva"];
+  var avances = sectores.map(function(s){ return (res.sectores[s]||{}).avance || 0; });
 
-    document.getElementById("stTotal").textContent  = datos.length;
-    document.getElementById("stHoy").textContent    = datos.filter(function(r) { return String(r.fecha).substring(0,10) === hoy; }).length;
-    document.getElementById("stSemana").textContent = datos.filter(function(r) { return String(r.semana) === String(sem); }).length;
-    document.getElementById("stMes").textContent    = datos.filter(function(r) { return String(r.fecha).substring(0,7) === mes; }).length;
-  }
+  charts.general = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: sectores,
+      datasets: [{
+        label: "% Avance",
+        data: avances,
+        backgroundColor: ["rgba(59,130,246,.7)","rgba(16,185,129,.7)","rgba(245,158,11,.7)"],
+        borderColor: ["#3B82F6","#10B981","#F59E0B"],
+        borderWidth: 2, borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { y: { beginAtZero: true, max: 100, ticks: { callback: function(v){ return v+"%"; } } } },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
 
-  function semanaActual() {
-    var d = new Date(), ini = new Date(d.getFullYear(), 0, 1);
-    return Math.ceil(((d - ini) / 86400000 + ini.getDay() + 1) / 7);
-  }
+// ─── FRENTES DETAIL ────────────────────────────────────────────────────
+function renderFrentesDetail(sector, res) {
+  var container = document.getElementById("frentesList" + sector);
+  var frentes = FRENTES[sector] || [];
+  var sectorData = res.sectores[sector] || {};
+  var frentesData = sectorData.frentes || {};
+  var html = "";
 
-  // ─── RESUMEN SECTORES ─────────────────────────────────────────────────────
-  function actualizarResumenSectores() {
-    var datos = datosActuales();
-    var hoy = new Date().toISOString().substring(0, 10);
-    var mes = new Date().toISOString().substring(0, 7);
-    var html = "";
+  frentes.forEach(function(f) {
+    var fd = frentesData[f] || {};
+    var avance = fd.avance || 0;
+    var sups = fd.supervisores || [];
+    var dias = fd.diasActivo || 0;
+    var ultimoReporte = fd.ultimoReporte || "-";
+    var totalReportes = fd.totalReportes || 0;
+    var fillClass = avance < 30 ? "low" : (avance < 70 ? "mid" : "high");
 
-    ["Costa", "Sierra", "Selva"].forEach(function(sec) {
-      var tot  = datos.filter(function(r) { return r.sector === sec; }).length;
-      var hoyC = datos.filter(function(r) { return r.sector === sec && String(r.fecha).substring(0,10) === hoy; }).length;
-      var mesC = datos.filter(function(r) { return r.sector === sec && String(r.fecha).substring(0,7) === mes; }).length;
-
-      html += '<div class="res-card sector-' + sec.toLowerCase() + '">';
-      html += '<h3><span class="sector-dot"></span>' + sec + '</h3>';
-      html += '<div class="res-row"><span>Total</span><span class="val">' + tot + '</span></div>';
-      html += '<div class="res-row"><span>Hoy</span><span class="val green">' + hoyC + '</span></div>';
-      html += '<div class="res-row"><span>Este mes</span><span class="val">' + mesC + '</span></div>';
+    html += '<div class="frente-card">' +
+      '<div class="frente-top"><span class="frente-name">' + f + '</span><span class="frente-pct">' + avance.toFixed(1) + '%</span></div>' +
+      '<div class="progress-bar"><div class="progress-fill ' + fillClass + '" style="width:' + avance + '%"></div></div>' +
+      '<div class="frente-meta">' +
+        '<span>&#128197; ' + dias + ' dias</span>' +
+        '<span>&#128203; ' + totalReportes + ' reportes</span>' +
+        '<span>&#128338; Ultimo: ' + ultimoReporte + '</span>' +
+      '</div>';
+    if (sups.length > 0) {
+      html += '<div class="frente-supervisors">';
+      sups.forEach(function(s){ html += '<span class="sup-badge">' + s + '</span>'; });
       html += '</div>';
-    });
+    }
+    html += '</div>';
+  });
 
-    document.getElementById("resumenSectores").innerHTML = html;
+  container.innerHTML = html || '<div class="msg">Sin datos disponibles</div>';
+}
+
+// ─── CERTIFICACIONES ───────────────────────────────────────────────────
+function renderCertificaciones() {
+  var meses = generarMeses();
+  var html = "";
+  meses.forEach(function(m) {
+    var data = certificaciones[m.key] || {};
+    var costa = data.Costa || 0;
+    var sierra = data.Sierra || 0;
+    var selva = data.Selva || 0;
+    var total = costa + sierra + selva;
+    html += '<tr>' +
+      '<td><b>' + m.label + '</b></td>' +
+      '<td><input class="cert-input" type="number" data-mes="'+m.key+'" data-sector="Costa" value="'+(costa||"")+'" placeholder="0.00"></td>' +
+      '<td><input class="cert-input" type="number" data-mes="'+m.key+'" data-sector="Sierra" value="'+(sierra||"")+'" placeholder="0.00"></td>' +
+      '<td><input class="cert-input" type="number" data-mes="'+m.key+'" data-sector="Selva" value="'+(selva||"")+'" placeholder="0.00"></td>' +
+      '<td style="font-weight:700;color:var(--navy)">S/. ' + formatNum(total) + '</td>' +
+      '</tr>';
+  });
+  document.getElementById("certBody").innerHTML = html;
+}
+
+function generarMeses() {
+  var meses = [];
+  var start = new Date(2026, 1, 1); // Feb 2026
+  var now = new Date();
+  var end = new Date(now.getFullYear(), now.getMonth() + 2, 1);
+  var d = new Date(start);
+  while (d <= end) {
+    var key = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0");
+    var label = d.toLocaleDateString("es-PE", { year: "numeric", month: "long" });
+    meses.push({ key: key, label: label });
+    d.setMonth(d.getMonth() + 1);
   }
+  return meses;
+}
 
-  // ─── FILTROS ──────────────────────────────────────────────────────────────
-  function actualizarFiltroFrente() {
-    var datos = datosActuales();
-    var sel = document.getElementById("fFrente");
-    sel.innerHTML = '<option value="">Todos los frentes</option>';
-    var vistos = {};
-    datos.forEach(function(r) {
-      if (r.frente && !vistos[r.frente]) {
-        vistos[r.frente] = 1;
-        var op = document.createElement("option");
-        op.value = r.frente; op.textContent = r.frente;
-        sel.appendChild(op);
+function formatNum(n) {
+  return n.toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+window.guardarCertificaciones = function() {
+  var inputs = document.querySelectorAll(".cert-input");
+  var data = {};
+  inputs.forEach(function(inp) {
+    var mes = inp.dataset.mes;
+    var sector = inp.dataset.sector;
+    if (!data[mes]) data[mes] = {};
+    data[mes][sector] = parseFloat(inp.value) || 0;
+  });
+  fetch("/api/portal/certificacion", {
+    method: "POST", headers: {"Content-Type":"application/json"},
+    body: JSON.stringify(data)
+  }).then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.ok) { certificaciones = data; alert("Certificaciones guardadas"); }
+      else alert("Error al guardar");
+    }).catch(function(){ alert("Error de conexion"); });
+};
+
+// ─── S-CURVES ──────────────────────────────────────────────────────────
+function renderSCurves(res) {
+  ["Costa","Sierra","Selva"].forEach(function(sector) {
+    var canvasId = "scurve" + sector;
+    var ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+    if (charts["scurve_"+sector]) charts["scurve_"+sector].destroy();
+
+    var scurveData = (res.scurves || {})[sector] || { labels: [], real: [], planificado: [] };
+
+    charts["scurve_"+sector] = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: scurveData.labels,
+        datasets: [
+          {
+            label: "Avance Real",
+            data: scurveData.real,
+            borderColor: "#10B981", backgroundColor: "rgba(16,185,129,.1)",
+            borderWidth: 2.5, fill: true, tension: 0.3,
+            pointBackgroundColor: "#10B981", pointRadius: 4
+          },
+          {
+            label: "Avance Planificado",
+            data: scurveData.planificado,
+            borderColor: "#3B82F6", backgroundColor: "transparent",
+            borderWidth: 2, borderDash: [6,4], tension: 0.3,
+            pointBackgroundColor: "#3B82F6", pointRadius: 3
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: {
+          y: { beginAtZero: true, max: 100, ticks: { callback: function(v){ return v+"%"; } } },
+          x: { ticks: { maxRotation: 45 } }
+        },
+        plugins: {
+          legend: { position: "top", labels: { usePointStyle: true, pointStyle: "circle" } }
+        }
       }
     });
+  });
+}
+
+// ─── GANTT UPLOAD ──────────────────────────────────────────────────────
+window.uploadGantt = function(sector, input) {
+  var file = input.files[0];
+  if (!file) return;
+
+  if (file.type.startsWith("image/")) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var base64 = e.target.result.split(",")[1];
+      fetch("/api/portal/gantt-upload", {
+        method: "POST", headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ sector: sector, filename: file.name, mimeType: file.type, base64: base64 })
+      }).then(function(r){ return r.json(); })
+        .then(function(d){
+          if (d.ok) {
+            document.getElementById("ganttPreview"+sector).innerHTML =
+              '<img src="data:'+file.type+';base64,'+base64+'" alt="Gantt '+sector+'">';
+            alert("Cronograma cargado");
+          }
+        });
+    };
+    reader.readAsDataURL(file);
+  } else {
+    alert("Por ahora solo se soportan imagenes para vista previa. Para Excel/PDF se guardara como archivo descargable.");
   }
+};
 
-  window.filtrar = function() {
-    var datos  = datosActuales();
-    var sec    = document.getElementById("fSector").value;
-    var frente = document.getElementById("fFrente").value;
-    var fecha  = document.getElementById("fFecha").value;
-
-    reportesFiltrados = datos.filter(function(r) {
-      if (sec    && r.sector !== sec)                           return false;
-      if (frente && r.frente !== frente)                        return false;
-      if (fecha  && String(r.fecha).substring(0,10) !== fecha)  return false;
-      return true;
-    });
-    paginaActual = 1;
-    renderTabla();
-  };
-
-  window.limpiarFiltros = function() {
-    ["fSector","fFrente","fFecha"].forEach(function(id) { document.getElementById(id).value = ""; });
-    filtrar();
-  };
-
-  // ─── RENDER TABLE ─────────────────────────────────────────────────────────
-  function renderTabla() {
-    var ini = (paginaActual - 1) * POR_PAGINA;
-    var pag = reportesFiltrados.slice(ini, ini + POR_PAGINA);
-    document.getElementById("contadorFiltro").textContent = reportesFiltrados.length + " registros";
-
-    if (pag.length === 0) {
-      document.getElementById("tablaArea").innerHTML =
-        '<div class="msg"><svg viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg><br>No hay reportes con estos filtros</div>';
-      document.getElementById("paginacion").innerHTML = "";
-      return;
+function renderGantts() {
+  ["Costa","Sierra","Selva"].forEach(function(sector) {
+    var info = ganttFiles[sector];
+    if (info && info.base64 && info.mimeType && info.mimeType.startsWith("image/")) {
+      document.getElementById("ganttPreview"+sector).innerHTML =
+        '<img src="data:'+info.mimeType+';base64,'+info.base64+'" alt="Gantt '+sector+'">';
     }
-
-    var cols, headHtml;
-    if (tabActual === "campo") {
-      headHtml = "<th>Fecha</th><th>Responsable</th><th>Sector</th><th>Frente</th><th>Tipo</th><th>Archivo</th>";
-    } else {
-      headHtml = "<th>Fecha</th><th>Responsable</th><th>Sector</th><th>Frente</th><th>Tipo Reporte</th><th>Archivo</th>";
-    }
-
-    var html = "<table><thead><tr>" + headHtml + "</tr></thead><tbody>";
-
-    pag.forEach(function(r) {
-      var bSec = "b-" + (r.sector || "").toLowerCase();
-      var arch = r.link
-        ? '<a class="link-arch" href="' + r.link + '" target="_blank"><svg viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>Abrir</a>'
-        : '<span style="color:var(--text-muted)">—</span>';
-
-      var tipoHtml = "";
-      if (tabActual === "campo") {
-        tipoHtml = '<span class="tipo-tag tipo-campo">' + (r.tipoReporte || "-") + '</span>';
-      } else {
-        tipoHtml = '<span class="tipo-tag tipo-hse">' + (r.tipoReporte || "-") + '</span>';
-      }
-
-      html += "<tr>"
-        + "<td><b>" + String(r.fecha).substring(0,10) + "</b></td>"
-        + "<td>" + (r.responsable || "-") + "</td>"
-        + "<td><span class='badge " + bSec + "'>" + (r.sector || "-") + "</span></td>"
-        + "<td><span class='frente-tag' title='" + (r.frente || "") + "'>" + (r.frente || "-") + "</span></td>"
-        + "<td>" + tipoHtml + "</td>"
-        + "<td>" + arch + "</td>"
-        + "</tr>";
-    });
-
-    html += "</tbody></table>";
-    document.getElementById("tablaArea").innerHTML = html;
-    renderPaginacion();
-  }
-
-  // ─── PAGINATION ───────────────────────────────────────────────────────────
-  function renderPaginacion() {
-    var total = Math.ceil(reportesFiltrados.length / POR_PAGINA);
-    if (total <= 1) { document.getElementById("paginacion").innerHTML = ""; return; }
-
-    var html = "";
-    // Prev
-    if (paginaActual > 1)
-      html += '<button class="pag-btn" onclick="irPagina(' + (paginaActual-1) + ')">&laquo;</button>';
-
-    var start = Math.max(1, paginaActual - 2);
-    var end   = Math.min(total, paginaActual + 2);
-
-    for (var i = start; i <= end; i++) {
-      html += '<button class="pag-btn ' + (i===paginaActual ? "activo" : "") + '" onclick="irPagina(' + i + ')">' + i + '</button>';
-    }
-
-    // Next
-    if (paginaActual < total)
-      html += '<button class="pag-btn" onclick="irPagina(' + (paginaActual+1) + ')">&raquo;</button>';
-
-    document.getElementById("paginacion").innerHTML = html;
-  }
-
-  window.irPagina = function(n) {
-    paginaActual = n;
-    renderTabla();
-    document.querySelector(".tabla-wrap").scrollIntoView({ behavior: "smooth" });
-  };
+  });
+}
 
 })();
 </script>
