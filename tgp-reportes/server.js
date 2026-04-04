@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// SISTEMA DE REPORTES DE CAMPO — server.js v8 (+ módulo HSE)
+// SISTEMA DE REPORTES DE CAMPO — server.js v9 (+ HSE + PDS)
 // ═══════════════════════════════════════════════════════════════════════════
 
 require("dotenv").config();
@@ -8,6 +8,7 @@ const cors       = require("cors");
 const path       = require("path");
 const { google } = require("googleapis");
 const nodemailer = require("nodemailer");
+const { generatePDS } = require("./pds-generator");
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -485,10 +486,19 @@ app.post("/api/reporte", async (req, res) => {
 
     await registrarEnSheet(sheets, datos, urlArchivo, ahora, hoy);
 
+    // Email no bloquea
     try {
       await enviarEmail(datos, urlArchivo, ahora);
     } catch (emailErr) {
       console.warn("[Email] Fallo (no critico):", emailErr.message);
+    }
+
+    // PDS no bloquea: si falla, el reporte ya fue guardado
+    if (datos.tipoReporte && datos.tipoReporte.toLowerCase().includes("diario")) {
+      const yearMonth = hoy.substring(0, 7); // "2026-04"
+      generatePDS(sheets, drive, SPREADSHEET_ID, datos.sector, yearMonth)
+        .then(() => console.log("[PDS] Generado exitosamente"))
+        .catch(pdsErr => console.warn("[PDS] Fallo (no critico):", pdsErr.message));
     }
 
     res.json({ ok: true });
@@ -521,9 +531,9 @@ app.get("/api/datos", async (req, res) => {
 
 // ─── HEALTH ──────────────────────────────────────────────────────────────────
 app.get("/health", (req, res) => {
-  res.json({ status: "ok", version: "8.0.0", time: new Date().toISOString() });
+  res.json({ status: "ok", version: "9.0.0", time: new Date().toISOString() });
 });
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`TGP Reportes v8 corriendo en puerto ${PORT}`);
+  console.log(`TGP Reportes v9 corriendo en puerto ${PORT}`);
 });
