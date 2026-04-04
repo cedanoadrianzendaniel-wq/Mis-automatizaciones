@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// SISTEMA DE REPORTES DE CAMPO — server.js v7 (email no bloquea)
+// SISTEMA DE REPORTES DE CAMPO — server.js v8 (+ módulo HSE)
 // ═══════════════════════════════════════════════════════════════════════════
 
 require("dotenv").config();
@@ -17,13 +17,18 @@ app.use(express.json({ limit: "60mb" }));
 app.use(express.urlencoded({ extended: true, limit: "60mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
-// ─── CONFIG ─────────────────────────────────────────────────────────────────
+// ─── CONFIG — CAMPO ──────────────────────────────────────────────────────────
 const EMAIL_COORDINADOR = process.env.EMAIL_COORDINADOR ||
   "yuri.arangoitia@bureauveritas.com, daniel.cedano@bureauveritas.com, gustavo.fernandez@bureauveritas.com, fiorella.diaz@bureauveritas.com";
 const CARPETA_RAIZ      = process.env.CARPETA_RAIZ || "Reportes de Campo 2026";
 const CARPETA_RAIZ_ID   = process.env.CARPETA_RAIZ_ID || "";
 const CLAVE_DASHBOARD   = process.env.CLAVE_DASHBOARD || "campo2026";
 const SPREADSHEET_ID    = process.env.SPREADSHEET_ID || "";
+
+// ─── CONFIG — HSE ────────────────────────────────────────────────────────────
+const CARPETA_RAIZ_HSE    = process.env.CARPETA_RAIZ_HSE || "Reportes HSE 2026";
+const CARPETA_RAIZ_HSE_ID = process.env.CARPETA_RAIZ_HSE_ID || "";
+const SPREADSHEET_ID_HSE  = process.env.SPREADSHEET_ID_HSE || "";
 
 // ─── DATOS ESTÁTICOS ─────────────────────────────────────────────────────────
 const FRENTES = {
@@ -104,43 +109,47 @@ async function carpetaEnPadre(drive, nombre, padreId) {
   return created.data.id;
 }
 
+async function obtenerRaizId(drive, raizNombre, raizIdEnv) {
+  if (raizIdEnv) return raizIdEnv;
+  const q = `name='${raizNombre}' and mimeType='application/vnd.google-apps.folder' and 'root' in parents and trashed=false`;
+  const res = await drive.files.list({ q, fields: "files(id)", pageSize: 1 });
+  if (res.data.files.length > 0) return res.data.files[0].id;
+  const r = await drive.files.create({
+    requestBody: { name: raizNombre, mimeType: "application/vnd.google-apps.folder" },
+    fields: "id"
+  });
+  return r.data.id;
+}
+
 async function obtenerCarpetaDrive(drive, sector, subcategoria, frente, tipo, fecha) {
-  let raizId;
-  if (CARPETA_RAIZ_ID) {
-    raizId = CARPETA_RAIZ_ID;
-  } else {
-    const qRaiz = `name='${CARPETA_RAIZ}' and mimeType='application/vnd.google-apps.folder' and 'root' in parents and trashed=false`;
-    const raizRes = await drive.files.list({ q: qRaiz, fields: "files(id)", pageSize: 1 });
-    if (raizRes.data.files.length > 0) {
-      raizId = raizRes.data.files[0].id;
-    } else {
-      const r = await drive.files.create({
-        requestBody: { name: CARPETA_RAIZ, mimeType: "application/vnd.google-apps.folder" },
-        fields: "id"
-      });
-      raizId = r.data.id;
-    }
-  }
+  const raizId   = await obtenerRaizId(drive, CARPETA_RAIZ, CARPETA_RAIZ_ID);
   const sectorId = await carpetaEnPadre(drive, sector,       raizId);
   const subcatId = await carpetaEnPadre(drive, subcategoria, sectorId);
   const frenteId = await carpetaEnPadre(drive, frente,       subcatId);
   const tipoId   = await carpetaEnPadre(drive, tipo,         frenteId);
-  const fechaId  = await carpetaEnPadre(drive, fecha,        tipoId);
-  return fechaId;
+  return           await carpetaEnPadre(drive, fecha,        tipoId);
 }
 
-// ─── SHEETS: registrar fila ──────────────────────────────────────────────────
+async function obtenerCarpetaDriveHSE(drive, sector, subcategoria, frente, tipo, fecha) {
+  const raizId   = await obtenerRaizId(drive, CARPETA_RAIZ_HSE, CARPETA_RAIZ_HSE_ID);
+  const sectorId = await carpetaEnPadre(drive, sector,       raizId);
+  const subcatId = await carpetaEnPadre(drive, subcategoria, sectorId);
+  const frenteId = await carpetaEnPadre(drive, frente,       subcatId);
+  const tipoId   = await carpetaEnPadre(drive, tipo,         frenteId);
+  return           await carpetaEnPadre(drive, fecha,        tipoId);
+}
+
+// ─── SHEETS: registrar fila — CAMPO ─────────────────────────────────────────
 async function registrarEnSheet(sheets, datos, urlArchivo, ahora, fecha) {
   const SHEET_NAME = "RAW_DATA";
-  const spreadsheetId = SPREADSHEET_ID;
-  if (!spreadsheetId) {
+  if (!SPREADSHEET_ID) {
     console.warn("SPREADSHEET_ID no configurado — omitiendo registro en Sheets");
     return;
   }
   let sheetData;
   try {
     sheetData = await sheets.spreadsheets.values.get({
-      spreadsheetId,
+      spreadsheetId: SPREADSHEET_ID,
       range: `${SHEET_NAME}!A1:W1`
     });
   } catch (e) {
@@ -149,7 +158,7 @@ async function registrarEnSheet(sheets, datos, urlArchivo, ahora, fecha) {
   const hasHeader = sheetData.data.values && sheetData.data.values.length > 0;
   if (!hasHeader) {
     await sheets.spreadsheets.values.append({
-      spreadsheetId,
+      spreadsheetId: SPREADSHEET_ID,
       range: `${SHEET_NAME}!A1`,
       valueInputOption: "RAW",
       requestBody: {
@@ -165,7 +174,7 @@ async function registrarEnSheet(sheets, datos, urlArchivo, ahora, fecha) {
   }
   const sem = semanaDelAno(new Date());
   await sheets.spreadsheets.values.append({
-    spreadsheetId,
+    spreadsheetId: SPREADSHEET_ID,
     range: `${SHEET_NAME}!A1`,
     valueInputOption: "RAW",
     requestBody: {
@@ -185,6 +194,61 @@ async function registrarEnSheet(sheets, datos, urlArchivo, ahora, fecha) {
   });
 }
 
+// ─── SHEETS: registrar fila — HSE ────────────────────────────────────────────
+async function registrarEnSheetHSE(sheets, datos, urlArchivo, ahora, fecha) {
+  const SHEET_NAME = "RAW_DATA";
+  if (!SPREADSHEET_ID_HSE) {
+    console.warn("SPREADSHEET_ID_HSE no configurado — omitiendo registro en Sheets HSE");
+    return;
+  }
+  let sheetData;
+  try {
+    sheetData = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID_HSE,
+      range: `${SHEET_NAME}!A1:K1`
+    });
+  } catch (e) {
+    sheetData = { data: { values: [] } };
+  }
+  const hasHeader = sheetData.data.values && sheetData.data.values.length > 0;
+  if (!hasHeader) {
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SPREADSHEET_ID_HSE,
+      range: `${SHEET_NAME}!A1`,
+      valueInputOption: "RAW",
+      requestBody: {
+        values: [[
+          "Timestamp", "Fecha", "Responsable", "Puesto",
+          "Sector", "Subcategoria", "Frente",
+          "Tipo Reporte", "Nombre Archivo", "Link Archivo", "Semana"
+        ]]
+      }
+    });
+  }
+  const sem = semanaDelAno(new Date());
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SPREADSHEET_ID_HSE,
+    range: `${SHEET_NAME}!A1`,
+    valueInputOption: "RAW",
+    requestBody: {
+      values: [[
+        ahora,
+        fecha,
+        datos.responsable,
+        datos.puesto       || "",
+        datos.sector,
+        datos.subcategoria,
+        datos.frente       || "",
+        datos.tipoReporte,
+        datos.nombreArchivo || "",
+        urlArchivo          || "",
+        sem
+      ]]
+    }
+  });
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
 function semanaDelAno(d) {
   const ini = new Date(d.getFullYear(), 0, 1);
   return Math.ceil(((d - ini) / 86400000 + ini.getDay() + 1) / 7);
@@ -196,7 +260,7 @@ function fechaCorta() {
   return fechaLima().substring(0, 10);
 }
 
-// ─── EMAIL ───────────────────────────────────────────────────────────────────
+// ─── EMAIL — CAMPO ───────────────────────────────────────────────────────────
 async function enviarEmail(datos, urlArchivo, ahora) {
   if (!process.env.SMTP_HOST) { console.warn("SMTP no configurado — omitiendo email"); return; }
   const transporter = nodemailer.createTransport({
@@ -205,9 +269,9 @@ async function enviarEmail(datos, urlArchivo, ahora) {
     auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
   });
   const adjunto = urlArchivo ? `<br><a href="${urlArchivo}" style="color:#2E75B6;font-weight:bold">Ver archivo en Drive</a>` : "";
-  const asunto = `[Campo] ${datos.tipoReporte} | ${datos.sector} | ${datos.frente} | ${datos.responsable}`;
-  const fila = (k, v) => `<div style="padding:6px 0;border-bottom:1px solid #eee;font-size:13px"><b style="color:#555">${k}:</b> ${v || "-"}</div>`;
-  const cuerpo = `<div style="font-family:Arial,sans-serif;max-width:580px">
+  const asunto  = `[Campo] ${datos.tipoReporte} | ${datos.sector} | ${datos.frente} | ${datos.responsable}`;
+  const fila    = (k, v) => `<div style="padding:6px 0;border-bottom:1px solid #eee;font-size:13px"><b style="color:#555">${k}:</b> ${v || "-"}</div>`;
+  const cuerpo  = `<div style="font-family:Arial,sans-serif;max-width:580px">
     <div style="background:#1F3864;color:#fff;padding:16px;border-radius:8px 8px 0 0">
       <b style="font-size:15px">Nuevo Reporte de Campo</b><br>
       <span style="font-size:11px;opacity:.8">${ahora}</span>
@@ -237,46 +301,133 @@ async function enviarEmail(datos, urlArchivo, ahora) {
   });
 }
 
-// ─── RUTAS ───────────────────────────────────────────────────────────────────
-app.get("/", (req, res) => { res.sendFile(path.join(__dirname, "public", "formulario.html")); });
-app.get("/dashboard", (req, res) => { res.sendFile(path.join(__dirname, "public", "dashboard.html")); });
-app.get("/api/supervisores", (req, res) => { res.json(SUPERVISORES); });
+// ─── EMAIL — HSE ─────────────────────────────────────────────────────────────
+async function enviarEmailHSE(datos, urlArchivo, ahora) {
+  if (!process.env.SMTP_HOST) { console.warn("SMTP no configurado — omitiendo email HSE"); return; }
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST, port: parseInt(process.env.SMTP_PORT || "587"),
+    secure: process.env.SMTP_SECURE === "true",
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+  });
+  const adjunto = urlArchivo ? `<br><a href="${urlArchivo}" style="color:#2E75B6;font-weight:bold">Ver archivo en Drive</a>` : "";
+  const asunto  = `[HSE] ${datos.tipoReporte} | ${datos.sector} | ${datos.frente} | ${datos.responsable}`;
+  const fila    = (k, v) => `<div style="padding:6px 0;border-bottom:1px solid #eee;font-size:13px"><b style="color:#555">${k}:</b> ${v || "-"}</div>`;
+  const cuerpo  = `<div style="font-family:Arial,sans-serif;max-width:580px">
+    <div style="background:#1F3864;color:#fff;padding:16px;border-radius:8px 8px 0 0">
+      <b style="font-size:15px">Nuevo Reporte HSE</b><br>
+      <span style="font-size:11px;opacity:.8">${ahora}</span>
+    </div>
+    <div style="padding:16px;border:1px solid #ddd;border-top:0;border-radius:0 0 8px 8px;background:#fafafa">
+      ${fila("Responsable", datos.responsable)}
+      ${fila("Puesto", datos.puesto)}
+      ${fila("Sector", datos.sector)}
+      ${fila("Subcategoria", datos.subcategoria)}
+      ${fila("Frente de Trabajo", datos.frente)}
+      ${fila("Tipo de Reporte", datos.tipoReporte)}
+      ${datos.observaciones ? fila("Observaciones", datos.observaciones) : ""}
+      ${adjunto}
+    </div>
+  </div>`;
+  await transporter.sendMail({
+    from: `"Reportes TGP" <${process.env.SMTP_USER}>`,
+    to: EMAIL_COORDINADOR, subject: asunto, html: cuerpo
+  });
+}
+
+// ─── RUTAS — CAMPO ───────────────────────────────────────────────────────────
+app.get("/",          (req, res) => res.sendFile(path.join(__dirname, "public", "formulario.html")));
+app.get("/dashboard", (req, res) => res.sendFile(path.join(__dirname, "public", "dashboard.html")));
+app.get("/api/supervisores",   (req, res) => res.json(SUPERVISORES));
+app.get("/api/todos-frentes",  (req, res) => res.json(FRENTES));
 app.get("/api/frentes", (req, res) => {
   const { sector, subcat } = req.query;
   res.json(FRENTES[`${sector}_${subcat}`] || []);
 });
-app.get("/api/todos-frentes", (req, res) => { res.json(FRENTES); });
 app.post("/api/verificar-clave", (req, res) => {
   const { clave } = req.body;
   res.json({ ok: String(clave).trim() === CLAVE_DASHBOARD });
 });
 
-// ─── DIAGNOSTICO ───────────────────────────────────────────────────────────────
+// ─── RUTAS — HSE ─────────────────────────────────────────────────────────────
+app.get("/hse", (req, res) => res.sendFile(path.join(__dirname, "public", "formulario-hse.html")));
+
+app.post("/api/reporte-hse", async (req, res) => {
+  const datos = req.body;
+  try {
+    const ahora = fechaLima().replace("T", " ");
+    const hoy   = fechaCorta();
+    let urlArchivo = "";
+
+    const auth   = getGoogleAuth();
+    const drive  = google.drive({ version: "v3", auth });
+    const sheets = google.sheets({ version: "v4", auth });
+
+    if (datos.archivoBase64 && datos.archivoBase64.length > 100) {
+      const carpetaId = await obtenerCarpetaDriveHSE(
+        drive, datos.sector, datos.subcategoria,
+        datos.frente, datos.tipoReporte, hoy
+      );
+      const buffer    = Buffer.from(datos.archivoBase64, "base64");
+      const uploadRes = await drive.files.create({
+        requestBody: {
+          name: datos.nombreArchivo,
+          parents: [carpetaId],
+          description: `${datos.responsable} | ${datos.frente} | HSE`
+        },
+        media: {
+          mimeType: datos.mimeType || "application/octet-stream",
+          body: require("stream").Readable.from(buffer)
+        },
+        fields: "id,webViewLink",
+        supportsAllDrives: true
+      });
+      urlArchivo = uploadRes.data.webViewLink || "";
+    }
+
+    await registrarEnSheetHSE(sheets, datos, urlArchivo, ahora, hoy);
+
+    // Email no bloquea
+    try {
+      await enviarEmailHSE(datos, urlArchivo, ahora);
+    } catch (emailErr) {
+      console.warn("[Email HSE] Fallo (no critico):", emailErr.message);
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[ERROR] reporte-hse:", err.message);
+    res.json({ ok: false, error: err.message });
+  }
+});
+
+// ─── DIAGNOSTICO ─────────────────────────────────────────────────────────────
 app.get("/api/diagnostico", async (req, res) => {
   const resultado = {
     env: {
-      CLIENT_ID: process.env.GOOGLE_CLIENT_ID ? "OK" : "FALTA",
-      CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET ? "OK" : "FALTA",
-      REFRESH_TOKEN: process.env.GOOGLE_REFRESH_TOKEN ? "OK (" + process.env.GOOGLE_REFRESH_TOKEN.substring(0,10) + "...)" : "FALTA",
-      SPREADSHEET_ID: process.env.SPREADSHEET_ID || "FALTA"
+      CLIENT_ID:        process.env.GOOGLE_CLIENT_ID     ? "OK" : "FALTA",
+      CLIENT_SECRET:    process.env.GOOGLE_CLIENT_SECRET ? "OK" : "FALTA",
+      REFRESH_TOKEN:    process.env.GOOGLE_REFRESH_TOKEN
+        ? "OK (" + process.env.GOOGLE_REFRESH_TOKEN.substring(0, 10) + "...)" : "FALTA",
+      SPREADSHEET_ID:     process.env.SPREADSHEET_ID     || "FALTA",
+      SPREADSHEET_ID_HSE: process.env.SPREADSHEET_ID_HSE || "FALTA"
     },
     drive: null,
-    sheets: null
+    sheets: null,
+    sheetsHSE: null
   };
   try {
-    const auth = getGoogleAuth();
+    const auth  = getGoogleAuth();
     const drive = google.drive({ version: "v3", auth });
-    const r = await drive.files.list({ pageSize: 1, fields: "files(id,name)" });
+    const r     = await drive.files.list({ pageSize: 1, fields: "files(id,name)" });
     resultado.drive = { ok: true, archivos: r.data.files.length };
   } catch (e) {
     resultado.drive = { ok: false, error: e.message, code: e.code };
   }
   try {
-    const auth = getGoogleAuth();
+    const auth   = getGoogleAuth();
     const sheets = google.sheets({ version: "v4", auth });
-    const spreadsheetId = process.env.SPREADSHEET_ID;
-    if (spreadsheetId) {
-      await sheets.spreadsheets.get({ spreadsheetId });
+    if (SPREADSHEET_ID) {
+      await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
       resultado.sheets = { ok: true };
     } else {
       resultado.sheets = { ok: false, error: "SPREADSHEET_ID no configurado" };
@@ -284,39 +435,62 @@ app.get("/api/diagnostico", async (req, res) => {
   } catch (e) {
     resultado.sheets = { ok: false, error: e.message, code: e.code };
   }
+  try {
+    const auth   = getGoogleAuth();
+    const sheets = google.sheets({ version: "v4", auth });
+    if (SPREADSHEET_ID_HSE) {
+      await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID_HSE });
+      resultado.sheetsHSE = { ok: true };
+    } else {
+      resultado.sheetsHSE = { ok: false, error: "SPREADSHEET_ID_HSE no configurado" };
+    }
+  } catch (e) {
+    resultado.sheetsHSE = { ok: false, error: e.message, code: e.code };
+  }
   res.json(resultado);
 });
 
+// ─── POST /api/reporte — CAMPO ────────────────────────────────────────────────
 app.post("/api/reporte", async (req, res) => {
   const datos = req.body;
   try {
     const ahora = fechaLima().replace("T", " ");
-    const hoy = fechaCorta();
+    const hoy   = fechaCorta();
     let urlArchivo = "";
-    const auth = getGoogleAuth();
-    const drive = google.drive({ version: "v3", auth });
+
+    const auth   = getGoogleAuth();
+    const drive  = google.drive({ version: "v3", auth });
     const sheets = google.sheets({ version: "v4", auth });
+
     if (datos.archivoBase64 && datos.archivoBase64.length > 100) {
-      const carpetaId = await obtenerCarpetaDrive(drive, datos.sector, datos.subcategoria, datos.frente, datos.tipoReporte, hoy);
-      const buffer = Buffer.from(datos.archivoBase64, "base64");
+      const carpetaId = await obtenerCarpetaDrive(
+        drive, datos.sector, datos.subcategoria,
+        datos.frente, datos.tipoReporte, hoy
+      );
+      const buffer    = Buffer.from(datos.archivoBase64, "base64");
       const uploadRes = await drive.files.create({
         requestBody: {
           name: datos.nombreArchivo, parents: [carpetaId],
           description: `${datos.responsable} | ${datos.frente} | ${datos.descripcion}`
         },
-        media: { mimeType: datos.mimeType || "application/octet-stream", body: require("stream").Readable.from(buffer) },
+        media: {
+          mimeType: datos.mimeType || "application/octet-stream",
+          body: require("stream").Readable.from(buffer)
+        },
         fields: "id,webViewLink",
         supportsAllDrives: true
       });
       urlArchivo = uploadRes.data.webViewLink || "";
     }
+
     await registrarEnSheet(sheets, datos, urlArchivo, ahora, hoy);
-    // Email no bloquea: si falla el email, el reporte ya fue guardado
+
     try {
       await enviarEmail(datos, urlArchivo, ahora);
     } catch (emailErr) {
       console.warn("[Email] Fallo (no critico):", emailErr.message);
     }
+
     res.json({ ok: true });
   } catch (err) {
     console.error("[ERROR] procesarReporte:", err.message);
@@ -324,13 +498,15 @@ app.post("/api/reporte", async (req, res) => {
   }
 });
 
+// ─── GET /api/datos — CAMPO ───────────────────────────────────────────────────
 app.get("/api/datos", async (req, res) => {
-  const spreadsheetId = SPREADSHEET_ID;
-  if (!spreadsheetId) return res.json({ reportes: [] });
+  if (!SPREADSHEET_ID) return res.json({ reportes: [] });
   try {
-    const auth = getGoogleAuth();
+    const auth   = getGoogleAuth();
     const sheets = google.sheets({ version: "v4", auth });
-    const result = await sheets.spreadsheets.values.get({ spreadsheetId, range: "RAW_DATA!A2:W" });
+    const result = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID, range: "RAW_DATA!A2:W"
+    });
     const filas = result.data.values || [];
     const reportes = filas.map(r => ({
       fecha: r[1] || "", responsable: r[2] || "", sector: r[4] || "",
@@ -343,10 +519,11 @@ app.get("/api/datos", async (req, res) => {
   }
 });
 
+// ─── HEALTH ──────────────────────────────────────────────────────────────────
 app.get("/health", (req, res) => {
-  res.json({ status: "ok", version: "7.0.0", time: new Date().toISOString() });
+  res.json({ status: "ok", version: "8.0.0", time: new Date().toISOString() });
 });
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`TGP Reportes de Campo v7 corriendo en puerto ${PORT}`);
+  console.log(`TGP Reportes v8 corriendo en puerto ${PORT}`);
 });
