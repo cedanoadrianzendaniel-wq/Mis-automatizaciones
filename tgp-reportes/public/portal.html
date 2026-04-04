@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal TGP — Coordinacion de Campo</title>
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   PORTAL TGP — ESTILOS
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  --navy: #1F3864;
+  --navy-light: #2E4A7A;
+  --accent: #2E75B6;
+  --accent-hover: #3D8BD4;
+  --bg: #F0F2F5;
+  --card: #FFFFFF;
+  --text: #1E293B;
+  --text-soft: #64748B;
+  --text-muted: #94A3B8;
+  --border: #E2E8F0;
+  --shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-md: 0 4px 6px rgba(0,0,0,.05), 0 2px 4px rgba(0,0,0,.04);
+  --shadow-lg: 0 10px 25px rgba(0,0,0,.08);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --costa: #3B82F6;
+  --costa-bg: #EFF6FF;
+  --sierra: #10B981;
+  --sierra-bg: #ECFDF5;
+  --selva: #F59E0B;
+  --selva-bg: #FFFBEB;
+  --hse-color: #EF4444;
+  --hse-bg: #FEF2F2;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); min-height: 100vh; color: var(--text); }
+
+/* ─── TOPBAR ──────────────────────────────────────────────────────────────── */
+.topbar {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+  color: white; padding: 0 24px; height: 60px;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: 0 2px 10px rgba(31,56,100,.3);
+  position: sticky; top: 0; z-index: 100;
+}
+.topbar-left { display: flex; align-items: center; gap: 12px; }
+.topbar-logo {
+  width: 36px; height: 36px; background: rgba(255,255,255,.15);
+  border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 13px; letter-spacing: -0.5px;
+}
+.topbar h1 { font-size: 16px; font-weight: 600; letter-spacing: -0.3px; }
+.topbar-right { display: flex; align-items: center; gap: 16px; }
+.topbar-time { font-size: 11px; opacity: .7; }
+.btn-logout {
+  background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2);
+  color: white; padding: 6px 14px; border-radius: 6px; font-size: 12px;
+  cursor: pointer; transition: all .2s;
+}
+.btn-logout:hover { background: rgba(255,255,255,.22); }
+
+/* ─── LOGIN ───────────────────────────────────────────────────────────────── */
+.login-overlay {
+  min-height: 100vh; display: flex; justify-content: center; align-items: center;
+  background: linear-gradient(135deg, var(--navy) 0%, #0F1D3A 50%, var(--navy-light) 100%);
+  position: relative; overflow: hidden;
+}
+.login-overlay::before {
+  content: ''; position: absolute; width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(46,117,182,.15) 0%, transparent 70%);
+  top: -200px; right: -100px;
+}
+.login-overlay::after {
+  content: ''; position: absolute; width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(46,117,182,.1) 0%, transparent 70%);
+  bottom: -100px; left: -50px;
+}
+.login-card {
+  background: var(--card); border-radius: 16px; padding: 40px 36px;
+  width: 380px; max-width: 92vw; text-align: center; box-shadow: var(--shadow-lg);
+  position: relative; z-index: 1;
+  animation: fadeUp .5s ease;
+}
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.login-icon {
+  width: 56px; height: 56px; margin: 0 auto 16px;
+  background: linear-gradient(135deg, var(--navy), var(--accent));
+  border-radius: 14px; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 12px rgba(46,117,182,.3);
+}
+.login-icon svg { width: 28px; height: 28px; fill: white; }
+.login-card h2 { color: var(--navy); font-size: 20px; margin-bottom: 4px; }
+.login-card p { font-size: 13px; color: var(--text-soft); margin-bottom: 24px; }
+.input-wrap { position: relative; margin-bottom: 16px; }
+.input-wrap input {
+  width: 100%; padding: 14px 16px; border: 2px solid var(--border); border-radius: 10px;
+  font-size: 15px; text-align: center; outline: none; transition: border-color .2s;
+  background: #F8FAFC;
+}
+.input-wrap input:focus { border-color: var(--accent); background: white; }
+.btn-primary {
+  width: 100%; padding: 14px; background: linear-gradient(135deg, var(--navy), var(--accent));
+  color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all .2s; letter-spacing: .3px;
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(31,56,100,.3); }
+.btn-primary:active { transform: translateY(0); }
+.err-msg { color: #DC2626; font-size: 12px; margin-top: 12px; min-height: 18px; }
+
+/* ─── DASHBOARD LAYOUT ────────────────────────────────────────────────────── */
+#dashScreen { display: none; }
+.content { padding: 20px 24px; max-width: 1200px; margin: 0 auto; }
+
+/* ─── STATS ROW ───────────────────────────────────────────────────────────── */
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+@media(max-width: 768px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+@media(max-width: 480px) { .stats { grid-template-columns: 1fr; } }
+.stat {
+  background: var(--card); border-radius: var(--radius); padding: 20px;
+  box-shadow: var(--shadow); transition: all .2s; position: relative; overflow: hidden;
+}
+.stat:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.stat::after {
+  content: ''; position: absolute; top: 0; right: 0; width: 80px; height: 80px;
+  background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+  opacity: .04; border-radius: 0 12px 0 80px;
+}
+.stat .num { font-size: 32px; font-weight: 700; color: var(--navy); line-height: 1; }
+.stat .lbl { font-size: 12px; color: var(--text-soft); margin-top: 4px; font-weight: 500; }
+.stat .icon-mini {
+  position: absolute; top: 16px; right: 16px; width: 32px; height: 32px;
+  background: var(--bg); border-radius: 8px; display: flex; align-items: center;
+  justify-content: center;
+}
+.stat .icon-mini svg { width: 16px; height: 16px; fill: var(--text-soft); }
+
+/* ─── TABS ────────────────────────────────────────────────────────────────── */
+.tabs-container { margin-bottom: 20px; }
+.tabs {
+  display: inline-flex; background: var(--card); border-radius: 10px;
+  padding: 4px; box-shadow: var(--shadow); gap: 4px;
+}
+.tab-btn {
+  padding: 10px 24px; border: none; border-radius: 8px; font-size: 13px;
+  font-weight: 600; cursor: pointer; transition: all .2s;
+  background: transparent; color: var(--text-soft); position: relative;
+}
+.tab-btn:hover { color: var(--text); background: var(--bg); }
+.tab-btn.active { background: var(--navy); color: white; box-shadow: 0 2px 8px rgba(31,56,100,.3); }
+.tab-btn .tab-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 18px; border-radius: 9px; font-size: 10px;
+  padding: 0 5px; margin-left: 6px; font-weight: 700;
+}
+.tab-btn.active .tab-badge { background: rgba(255,255,255,.2); color: white; }
+.tab-btn:not(.active) .tab-badge { background: var(--bg); color: var(--text-soft); }
+
+/* ─── SECTOR CARDS ────────────────────────────────────────────────────────── */
+.resumen-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+@media(max-width: 700px) { .resumen-grid { grid-template-columns: 1fr; } }
+.res-card {
+  background: var(--card); border-radius: var(--radius); padding: 20px;
+  box-shadow: var(--shadow); border-left: 4px solid var(--border); transition: all .2s;
+}
+.res-card:hover { box-shadow: var(--shadow-md); }
+.res-card.sector-costa  { border-left-color: var(--costa); }
+.res-card.sector-sierra { border-left-color: var(--sierra); }
+.res-card.sector-selva  { border-left-color: var(--selva); }
+.res-card h3 {
+  font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.sector-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.res-card.sector-costa .sector-dot  { background: var(--costa); }
+.res-card.sector-sierra .sector-dot { background: var(--sierra); }
+.res-card.sector-selva .sector-dot  { background: var(--selva); }
+.res-row {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; padding: 6px 0; border-bottom: 1px solid #F1F5F9;
+}
+.res-row:last-child { border-bottom: none; }
+.res-row .val { font-weight: 700; color: var(--navy); }
+.res-row .val.green { color: var(--sierra); }
+
+/* ─── FILTER BAR ──────────────────────────────────────────────────────────── */
+.filtros {
+  background: var(--card); border-radius: var(--radius); padding: 16px 20px;
+  margin-bottom: 16px; display: flex; gap: 10px; flex-wrap: wrap;
+  align-items: center; box-shadow: var(--shadow);
+}
+.filtros label { font-size: 12px; font-weight: 600; color: var(--text-soft); white-space: nowrap; }
+.filtros select, .filtros input[type="date"] {
+  padding: 9px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 12px; background: #F8FAFC; flex: 1; min-width: 130px;
+  outline: none; color: var(--text); transition: border-color .2s;
+  font-family: inherit;
+}
+.filtros select:focus, .filtros input[type="date"]:focus { border-color: var(--accent); }
+.filtros .btn-filter {
+  padding: 9px 18px; border: none; border-radius: var(--radius-sm);
+  font-size: 12px; cursor: pointer; font-weight: 600; transition: all .2s;
+}
+.btn-filter.primary { background: var(--navy); color: white; }
+.btn-filter.primary:hover { background: var(--navy-light); }
+.btn-filter.secondary { background: var(--bg); color: var(--text-soft); }
+.btn-filter.secondary:hover { background: var(--border); }
+
+/* ─── TABLE ───────────────────────────────────────────────────────────────── */
+.tabla-wrap {
+  background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.tabla-head {
+  background: linear-gradient(135deg, var(--navy), var(--navy-light));
+  color: white; padding: 14px 20px; font-size: 13px; font-weight: 600;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.tabla-head .contador { font-size: 11px; opacity: .8; font-weight: 400; }
+.table-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th {
+  background: #F8FAFC; padding: 12px 16px; text-align: left; font-size: 11px;
+  color: var(--text-soft); font-weight: 600; border-bottom: 2px solid var(--border);
+  text-transform: uppercase; letter-spacing: .5px; white-space: nowrap;
+}
+td {
+  padding: 12px 16px; border-bottom: 1px solid #F1F5F9;
+  vertical-align: middle; max-width: 220px; word-break: break-word;
+}
+tr { transition: background .15s; }
+tr:hover td { background: #F8FAFC; }
+
+/* ─── BADGES ──────────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+}
+.b-costa  { background: var(--costa-bg); color: var(--costa); }
+.b-sierra { background: var(--sierra-bg); color: var(--sierra); }
+.b-selva  { background: var(--selva-bg); color: var(--selva); }
+.frente-tag {
+  display: inline-block; background: #F0F4FF; border: 1px solid #DBEAFE;
+  border-radius: 6px; padding: 3px 8px; font-size: 11px; color: var(--navy);
+  max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tipo-tag {
+  display: inline-flex; padding: 3px 8px; border-radius: 6px;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .3px;
+}
+.tipo-campo { background: #EFF6FF; color: #2563EB; }
+.tipo-hse   { background: var(--hse-bg); color: var(--hse-color); }
+
+.link-arch {
+  color: var(--accent); text-decoration: none; font-size: 12px;
+  font-weight: 600; display: inline-flex; align-items: center; gap: 4px;
+  transition: color .2s;
+}
+.link-arch:hover { color: var(--navy); }
+.link-arch svg { width: 14px; height: 14px; fill: currentColor; }
+
+/* ─── PAGINATION ──────────────────────────────────────────────────────────── */
+.pagination { display: flex; justify-content: center; gap: 6px; padding: 16px; flex-wrap: wrap; }
+.pag-btn {
+  padding: 8px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--card); cursor: pointer; font-size: 12px; font-weight: 500;
+  color: var(--text-soft); transition: all .2s;
+}
+.pag-btn:hover { border-color: var(--accent); color: var(--accent); }
+.pag-btn.activo { background: var(--navy); color: white; border-color: var(--navy); }
+
+/* ─── EMPTY STATE ─────────────────────────────────────────────────────────── */
+.msg {
+  text-align: center; padding: 48px 20px; color: var(--text-muted); font-size: 14px;
+}
+.msg svg { width: 48px; height: 48px; fill: var(--border); margin-bottom: 12px; }
+
+/* ─── LOADING SPINNER ─────────────────────────────────────────────────────── */
+.spinner { display: inline-block; width: 20px; height: 20px; border: 2.5px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── RESPONSIVE ──────────────────────────────────────────────────────────── */
+@media(max-width: 600px) {
+  .topbar { padding: 0 16px; }
+  .topbar h1 { font-size: 13px; }
+  .content { padding: 12px; }
+  .filtros { padding: 12px; }
+  td, th { padding: 8px 10px; }
+  .tab-btn { padding: 8px 14px; font-size: 12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ LOGIN SCREEN ═══════════════ -->
+<div id="loginScreen">
+  <div class="login-overlay">
+    <div class="login-card">
+      <div class="login-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+      </div>
+      <h2>Portal TGP</h2>
+      <p>Coordinacion de Campo y Seguridad</p>
+      <div class="input-wrap">
+        <input type="password" id="clave" placeholder="Clave de acceso"
+               onkeydown="if(event.key==='Enter') login()">
+      </div>
+      <button class="btn-primary" onclick="login()">Ingresar</button>
+      <div class="err-msg" id="errLogin"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ DASHBOARD ═══════════════ -->
+<div id="dashScreen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">TGP</div>
+      <h1>Portal Coordinacion — Reportes 2026</h1>
+    </div>
+    <div class="topbar-right">
+      <span class="topbar-time" id="ultimaAct"></span>
+      <button class="btn-logout" onclick="logout()">Cerrar sesion</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- STATS -->
+    <div class="stats">
+      <div class="stat">
+        <div class="icon-mini"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1 2l5 5h-5V4zM6 20V4h5v7h7v9H6z"/></svg></div>
+        <div class="num" id="stTotal">-</div>
+        <div class="lbl">Total reportes</div>
+      </div>
+      <div class="stat">
+        <div class="icon-mini"><svg viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z"/></svg></div>
+        <div class="num" id="stHoy">-</div>
+        <div class="lbl">Reportes hoy</div>
+      </div>
+      <div class="stat">
+        <div class="icon-mini"><svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg></div>
+        <div class="num" id="stSemana">-</div>
+        <div class="lbl">Esta semana</div>
+      </div>
+      <div class="stat">
+        <div class="icon-mini"><svg viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6h-6z"/></svg></div>
+        <div class="num" id="stMes">-</div>
+        <div class="lbl">Este mes</div>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs-container">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="campo" onclick="cambiarTab('campo')">
+          Reportes de Campo <span class="tab-badge" id="badgeCampo">0</span>
+        </button>
+        <button class="tab-btn" data-tab="hse" onclick="cambiarTab('hse')">
+          Reportes HSE <span class="tab-badge" id="badgeHse">0</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- RESUMEN SECTORES -->
+    <div class="resumen-grid" id="resumenSectores"></div>
+
+    <!-- FILTROS -->
+    <div class="filtros">
+      <label>Filtrar:</label>
+      <select id="fSector" onchange="filtrar()">
+        <option value="">Todos los sectores</option>
+        <option>Costa</option>
+        <option>Sierra</option>
+        <option>Selva</option>
+      </select>
+      <select id="fFrente" onchange="filtrar()">
+        <option value="">Todos los frentes</option>
+      </select>
+      <input type="date" id="fFecha" onchange="filtrar()">
+      <button class="btn-filter secondary" onclick="limpiarFiltros()">Limpiar</button>
+      <button class="btn-filter primary" onclick="cargarDatos()">
+        <span id="btnActText">Actualizar</span>
+      </button>
+    </div>
+
+    <!-- TABLA -->
+    <div class="tabla-wrap">
+      <div class="tabla-head">
+        <span id="tablaTitle">Reportes de Campo</span>
+        <span class="contador" id="contadorFiltro"></span>
+      </div>
+      <div class="table-scroll">
+        <div id="tablaArea">
+          <div class="msg">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
+            <br>Cargando reportes...
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="paginacion" class="pagination"></div>
+
+  </div>
+</div>
+
+<!-- ═══════════════ JAVASCRIPT ═══════════════ -->
+<script>
+(function() {
+  "use strict";
+
+  // ─── STATE ────────────────────────────────────────────────────────────────
+  var datosCampo = [], datosHSE = [];
+  var reportesFiltrados = [];
+  var tabActual = "campo";
+  var paginaActual = 1;
+  var POR_PAGINA = 15;
+
+  // ─── LOGIN ────────────────────────────────────────────────────────────────
+  window.login = function() {
+    var clave = document.getElementById("clave").value.trim();
+    if (!clave) { document.getElementById("errLogin").textContent = "Ingresa la clave"; return; }
+    document.getElementById("errLogin").textContent = "";
+
+    fetch("/api/verificar-clave", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clave: clave })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.ok) {
+        document.getElementById("loginScreen").style.display = "none";
+        document.getElementById("dashScreen").style.display  = "block";
+        cargarDatos();
+      } else {
+        document.getElementById("errLogin").textContent = "Clave incorrecta";
+      }
+    })
+    .catch(function() {
+      document.getElementById("errLogin").textContent = "Error de conexion";
+    });
+  };
+
+  window.logout = function() {
+    document.getElementById("dashScreen").style.display  = "none";
+    document.getElementById("loginScreen").style.display = "block";
+    document.getElementById("clave").value = "";
+    datosCampo = []; datosHSE = [];
+  };
+
+  // ─── CARGAR DATOS ─────────────────────────────────────────────────────────
+  window.cargarDatos = function() {
+    document.getElementById("btnActText").innerHTML = '<span class="spinner"></span>';
+    document.getElementById("tablaArea").innerHTML =
+      '<div class="msg"><span class="spinner"></span><br>Cargando reportes...</div>';
+
+    // Cargar ambos en paralelo
+    Promise.all([
+      fetch("/api/datos").then(function(r) { return r.json(); }),
+      fetch("/api/datos-hse").then(function(r) { return r.json(); }).catch(function() { return { reportes: [] }; })
+    ]).then(function(results) {
+      datosCampo = (results[0].reportes || []);
+      datosHSE   = (results[1].reportes || []);
+
+      document.getElementById("ultimaAct").textContent =
+        "Actualizado: " + new Date().toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" });
+      document.getElementById("btnActText").textContent = "Actualizar";
+
+      document.getElementById("badgeCampo").textContent = datosCampo.length;
+      document.getElementById("badgeHse").textContent   = datosHSE.length;
+
+      actualizarStats();
+      actualizarResumenSectores();
+      actualizarFiltroFrente();
+      filtrar();
+    }).catch(function() {
+      document.getElementById("tablaArea").innerHTML = '<div class="msg">Error al cargar datos</div>';
+      document.getElementById("btnActText").textContent = "Actualizar";
+    });
+  };
+
+  // ─── TABS ─────────────────────────────────────────────────────────────────
+  window.cambiarTab = function(tab) {
+    tabActual = tab;
+    document.querySelectorAll(".tab-btn").forEach(function(btn) {
+      btn.classList.toggle("active", btn.dataset.tab === tab);
+    });
+    document.getElementById("tablaTitle").textContent =
+      tab === "campo" ? "Reportes de Campo" : "Reportes HSE";
+    paginaActual = 1;
+    actualizarStats();
+    actualizarResumenSectores();
+    actualizarFiltroFrente();
+    filtrar();
+  };
+
+  function datosActuales() {
+    return tabActual === "campo" ? datosCampo : datosHSE;
+  }
+
+  // ─── STATS ────────────────────────────────────────────────────────────────
+  function actualizarStats() {
+    var datos = datosActuales();
+    var hoy = new Date().toISOString().substring(0, 10);
+    var mes = new Date().toISOString().substring(0, 7);
+    var sem = semanaActual();
+
+    document.getElementById("stTotal").textContent  = datos.length;
+    document.getElementById("stHoy").textContent    = datos.filter(function(r) { return String(r.fecha).substring(0,10) === hoy; }).length;
+    document.getElementById("stSemana").textContent = datos.filter(function(r) { return String(r.semana) === String(sem); }).length;
+    document.getElementById("stMes").textContent    = datos.filter(function(r) { return String(r.fecha).substring(0,7) === mes; }).length;
+  }
+
+  function semanaActual() {
+    var d = new Date(), ini = new Date(d.getFullYear(), 0, 1);
+    return Math.ceil(((d - ini) / 86400000 + ini.getDay() + 1) / 7);
+  }
+
+  // ─── RESUMEN SECTORES ─────────────────────────────────────────────────────
+  function actualizarResumenSectores() {
+    var datos = datosActuales();
+    var hoy = new Date().toISOString().substring(0, 10);
+    var mes = new Date().toISOString().substring(0, 7);
+    var html = "";
+
+    ["Costa", "Sierra", "Selva"].forEach(function(sec) {
+      var tot  = datos.filter(function(r) { return r.sector === sec; }).length;
+      var hoyC = datos.filter(function(r) { return r.sector === sec && String(r.fecha).substring(0,10) === hoy; }).length;
+      var mesC = datos.filter(function(r) { return r.sector === sec && String(r.fecha).substring(0,7) === mes; }).length;
+
+      html += '<div class="res-card sector-' + sec.toLowerCase() + '">';
+      html += '<h3><span class="sector-dot"></span>' + sec + '</h3>';
+      html += '<div class="res-row"><span>Total</span><span class="val">' + tot + '</span></div>';
+      html += '<div class="res-row"><span>Hoy</span><span class="val green">' + hoyC + '</span></div>';
+      html += '<div class="res-row"><span>Este mes</span><span class="val">' + mesC + '</span></div>';
+      html += '</div>';
+    });
+
+    document.getElementById("resumenSectores").innerHTML = html;
+  }
+
+  // ─── FILTROS ──────────────────────────────────────────────────────────────
+  function actualizarFiltroFrente() {
+    var datos = datosActuales();
+    var sel = document.getElementById("fFrente");
+    sel.innerHTML = '<option value="">Todos los frentes</option>';
+    var vistos = {};
+    datos.forEach(function(r) {
+      if (r.frente && !vistos[r.frente]) {
+        vistos[r.frente] = 1;
+        var op = document.createElement("option");
+        op.value = r.frente; op.textContent = r.frente;
+        sel.appendChild(op);
+      }
+    });
+  }
+
+  window.filtrar = function() {
+    var datos  = datosActuales();
+    var sec    = document.getElementById("fSector").value;
+    var frente = document.getElementById("fFrente").value;
+    var fecha  = document.getElementById("fFecha").value;
+
+    reportesFiltrados = datos.filter(function(r) {
+      if (sec    && r.sector !== sec)                           return false;
+      if (frente && r.frente !== frente)                        return false;
+      if (fecha  && String(r.fecha).substring(0,10) !== fecha)  return false;
+      return true;
+    });
+    paginaActual = 1;
+    renderTabla();
+  };
+
+  window.limpiarFiltros = function() {
+    ["fSector","fFrente","fFecha"].forEach(function(id) { document.getElementById(id).value = ""; });
+    filtrar();
+  };
+
+  // ─── RENDER TABLE ─────────────────────────────────────────────────────────
+  function renderTabla() {
+    var ini = (paginaActual - 1) * POR_PAGINA;
+    var pag = reportesFiltrados.slice(ini, ini + POR_PAGINA);
+    document.getElementById("contadorFiltro").textContent = reportesFiltrados.length + " registros";
+
+    if (pag.length === 0) {
+      document.getElementById("tablaArea").innerHTML =
+        '<div class="msg"><svg viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg><br>No hay reportes con estos filtros</div>';
+      document.getElementById("paginacion").innerHTML = "";
+      return;
+    }
+
+    var cols, headHtml;
+    if (tabActual === "campo") {
+      headHtml = "<th>Fecha</th><th>Responsable</th><th>Sector</th><th>Frente</th><th>Tipo</th><th>Archivo</th>";
+    } else {
+      headHtml = "<th>Fecha</th><th>Responsable</th><th>Sector</th><th>Frente</th><th>Tipo Reporte</th><th>Archivo</th>";
+    }
+
+    var html = "<table><thead><tr>" + headHtml + "</tr></thead><tbody>";
+
+    pag.forEach(function(r) {
+      var bSec = "b-" + (r.sector || "").toLowerCase();
+      var arch = r.link
+        ? '<a class="link-arch" href="' + r.link + '" target="_blank"><svg viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>Abrir</a>'
+        : '<span style="color:var(--text-muted)">—</span>';
+
+      var tipoHtml = "";
+      if (tabActual === "campo") {
+        tipoHtml = '<span class="tipo-tag tipo-campo">' + (r.tipoReporte || "-") + '</span>';
+      } else {
+        tipoHtml = '<span class="tipo-tag tipo-hse">' + (r.tipoReporte || "-") + '</span>';
+      }
+
+      html += "<tr>"
+        + "<td><b>" + String(r.fecha).substring(0,10) + "</b></td>"
+        + "<td>" + (r.responsable || "-") + "</td>"
+        + "<td><span class='badge " + bSec + "'>" + (r.sector || "-") + "</span></td>"
+        + "<td><span class='frente-tag' title='" + (r.frente || "") + "'>" + (r.frente || "-") + "</span></td>"
+        + "<td>" + tipoHtml + "</td>"
+        + "<td>" + arch + "</td>"
+        + "</tr>";
+    });
+
+    html += "</tbody></table>";
+    document.getElementById("tablaArea").innerHTML = html;
+    renderPaginacion();
+  }
+
+  // ─── PAGINATION ───────────────────────────────────────────────────────────
+  function renderPaginacion() {
+    var total = Math.ceil(reportesFiltrados.length / POR_PAGINA);
+    if (total <= 1) { document.getElementById("paginacion").innerHTML = ""; return; }
+
+    var html = "";
+    // Prev
+    if (paginaActual > 1)
+      html += '<button class="pag-btn" onclick="irPagina(' + (paginaActual-1) + ')">&laquo;</button>';
+
+    var start = Math.max(1, paginaActual - 2);
+    var end   = Math.min(total, paginaActual + 2);
+
+    for (var i = start; i <= end; i++) {
+      html += '<button class="pag-btn ' + (i===paginaActual ? "activo" : "") + '" onclick="irPagina(' + i + ')">' + i + '</button>';
+    }
+
+    // Next
+    if (paginaActual < total)
+      html += '<button class="pag-btn" onclick="irPagina(' + (paginaActual+1) + ')">&raquo;</button>';
+
+    document.getElementById("paginacion").innerHTML = html;
+  }
+
+  window.irPagina = function(n) {
+    paginaActual = n;
+    renderTabla();
+    document.querySelector(".tabla-wrap").scrollIntoView({ behavior: "smooth" });
+  };
+
+})();
+</script>
+</body>
+</html>
