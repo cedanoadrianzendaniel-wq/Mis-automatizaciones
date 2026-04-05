@@ -44,7 +44,6 @@ function initScanArea() {
   const preview = $("#scanPreview");
   const previewImg = $("#previewImg");
   const btnRemove = $("#btnRemoveImg");
-  const btnEscanear = $("#btnEscanear");
   const scanProgress = $("#scanProgress");
 
   let archivoSeleccionado = null;
@@ -75,7 +74,8 @@ function initScanArea() {
       previewImg.src = e.target.result;
       placeholder.hidden = true;
       preview.hidden = false;
-      btnEscanear.disabled = false;
+      // Iniciar OCR automáticamente
+      ejecutarOCR(file);
     };
     reader.readAsDataURL(file);
   }
@@ -85,32 +85,33 @@ function initScanArea() {
     archivoSeleccionado = null;
     fileCamara.value = ""; fileGaleria.value = "";
     placeholder.hidden = false; preview.hidden = true;
-    btnEscanear.disabled = true;
+    scanProgress.hidden = true;
+    limpiarFormComp();
   });
 
-  btnEscanear.addEventListener("click", async () => {
-    if (!archivoSeleccionado) return;
-    btnEscanear.disabled = true;
+  async function ejecutarOCR(file) {
     scanProgress.hidden = false;
+    scanProgress.querySelector("span").textContent = "Preparando escaneo...";
 
     try {
-      toast("Procesando imagen... esto puede tomar unos segundos", "info");
-
       const worker = await Tesseract.createWorker("spa", 1, {
         logger: m => {
           if (m.status === "recognizing text") {
             const pct = Math.round((m.progress || 0) * 100);
-            scanProgress.querySelector("span").textContent = `Analizando... ${pct}%`;
+            scanProgress.querySelector("span").textContent = `Leyendo documento... ${pct}%`;
+          } else if (m.status === "loading language traineddata") {
+            scanProgress.querySelector("span").textContent = "Cargando idioma espa\u00f1ol...";
           }
         }
       });
 
-      const result = await worker.recognize(archivoSeleccionado);
+      const result = await worker.recognize(file);
       const texto = result.data.text;
       await worker.terminate();
 
       const datos = extraerDatosComprobante(texto);
 
+      // Rellenar formulario automáticamente
       if (datos.fecha) {
         const p = datos.fecha.split("/");
         if (p.length === 3) $("#compFecha").value = `${p[2]}-${p[1]}-${p[0]}`;
@@ -123,16 +124,24 @@ function initScanArea() {
       if (datos.concepto) $("#compConcepto").value = datos.concepto;
       if (datos.monto) $("#compMonto").value = datos.monto;
 
-      toast("Comprobante escaneado. Verifique los datos.", "success");
+      // Resaltar campos completados
+      ["compFecha","compTipo","compNumero","compConcepto","compMonto"].forEach(id => {
+        const el = $(`#${id}`);
+        if (el.value) {
+          el.style.borderColor = "var(--green-500)";
+          el.style.backgroundColor = "var(--green-50)";
+          setTimeout(() => { el.style.borderColor = ""; el.style.backgroundColor = ""; }, 3000);
+        }
+      });
+
+      toast("Datos extra\u00eddos. Revise y corrija si es necesario.", "success");
     } catch (err) {
       console.error("OCR Error:", err);
-      toast("Error al procesar la imagen", "error");
+      toast("No se pudo leer el documento. Complete los datos manualmente.", "warning");
     } finally {
-      btnEscanear.disabled = false;
       scanProgress.hidden = true;
-      scanProgress.querySelector("span").textContent = "Analizando comprobante\u2026";
     }
-  });
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
