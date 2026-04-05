@@ -149,7 +149,7 @@
 
         <!-- Capture zone -->
         <div class="capture-zone">
-          <div class="capture-buttons">
+          <div class="capture-buttons capture-buttons--3">
             <button class="capture-btn capture-btn--camera" id="btnTomarFoto">
               <div class="capture-btn-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
@@ -159,6 +159,17 @@
               </div>
               <span>Tomar Foto</span>
               <small>C&aacute;mara del dispositivo</small>
+            </button>
+            <button class="capture-btn capture-btn--qr" id="btnEscanearQR">
+              <div class="capture-btn-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+                  <rect x="2" y="2" width="8" height="8" rx="1"/><rect x="14" y="2" width="8" height="8" rx="1"/>
+                  <rect x="2" y="14" width="8" height="8" rx="1"/><rect x="14" y="14" width="4" height="4"/>
+                  <line x1="22" y1="14" x2="22" y2="22"/><line x1="14" y1="22" x2="22" y2="22"/>
+                </svg>
+              </div>
+              <span>Escanear QR</span>
+              <small>C&oacute;digo QR del comprobante</small>
             </button>
             <button class="capture-btn capture-btn--upload" id="btnSubirArchivo">
               <div class="capture-btn-icon">
@@ -174,6 +185,21 @@
           </div>
           <input type="file" id="fileCamara" accept="image/*" capture="environment" hidden>
           <input type="file" id="fileGaleria" accept="image/*,.pdf" hidden>
+
+          <!-- QR Scanner (live camera) -->
+          <div class="qr-scanner" id="qrScanner" hidden>
+            <div class="qr-scanner-header">
+              <span>Apunte al c&oacute;digo QR del comprobante</span>
+              <button class="btn btn--ghost btn--sm" id="btnCerrarQR">Cerrar</button>
+            </div>
+            <div class="qr-video-wrap">
+              <video id="qrVideo" autoplay playsinline></video>
+              <canvas id="qrCanvas" hidden></canvas>
+              <div class="qr-overlay">
+                <div class="qr-frame"></div>
+              </div>
+            </div>
+          </div>
 
           <div class="capture-preview" id="scanArea">
             <div class="capture-empty" id="scanPlaceholder">
@@ -454,6 +480,7 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs" type="module"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

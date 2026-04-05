@@ -396,6 +396,7 @@ body {
 }
 
 .capture-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); }
+.capture-buttons--3 { grid-template-columns: 1fr 1fr 1fr; }
 
 .capture-btn {
   display: flex; flex-direction: column; align-items: center; gap: var(--s2);
@@ -430,11 +431,67 @@ body {
   border-color: var(--violet-500); background: rgba(139,92,246,.04);
 }
 
+.capture-btn--qr .capture-btn-icon {
+  background: var(--green-600); color: white;
+}
+.capture-btn--qr:hover {
+  border-color: var(--green-500); background: rgba(16,185,129,.04);
+}
+
 .capture-btn--upload .capture-btn-icon {
   background: var(--n200); color: var(--n600);
 }
 .capture-btn--upload:hover {
   border-color: var(--n400); background: var(--n50);
+}
+
+/* QR Scanner */
+.qr-scanner {
+  border: 2px solid var(--green-500);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  background: var(--n900);
+}
+
+.qr-scanner-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--s3) var(--s4);
+  background: var(--n800);
+  color: var(--n0);
+  font-size: var(--text-sm); font-weight: 500;
+}
+
+.qr-video-wrap {
+  position: relative;
+  width: 100%;
+  max-height: 320px;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+
+.qr-video-wrap video {
+  width: 100%;
+  max-height: 320px;
+  object-fit: cover;
+}
+
+.qr-overlay {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+}
+
+.qr-frame {
+  width: 200px; height: 200px;
+  border: 3px solid var(--green-500);
+  border-radius: var(--r-lg);
+  box-shadow: 0 0 0 9999px rgba(0,0,0,.4);
+  animation: qrPulse 2s ease-in-out infinite;
+}
+
+@keyframes qrPulse {
+  0%, 100% { border-color: var(--green-500); }
+  50% { border-color: rgba(16,185,129,.4); }
 }
 
 .capture-preview {
@@ -648,7 +705,7 @@ tbody tr:last-child td { border-bottom: none; }
 
   .tab .tab-label { font-size: var(--text-xs); }
 
-  .capture-buttons { grid-template-columns: 1fr; }
+  .capture-buttons, .capture-buttons--3 { grid-template-columns: 1fr; }
 
   .form-row { grid-template-columns: 1fr; }
 

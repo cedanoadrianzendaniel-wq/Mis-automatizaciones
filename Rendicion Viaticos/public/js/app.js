@@ -138,6 +138,117 @@ function initScanArea() {
     }
   }
 
+  // ── QR Scanner ─────────────────────────────────────────────────────
+  let qrStream = null;
+  let qrAnimFrame = null;
+
+  $("#btnEscanearQR").addEventListener("click", async () => {
+    const qrScanner = $("#qrScanner");
+    const video = $("#qrVideo");
+    const canvas = $("#qrCanvas");
+
+    try {
+      qrStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }
+      });
+      video.srcObject = qrStream;
+      qrScanner.hidden = false;
+
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+      function escanearFrame() {
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          ctx.drawImage(video, 0, 0);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const code = jsQR(imageData.data, canvas.width, canvas.height, { inversionAttempts: "dontInvert" });
+
+          if (code) {
+            cerrarQR();
+            procesarQR(code.data);
+            return;
+          }
+        }
+        qrAnimFrame = requestAnimationFrame(escanearFrame);
+      }
+      escanearFrame();
+
+    } catch (err) {
+      console.error("QR camera error:", err);
+      toast("No se pudo acceder a la c\u00e1mara. Verifique permisos.", "error");
+    }
+  });
+
+  function cerrarQR() {
+    const qrScanner = $("#qrScanner");
+    const video = $("#qrVideo");
+    if (qrStream) { qrStream.getTracks().forEach(t => t.stop()); qrStream = null; }
+    if (qrAnimFrame) { cancelAnimationFrame(qrAnimFrame); qrAnimFrame = null; }
+    video.srcObject = null;
+    qrScanner.hidden = true;
+  }
+
+  $("#btnCerrarQR").addEventListener("click", cerrarQR);
+
+  function procesarQR(data) {
+    // QR de comprobantes SUNAT Peru: RUC|TIPO|SERIE|NUMERO|IGV|TOTAL|FECHA|TIPO_DOC|NRO_DOC|...
+    // También puede venir como URL o texto con pipes
+    const partes = data.split("|");
+
+    if (partes.length >= 6) {
+      // Formato SUNAT
+      const ruc = partes[0].trim();
+      const tipoDoc = partes[1].trim();
+      const serie = partes[2].trim();
+      const numero = partes[3].trim();
+      const igv = partes[4].trim();
+      const total = partes[5].trim();
+      const fecha = partes.length >= 7 ? partes[6].trim() : "";
+
+      // Tipo de comprobante
+      const tipoMap = { "01": "Factura Electr\u00f3nica", "03": "Boleta de Venta", "07": "Nota de Cr\u00e9dito", "08": "Nota de D\u00e9bito" };
+      const tipo = tipoMap[tipoDoc] || "Factura Electr\u00f3nica";
+
+      // Rellenar formulario
+      const sel = $("#compTipo");
+      for (const opt of sel.options) { if (opt.value === tipo) { sel.value = tipo; break; } }
+
+      $("#compNumero").value = `${serie}-${numero}`;
+
+      if (total) $("#compMonto").value = parseFloat(total.replace(/,/g, "")) || "";
+
+      if (fecha) {
+        // fecha puede venir como dd/mm/yyyy o yyyy-mm-dd
+        let fmtDate = "";
+        if (fecha.includes("/")) {
+          const [d, m, y] = fecha.split("/");
+          fmtDate = `${y}-${m.padStart(2,"0")}-${d.padStart(2,"0")}`;
+        } else if (fecha.includes("-")) {
+          fmtDate = fecha;
+        }
+        if (fmtDate) $("#compFecha").value = fmtDate;
+      }
+
+      $("#compConcepto").value = `Proveedor RUC: ${ruc}`;
+
+      // Resaltar campos
+      ["compFecha","compTipo","compNumero","compConcepto","compMonto"].forEach(id => {
+        const el = $(`#${id}`);
+        if (el.value) {
+          el.style.borderColor = "var(--green-500)";
+          el.style.backgroundColor = "var(--green-50)";
+          setTimeout(() => { el.style.borderColor = ""; el.style.backgroundColor = ""; }, 3000);
+        }
+      });
+
+      toast("QR le\u00eddo exitosamente. Datos del comprobante cargados.", "success");
+    } else {
+      // QR no reconocido como formato SUNAT, mostrar datos raw
+      toast("QR detectado pero formato no reconocido. Contenido: " + data.substring(0, 80), "warning");
+    }
+  }
+
   btnRemove.addEventListener("click", (e) => {
     e.stopPropagation();
     archivoSeleccionado = null;
