@@ -93,35 +93,44 @@ function initScanArea() {
     btnEscanear.disabled = true;
     scanProgress.hidden = false;
 
-    const formData = new FormData();
-    formData.append("comprobante", archivoSeleccionado);
-
     try {
-      const resp = await fetch("/api/escanear", { method: "POST", body: formData });
-      const data = await resp.json();
+      toast("Procesando imagen... esto puede tomar unos segundos", "info");
 
-      if (data.ok) {
-        if (data.datos.fecha) {
-          const p = data.datos.fecha.split("/");
-          if (p.length === 3) $("#compFecha").value = `${p[2]}-${p[1]}-${p[0]}`;
+      const worker = await Tesseract.createWorker("spa", 1, {
+        logger: m => {
+          if (m.status === "recognizing text") {
+            const pct = Math.round((m.progress || 0) * 100);
+            scanProgress.querySelector("span").textContent = `Analizando... ${pct}%`;
+          }
         }
-        if (data.datos.tipo) {
-          const sel = $("#compTipo");
-          for (const opt of sel.options) { if (opt.value === data.datos.tipo) { sel.value = data.datos.tipo; break; } }
-        }
-        if (data.datos.numero) $("#compNumero").value = data.datos.numero;
-        if (data.datos.concepto) $("#compConcepto").value = data.datos.concepto;
-        if (data.datos.monto) $("#compMonto").value = data.datos.monto;
+      });
 
-        toast("Comprobante escaneado. Verifique los datos.", "success");
-      } else {
-        toast(data.error || "Error al escanear", "error");
+      const result = await worker.recognize(archivoSeleccionado);
+      const texto = result.data.text;
+      await worker.terminate();
+
+      const datos = extraerDatosComprobante(texto);
+
+      if (datos.fecha) {
+        const p = datos.fecha.split("/");
+        if (p.length === 3) $("#compFecha").value = `${p[2]}-${p[1]}-${p[0]}`;
       }
+      if (datos.tipo) {
+        const sel = $("#compTipo");
+        for (const opt of sel.options) { if (opt.value === datos.tipo) { sel.value = datos.tipo; break; } }
+      }
+      if (datos.numero) $("#compNumero").value = datos.numero;
+      if (datos.concepto) $("#compConcepto").value = datos.concepto;
+      if (datos.monto) $("#compMonto").value = datos.monto;
+
+      toast("Comprobante escaneado. Verifique los datos.", "success");
     } catch (err) {
-      toast("Error de conexi\u00f3n al escanear", "error");
+      console.error("OCR Error:", err);
+      toast("Error al procesar la imagen", "error");
     } finally {
       btnEscanear.disabled = false;
       scanProgress.hidden = true;
+      scanProgress.querySelector("span").textContent = "Analizando comprobante\u2026";
     }
   });
 }
@@ -270,6 +279,58 @@ function actualizarSaldo(totalGastado) {
     el.classList.add("positivo"); dot.classList.add("dot--green");
     det.textContent = "Rendici\u00f3n exacta";
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// OCR — Extracción de datos del comprobante (client-side)
+// ═══════════════════════════════════════════════════════════════════════════
+function extraerDatosComprobante(texto) {
+  const datos = { fecha: "", tipo: "", numero: "", concepto: "", monto: "" };
+
+  // Fecha (dd/mm/yyyy, dd-mm-yyyy, dd.mm.yyyy)
+  const fechaMatch = texto.match(/(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/);
+  if (fechaMatch) {
+    const [, d, m, y] = fechaMatch;
+    const year = y.length === 2 ? `20${y}` : y;
+    datos.fecha = `${d.padStart(2,"0")}/${m.padStart(2,"0")}/${year}`;
+  }
+
+  // Tipo de comprobante
+  if (/FACTURA\s*(ELECTR[OÓ]NICA)?/i.test(texto)) datos.tipo = "Factura Electr\u00f3nica";
+  else if (/BOLETA/i.test(texto)) datos.tipo = "Boleta de Venta";
+  else if (/RECIBO.*HONORARIO/i.test(texto)) datos.tipo = "Recibo por Honorarios";
+  else if (/NOTA\s*DE\s*CR[EÉ]DITO/i.test(texto)) datos.tipo = "Nota de Cr\u00e9dito";
+  else if (/TICKET/i.test(texto)) datos.tipo = "Ticket";
+
+  // Número (E001-xxx, F001-xxx, B001-xxx)
+  const numMatch = texto.match(/([EFBefb]\d{3})\s*[-\u2013\u2014]\s*(\d+)/);
+  if (numMatch) {
+    datos.numero = `${numMatch[1].toUpperCase()}-${numMatch[2]}`;
+  } else {
+    const numMatch2 = texto.match(/(\d{3,4})\s*[-\u2013\u2014]\s*(\d{4,10})/);
+    if (numMatch2) datos.numero = `${numMatch2[1]}-${numMatch2[2]}`;
+  }
+
+  // Monto
+  const montoPatterns = [
+    /TOTAL\s*:?\s*S\/?\s*\.?\s*([\d,]+\.?\d{0,2})/i,
+    /IMPORTE\s*TOTAL\s*:?\s*S\/?\s*\.?\s*([\d,]+\.?\d{0,2})/i,
+    /TOTAL\s*A\s*PAGAR\s*:?\s*S\/?\s*\.?\s*([\d,]+\.?\d{0,2})/i,
+    /TOTAL\s*:?\s*([\d,]+\.\d{2})/i,
+    /S\/?\s*\.?\s*([\d,]+\.\d{2})/i
+  ];
+  for (const p of montoPatterns) {
+    const m = texto.match(p);
+    if (m) { datos.monto = m[1].replace(/,/g, ""); break; }
+  }
+
+  // Concepto
+  const lineas = texto.split("\n").filter(l => l.trim().length > 5);
+  const excl = /fecha|ruc|factura|boleta|total|igv|subtotal|direc|telef|email|electr|serie/i;
+  const conceptoLineas = lineas.filter(l => !excl.test(l)).slice(0, 2);
+  if (conceptoLineas.length > 0) datos.concepto = conceptoLineas.join(" | ").substring(0, 120).trim();
+
+  return datos;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
