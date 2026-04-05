@@ -41,7 +41,16 @@
 
     <!-- ─── SIDEBAR: Datos + Saldo ──────────────────────────────────── -->
     <aside class="sidebar">
-      <div class="sidebar-section">
+      <button class="mobile-toggle" id="btnToggleEmpleado">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+        </svg>
+        Datos del Empleado
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="margin-left:auto">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+      <div class="sidebar-section employee-section" id="employeeSection">
         <h3 class="sidebar-title">Datos del Empleado</h3>
         <div class="field">
           <label for="empleado">Nombre completo</label>

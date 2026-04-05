@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initFormularios();
   initExportacion();
   initModal();
+  initMobileToggle();
   cargarDatosGuardados();
 });
 
@@ -644,6 +645,15 @@ function cargarDatosGuardados() {
 // UTILS
 // ═══════════════════════════════════════════════════════════════════════════
 function fmtFecha(d) { if (!d) return ""; const [y,m,dd] = d.split("-"); return `${dd}/${m}/${y}`; }
+
+function initMobileToggle() {
+  const btn = $("#btnToggleEmpleado");
+  const section = $("#employeeSection");
+  if (!btn || !section) return;
+  btn.addEventListener("click", () => {
+    section.classList.toggle("expanded");
+  });
+}
 
 function toast(msg, type = "info") {
   const c = $("#toastContainer");
