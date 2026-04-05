@@ -487,12 +487,12 @@ function initModal() {
     modal.hidden = false;
   });
 
-  $("#btnCerrarModal").addEventListener("click", () => { modal.hidden = true; });
-  $("#btnCancelarCorreo").addEventListener("click", () => { modal.hidden = true; });
-
-  modal.addEventListener("click", (e) => {
-    if (e.target === modal) modal.hidden = true;
-  });
+  function cerrarModal() { modal.hidden = true; }
+  $("#btnCerrarModal").addEventListener("click", cerrarModal);
+  $("#btnCancelarCorreo").addEventListener("click", cerrarModal);
+  modal.addEventListener("click", (e) => { if (e.target === modal) cerrarModal(); });
+  // Cerrar con Escape
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !modal.hidden) cerrarModal(); });
 
   $("#btnConfirmarEnvio").addEventListener("click", enviarPorCorreo);
 }
@@ -555,9 +555,9 @@ async function enviarPorCorreo() {
 
         const data = await envioResp.json();
 
+        $("#modalCorreo").hidden = true;
         if (data.ok) {
           toast("Correo enviado exitosamente", "success");
-          $("#modalCorreo").hidden = true;
         } else {
           toast(data.error || "Error al enviar correo", "error");
         }
