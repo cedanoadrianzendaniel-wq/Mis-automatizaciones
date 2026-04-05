@@ -1,22 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// RENDICIÓN DE VIÁTICOS — app.js v1.0
-// Lógica del cliente: escaneo OCR, gestión de datos, exportación
+// RENDIGASTOS — app.js v2.0
 // ═══════════════════════════════════════════════════════════════════════════
 
-// ─── ESTADO ─────────────────────────────────────────────────────────────────
-const state = {
-  comprobantes: [],
-  declaraciones: [],
-  movilidad: []
-};
+const state = { comprobantes: [], declaraciones: [], movilidad: [] };
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => document.querySelectorAll(s);
 
-// ─── ELEMENTOS DOM ──────────────────────────────────────────────────────────
-const $ = (sel) => document.querySelector(sel);
-const $$ = (sel) => document.querySelectorAll(sel);
-
-// ─── INICIALIZACIÓN ─────────────────────────────────────────────────────────
+// ─── INIT ───────────────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
-  // Asegurar que el modal esté cerrado al cargar
   const modal = document.getElementById("modalCorreo");
   if (modal) modal.style.display = "none";
 
@@ -35,7 +26,7 @@ function initTabs() {
   $$(".tab").forEach(tab => {
     tab.addEventListener("click", () => {
       $$(".tab").forEach(t => t.classList.remove("active"));
-      $$(".tab-content").forEach(tc => tc.classList.remove("active"));
+      $$(".tab-panel").forEach(p => p.classList.remove("active"));
       tab.classList.add("active");
       $(`#tab-${tab.dataset.tab}`).classList.add("active");
     });
@@ -43,7 +34,7 @@ function initTabs() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// ESCANEO OCR
+// SCAN / CAPTURE
 // ═══════════════════════════════════════════════════════════════════════════
 function initScanArea() {
   const scanArea = $("#scanArea");
@@ -58,58 +49,26 @@ function initScanArea() {
 
   let archivoSeleccionado = null;
 
-  // Botón "Tomar Foto" — abre cámara directa en celular
-  $("#btnTomarFoto").addEventListener("click", () => {
-    fileCamara.click();
-  });
+  $("#btnTomarFoto").addEventListener("click", () => fileCamara.click());
+  $("#btnSubirArchivo").addEventListener("click", () => fileGaleria.click());
 
-  // Botón "Subir Imagen" — abre galería/archivos
-  $("#btnSubirArchivo").addEventListener("click", () => {
-    fileGaleria.click();
-  });
-
-  // Click en el área de preview también abre galería
   scanArea.addEventListener("click", (e) => {
-    if (e.target.closest("#btnRemoveImg")) return;
+    if (e.target.closest("#btnRemoveImg") || e.target.closest(".capture-img")) return;
     fileGaleria.click();
   });
 
-  // Drag & drop (para escritorio)
-  scanArea.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    scanArea.classList.add("dragover");
-  });
-
-  scanArea.addEventListener("dragleave", () => {
-    scanArea.classList.remove("dragover");
-  });
-
+  scanArea.addEventListener("dragover", (e) => { e.preventDefault(); scanArea.classList.add("dragover"); });
+  scanArea.addEventListener("dragleave", () => scanArea.classList.remove("dragover"));
   scanArea.addEventListener("drop", (e) => {
-    e.preventDefault();
-    scanArea.classList.remove("dragover");
-    if (e.dataTransfer.files.length > 0) {
-      cargarArchivo(e.dataTransfer.files[0]);
-    }
+    e.preventDefault(); scanArea.classList.remove("dragover");
+    if (e.dataTransfer.files.length > 0) cargarArchivo(e.dataTransfer.files[0]);
   });
 
-  // Listener para ambos inputs de archivo
-  fileCamara.addEventListener("change", () => {
-    if (fileCamara.files.length > 0) {
-      cargarArchivo(fileCamara.files[0]);
-    }
-  });
-
-  fileGaleria.addEventListener("change", () => {
-    if (fileGaleria.files.length > 0) {
-      cargarArchivo(fileGaleria.files[0]);
-    }
-  });
+  fileCamara.addEventListener("change", () => { if (fileCamara.files.length > 0) cargarArchivo(fileCamara.files[0]); });
+  fileGaleria.addEventListener("change", () => { if (fileGaleria.files.length > 0) cargarArchivo(fileGaleria.files[0]); });
 
   function cargarArchivo(file) {
-    if (file.size > 10 * 1024 * 1024) {
-      toast("El archivo excede el límite de 10MB", "error");
-      return;
-    }
+    if (file.size > 10 * 1024 * 1024) { toast("Archivo excede 10MB", "error"); return; }
     archivoSeleccionado = file;
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -124,17 +83,13 @@ function initScanArea() {
   btnRemove.addEventListener("click", (e) => {
     e.stopPropagation();
     archivoSeleccionado = null;
-    fileCamara.value = "";
-    fileGaleria.value = "";
-    placeholder.hidden = false;
-    preview.hidden = true;
+    fileCamara.value = ""; fileGaleria.value = "";
+    placeholder.hidden = false; preview.hidden = true;
     btnEscanear.disabled = true;
   });
 
-  // Escanear con OCR
   btnEscanear.addEventListener("click", async () => {
     if (!archivoSeleccionado) return;
-
     btnEscanear.disabled = true;
     scanProgress.hidden = false;
 
@@ -142,47 +97,28 @@ function initScanArea() {
     formData.append("comprobante", archivoSeleccionado);
 
     try {
-      const resp = await fetch("/api/escanear", {
-        method: "POST",
-        body: formData
-      });
-
+      const resp = await fetch("/api/escanear", { method: "POST", body: formData });
       const data = await resp.json();
 
       if (data.ok) {
-        // Rellenar formulario con datos extraídos
         if (data.datos.fecha) {
-          // Convertir dd/mm/yyyy a yyyy-mm-dd para input date
-          const partes = data.datos.fecha.split("/");
-          if (partes.length === 3) {
-            $("#compFecha").value = `${partes[2]}-${partes[1]}-${partes[0]}`;
-          }
+          const p = data.datos.fecha.split("/");
+          if (p.length === 3) $("#compFecha").value = `${p[2]}-${p[1]}-${p[0]}`;
         }
         if (data.datos.tipo) {
-          const select = $("#compTipo");
-          for (const opt of select.options) {
-            if (opt.value === data.datos.tipo) {
-              select.value = data.datos.tipo;
-              break;
-            }
-          }
+          const sel = $("#compTipo");
+          for (const opt of sel.options) { if (opt.value === data.datos.tipo) { sel.value = data.datos.tipo; break; } }
         }
-        if (data.datos.numero) {
-          $("#compNumero").value = data.datos.numero;
-        }
-        if (data.datos.concepto) {
-          $("#compConcepto").value = data.datos.concepto;
-        }
-        if (data.datos.monto) {
-          $("#compMonto").value = data.datos.monto;
-        }
+        if (data.datos.numero) $("#compNumero").value = data.datos.numero;
+        if (data.datos.concepto) $("#compConcepto").value = data.datos.concepto;
+        if (data.datos.monto) $("#compMonto").value = data.datos.monto;
 
-        toast("Comprobante escaneado exitosamente. Verifique los datos extraídos.", "success");
+        toast("Comprobante escaneado. Verifique los datos.", "success");
       } else {
         toast(data.error || "Error al escanear", "error");
       }
     } catch (err) {
-      toast("Error de conexión al escanear", "error");
+      toast("Error de conexi\u00f3n al escanear", "error");
     } finally {
       btnEscanear.disabled = false;
       scanProgress.hidden = true;
@@ -194,276 +130,150 @@ function initScanArea() {
 // FORMULARIOS
 // ═══════════════════════════════════════════════════════════════════════════
 function initFormularios() {
-  // ── Comprobantes ─────────────────────────────────────────────────────
+  // Comprobantes
   $("#btnAgregarComp").addEventListener("click", () => {
-    const fecha = $("#compFecha").value;
-    const tipo = $("#compTipo").value;
-    const numero = $("#compNumero").value.trim();
-    const concepto = $("#compConcepto").value.trim();
+    const fecha = $("#compFecha").value, tipo = $("#compTipo").value;
+    const numero = $("#compNumero").value.trim(), concepto = $("#compConcepto").value.trim();
     const monto = $("#compMonto").value;
 
-    if (!fecha || !tipo || !numero || !monto) {
-      toast("Complete los campos obligatorios: Fecha, Tipo, N° y Monto", "warning");
-      return;
-    }
+    if (!fecha || !tipo || !numero || !monto) { toast("Complete: Fecha, Tipo, N\u00b0 y Monto", "warning"); return; }
 
-    state.comprobantes.push({
-      fecha: formatearFecha(fecha),
-      tipo,
-      numero,
-      concepto,
-      monto: parseFloat(monto).toFixed(2)
-    });
-
-    limpiarFormComp();
-    renderComprobantes();
-    actualizarTotales();
-    guardarDatos();
+    state.comprobantes.push({ fecha: fmtFecha(fecha), tipo, numero, concepto, monto: parseFloat(monto).toFixed(2) });
+    limpiarFormComp(); renderComprobantes(); actualizarTotales(); guardarDatos();
     toast("Comprobante agregado", "success");
   });
 
   $("#btnLimpiarComp").addEventListener("click", limpiarFormComp);
 
-  // ── Declaraciones Juradas ───────────────────────────────────────────
+  // Declaraciones
   $("#btnAgregarDJ").addEventListener("click", () => {
-    const fecha = $("#djFecha").value;
-    const concepto = $("#djConcepto").value.trim();
-    const motivo = $("#djMotivo").value.trim();
-    const monto = $("#djMonto").value;
+    const fecha = $("#djFecha").value, concepto = $("#djConcepto").value.trim();
+    const motivo = $("#djMotivo").value.trim(), monto = $("#djMonto").value;
 
-    if (!fecha || !concepto || !monto) {
-      toast("Complete los campos obligatorios: Fecha, Concepto y Monto", "warning");
-      return;
-    }
+    if (!fecha || !concepto || !monto) { toast("Complete: Fecha, Concepto y Monto", "warning"); return; }
 
-    state.declaraciones.push({
-      fecha: formatearFecha(fecha),
-      concepto,
-      motivo,
-      monto: parseFloat(monto).toFixed(2)
-    });
-
-    $("#djFecha").value = "";
-    $("#djConcepto").value = "";
-    $("#djMotivo").value = "";
-    $("#djMonto").value = "";
-
-    renderDeclaraciones();
-    actualizarTotales();
-    guardarDatos();
-    toast("Declaración jurada agregada", "success");
+    state.declaraciones.push({ fecha: fmtFecha(fecha), concepto, motivo, monto: parseFloat(monto).toFixed(2) });
+    $("#djFecha").value = ""; $("#djConcepto").value = ""; $("#djMotivo").value = ""; $("#djMonto").value = "";
+    renderDeclaraciones(); actualizarTotales(); guardarDatos();
+    toast("Declaraci\u00f3n jurada agregada", "success");
   });
 
-  // ── Movilización ────────────────────────────────────────────────────
+  // Movilidad
   $("#btnAgregarMov").addEventListener("click", () => {
-    const fecha = $("#movFecha").value;
-    const transporte = $("#movTransporte").value;
-    const origen = $("#movOrigen").value.trim();
-    const destino = $("#movDestino").value.trim();
-    const monto = $("#movMonto").value;
-    const motivo = $("#movMotivo").value.trim();
+    const fecha = $("#movFecha").value, transporte = $("#movTransporte").value;
+    const origen = $("#movOrigen").value.trim(), destino = $("#movDestino").value.trim();
+    const monto = $("#movMonto").value, motivo = $("#movMotivo").value.trim();
 
-    if (!fecha || !transporte || !monto) {
-      toast("Complete los campos obligatorios: Fecha, Transporte y Monto", "warning");
-      return;
-    }
+    if (!fecha || !transporte || !monto) { toast("Complete: Fecha, Transporte y Monto", "warning"); return; }
 
-    state.movilidad.push({
-      fecha: formatearFecha(fecha),
-      transporte,
-      origen,
-      destino,
-      monto: parseFloat(monto).toFixed(2),
-      motivo
-    });
-
-    $("#movFecha").value = "";
-    $("#movTransporte").value = "";
-    $("#movOrigen").value = "";
-    $("#movDestino").value = "";
-    $("#movMonto").value = "";
-    $("#movMotivo").value = "";
-
-    renderMovilidad();
-    actualizarTotales();
-    guardarDatos();
-    toast("Movilización agregada", "success");
+    state.movilidad.push({ fecha: fmtFecha(fecha), transporte, origen, destino, monto: parseFloat(monto).toFixed(2), motivo });
+    ["movFecha","movTransporte","movOrigen","movDestino","movMonto","movMotivo"].forEach(id => $(`#${id}`).value = "");
+    renderMovilidad(); actualizarTotales(); guardarDatos();
+    toast("Movilizaci\u00f3n agregada", "success");
   });
 }
 
 function limpiarFormComp() {
-  $("#compFecha").value = "";
-  $("#compTipo").value = "";
-  $("#compNumero").value = "";
-  $("#compConcepto").value = "";
-  $("#compMonto").value = "";
+  ["compFecha","compTipo","compNumero","compConcepto","compMonto"].forEach(id => $(`#${id}`).value = "");
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// RENDER TABLAS
+// RENDER
 // ═══════════════════════════════════════════════════════════════════════════
+const trashSVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+
 function renderComprobantes() {
-  const tbody = $("#tbodyComp");
-  if (state.comprobantes.length === 0) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No hay comprobantes registrados</td></tr>';
-    return;
-  }
-  tbody.innerHTML = state.comprobantes.map((c, i) => `
-    <tr>
-      <td>${i + 1}</td>
-      <td>${c.fecha}</td>
-      <td>${c.tipo}</td>
-      <td><strong>${c.numero}</strong></td>
-      <td>${c.concepto}</td>
-      <td><strong>S/ ${parseFloat(c.monto).toFixed(2)}</strong></td>
-      <td>
-        <button class="btn-icon" onclick="eliminarComprobante(${i})" title="Eliminar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-            <polyline points="3 6 5 6 21 6"/>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-          </svg>
-        </button>
-      </td>
-    </tr>
-  `).join("");
+  const tb = $("#tbodyComp");
+  if (!state.comprobantes.length) { tb.innerHTML = '<tr class="row-empty"><td colspan="7">Sin comprobantes registrados</td></tr>'; return; }
+  tb.innerHTML = state.comprobantes.map((c, i) => `<tr>
+    <td>${i+1}</td><td>${c.fecha}</td><td>${c.tipo}</td><td><strong>${c.numero}</strong></td><td>${c.concepto}</td>
+    <td class="text-right"><strong>S/ ${parseFloat(c.monto).toFixed(2)}</strong></td>
+    <td><button class="btn-icon" onclick="eliminarComprobante(${i})" title="Eliminar">${trashSVG}</button></td></tr>`).join("");
 }
 
 function renderDeclaraciones() {
-  const tbody = $("#tbodyDJ");
-  if (state.declaraciones.length === 0) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">No hay declaraciones registradas</td></tr>';
-    return;
-  }
-  tbody.innerHTML = state.declaraciones.map((d, i) => `
-    <tr>
-      <td>${i + 1}</td>
-      <td>${d.fecha}</td>
-      <td>${d.concepto}</td>
-      <td>${d.motivo}</td>
-      <td><strong>S/ ${parseFloat(d.monto).toFixed(2)}</strong></td>
-      <td>
-        <button class="btn-icon" onclick="eliminarDeclaracion(${i})" title="Eliminar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-            <polyline points="3 6 5 6 21 6"/>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-          </svg>
-        </button>
-      </td>
-    </tr>
-  `).join("");
+  const tb = $("#tbodyDJ");
+  if (!state.declaraciones.length) { tb.innerHTML = '<tr class="row-empty"><td colspan="6">Sin declaraciones registradas</td></tr>'; return; }
+  tb.innerHTML = state.declaraciones.map((d, i) => `<tr>
+    <td>${i+1}</td><td>${d.fecha}</td><td>${d.concepto}</td><td>${d.motivo}</td>
+    <td class="text-right"><strong>S/ ${parseFloat(d.monto).toFixed(2)}</strong></td>
+    <td><button class="btn-icon" onclick="eliminarDeclaracion(${i})" title="Eliminar">${trashSVG}</button></td></tr>`).join("");
 }
 
 function renderMovilidad() {
-  const tbody = $("#tbodyMov");
-  if (state.movilidad.length === 0) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="8">No hay movilizaciones registradas</td></tr>';
-    return;
-  }
-  tbody.innerHTML = state.movilidad.map((m, i) => `
-    <tr>
-      <td>${i + 1}</td>
-      <td>${m.fecha}</td>
-      <td>${m.origen}</td>
-      <td>${m.destino}</td>
-      <td>${m.transporte}</td>
-      <td>${m.motivo}</td>
-      <td><strong>S/ ${parseFloat(m.monto).toFixed(2)}</strong></td>
-      <td>
-        <button class="btn-icon" onclick="eliminarMovilidad(${i})" title="Eliminar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-            <polyline points="3 6 5 6 21 6"/>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-          </svg>
-        </button>
-      </td>
-    </tr>
-  `).join("");
+  const tb = $("#tbodyMov");
+  if (!state.movilidad.length) { tb.innerHTML = '<tr class="row-empty"><td colspan="8">Sin movilizaciones registradas</td></tr>'; return; }
+  tb.innerHTML = state.movilidad.map((m, i) => `<tr>
+    <td>${i+1}</td><td>${m.fecha}</td><td>${m.origen}</td><td>${m.destino}</td><td>${m.transporte}</td><td>${m.motivo}</td>
+    <td class="text-right"><strong>S/ ${parseFloat(m.monto).toFixed(2)}</strong></td>
+    <td><button class="btn-icon" onclick="eliminarMovilidad(${i})" title="Eliminar">${trashSVG}</button></td></tr>`).join("");
 }
 
-// ─── Eliminar registros ─────────────────────────────────────────────────────
-function eliminarComprobante(i) {
-  state.comprobantes.splice(i, 1);
-  renderComprobantes();
-  actualizarTotales();
-  guardarDatos();
-}
-
-function eliminarDeclaracion(i) {
-  state.declaraciones.splice(i, 1);
-  renderDeclaraciones();
-  actualizarTotales();
-  guardarDatos();
-}
-
-function eliminarMovilidad(i) {
-  state.movilidad.splice(i, 1);
-  renderMovilidad();
-  actualizarTotales();
-  guardarDatos();
-}
+function eliminarComprobante(i) { state.comprobantes.splice(i,1); renderComprobantes(); actualizarTotales(); guardarDatos(); }
+function eliminarDeclaracion(i) { state.declaraciones.splice(i,1); renderDeclaraciones(); actualizarTotales(); guardarDatos(); }
+function eliminarMovilidad(i) { state.movilidad.splice(i,1); renderMovilidad(); actualizarTotales(); guardarDatos(); }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TOTALES
 // ═══════════════════════════════════════════════════════════════════════════
 function actualizarTotales() {
-  const totalComp = state.comprobantes.reduce((s, c) => s + parseFloat(c.monto), 0);
-  const totalDJ = state.declaraciones.reduce((s, d) => s + parseFloat(d.monto), 0);
-  const totalMov = state.movilidad.reduce((s, m) => s + parseFloat(m.monto), 0);
-  const totalGeneral = totalComp + totalDJ + totalMov;
+  const totalComp = state.comprobantes.reduce((s,c) => s + parseFloat(c.monto), 0);
+  const totalDJ = state.declaraciones.reduce((s,d) => s + parseFloat(d.monto), 0);
+  const totalMov = state.movilidad.reduce((s,m) => s + parseFloat(m.monto), 0);
+  const total = totalComp + totalDJ + totalMov;
 
-  // Subtotales
   $("#subtotalComp").textContent = `Subtotal: S/ ${totalComp.toFixed(2)}`;
   $("#subtotalDJ").textContent = `Subtotal: S/ ${totalDJ.toFixed(2)}`;
   $("#subtotalMov").textContent = `Subtotal: S/ ${totalMov.toFixed(2)}`;
 
-  // Contadores en tabs
   $("#countComp").textContent = state.comprobantes.length;
   $("#countDJ").textContent = state.declaraciones.length;
   $("#countMov").textContent = state.movilidad.length;
 
-  // Resumen
   $("#resComp").textContent = `S/ ${totalComp.toFixed(2)}`;
   $("#resDJ").textContent = `S/ ${totalDJ.toFixed(2)}`;
   $("#resMov").textContent = `S/ ${totalMov.toFixed(2)}`;
-  $("#resTotal").textContent = `S/ ${totalGeneral.toFixed(2)}`;
+  $("#resTotal").textContent = `S/ ${total.toFixed(2)}`;
 
-  // Badge header
-  $("#badgeTotal").textContent = `Total: S/ ${totalGeneral.toFixed(2)}`;
+  // Topbar pill
+  const pill = $("#badgeTotal");
+  pill.querySelector(".pill-value").textContent = `S/ ${total.toFixed(2)}`;
 
-  // Panel de saldo
-  actualizarSaldo(totalGeneral);
+  actualizarSaldo(total);
 }
 
 function actualizarSaldo(totalGastado) {
-  const viaticoAsignado = parseFloat($("#viaticoAsignado").value) || 0;
-  const saldo = viaticoAsignado - totalGastado;
+  const asignado = parseFloat($("#viaticoAsignado").value) || 0;
+  const saldo = asignado - totalGastado;
 
-  $("#saldoAsignado").textContent = `S/ ${viaticoAsignado.toFixed(2)}`;
+  $("#saldoAsignado").textContent = `S/ ${asignado.toFixed(2)}`;
   $("#saldoGastado").textContent = `S/ ${totalGastado.toFixed(2)}`;
   $("#saldoRestante").textContent = `S/ ${Math.abs(saldo).toFixed(2)}`;
 
-  const saldoEl = $(".saldo-restante");
-  const detalleEl = $("#saldoDetalle");
+  const el = $("#balanceResult");
+  const dot = $("#balanceDot");
+  const det = $("#saldoDetalle");
 
-  saldoEl.classList.remove("positivo", "negativo", "neutro");
+  el.classList.remove("positivo","negativo","neutro");
+  dot.classList.remove("dot--green","dot--red","dot--amber");
 
-  if (viaticoAsignado === 0) {
-    saldoEl.classList.add("neutro");
-    detalleEl.textContent = "Ingrese el viático asignado";
+  if (asignado === 0) {
+    el.classList.add("neutro"); dot.classList.add("dot--amber");
+    det.textContent = "Ingrese vi\u00e1tico asignado";
   } else if (saldo > 0) {
-    saldoEl.classList.add("positivo");
-    detalleEl.textContent = "Saldo a favor (devolver)";
+    el.classList.add("positivo"); dot.classList.add("dot--green");
+    det.textContent = "Saldo a favor (devolver)";
   } else if (saldo < 0) {
-    saldoEl.classList.add("negativo");
-    detalleEl.textContent = "Monto excedido (por reembolsar)";
+    el.classList.add("negativo"); dot.classList.add("dot--red");
+    det.textContent = "Excedido (por reembolsar)";
   } else {
-    saldoEl.classList.add("positivo");
-    detalleEl.textContent = "Rendición exacta";
+    el.classList.add("positivo"); dot.classList.add("dot--green");
+    det.textContent = "Rendici\u00f3n exacta";
   }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// EXPORTACIÓN
+// EXPORT
 // ═══════════════════════════════════════════════════════════════════════════
 function initExportacion() {
   $("#btnExportExcel").addEventListener("click", () => exportar("excel"));
@@ -473,73 +283,37 @@ function initExportacion() {
 async function exportar(formato) {
   const empleado = $("#empleado").value.trim();
   const periodo = $("#periodo").value.trim();
-
-  if (!empleado) {
-    toast("Ingrese el nombre del empleado antes de exportar", "warning");
-    return;
-  }
-
-  if (state.comprobantes.length === 0 && state.declaraciones.length === 0 && state.movilidad.length === 0) {
-    toast("No hay datos para exportar", "warning");
-    return;
-  }
+  if (!empleado) { toast("Ingrese nombre del empleado", "warning"); return; }
+  if (!state.comprobantes.length && !state.declaraciones.length && !state.movilidad.length) { toast("No hay datos", "warning"); return; }
 
   const viaticoAsignado = $("#viaticoAsignado").value || "0";
-  const body = {
-    empleado,
-    periodo,
-    viaticoAsignado,
-    comprobantes: state.comprobantes,
-    declaraciones: state.declaraciones,
-    movilidad: state.movilidad
-  };
-
+  const body = { empleado, periodo, viaticoAsignado, comprobantes: state.comprobantes, declaraciones: state.declaraciones, movilidad: state.movilidad };
   const endpoint = formato === "excel" ? "/api/generar-excel" : "/api/generar-pdf";
   const ext = formato === "excel" ? "xlsx" : "pdf";
 
   try {
-    toast("Generando archivo...", "info");
-
-    const resp = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
-    });
-
-    if (!resp.ok) throw new Error("Error al generar archivo");
-
+    toast("Generando archivo\u2026", "info");
+    const resp = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (!resp.ok) throw new Error();
     const blob = await resp.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
-    a.download = `Rendicion_Viaticos_${empleado.replace(/\s+/g, "_")}_${periodo || "sin_periodo"}.${ext}`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    a.href = url; a.download = `Rendicion_${empleado.replace(/\s+/g,"_")}_${periodo||"sin_periodo"}.${ext}`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
-
-    toast(`Archivo ${ext.toUpperCase()} descargado exitosamente`, "success");
-  } catch (err) {
-    toast(`Error al generar ${ext.toUpperCase()}`, "error");
-  }
+    toast(`${ext.toUpperCase()} descargado`, "success");
+  } catch { toast(`Error al generar ${ext.toUpperCase()}`, "error"); }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// MODAL DE CORREO
+// MODAL
 // ═══════════════════════════════════════════════════════════════════════════
 function initModal() {
   const modal = $("#modalCorreo");
 
   $("#btnEnviarCorreo").addEventListener("click", () => {
-    const empleado = $("#empleado").value.trim();
-    if (!empleado) {
-      toast("Ingrese el nombre del empleado", "warning");
-      return;
-    }
-    if (state.comprobantes.length === 0 && state.declaraciones.length === 0 && state.movilidad.length === 0) {
-      toast("No hay datos para enviar", "warning");
-      return;
-    }
+    if (!$("#empleado").value.trim()) { toast("Ingrese nombre del empleado", "warning"); return; }
+    if (!state.comprobantes.length && !state.declaraciones.length && !state.movilidad.length) { toast("No hay datos", "warning"); return; }
     modal.style.display = "flex";
   });
 
@@ -557,164 +331,90 @@ async function enviarPorCorreo() {
   const formato = document.querySelector('input[name="formatoCorreo"]:checked').value;
   const empleado = $("#empleado").value.trim();
   const periodo = $("#periodo").value.trim();
-
-  if (!destinatario) {
-    toast("Ingrese el correo del destinatario", "warning");
-    return;
-  }
+  if (!destinatario) { toast("Ingrese correo del destinatario", "warning"); return; }
 
   const btn = $("#btnConfirmarEnvio");
-  btn.disabled = true;
-  btn.textContent = "Enviando...";
+  btn.disabled = true; btn.textContent = "Enviando\u2026";
 
   try {
-    // Generar el archivo primero
-    const body = {
-      empleado,
-      periodo,
-      comprobantes: state.comprobantes,
-      declaraciones: state.declaraciones,
-      movilidad: state.movilidad
-    };
-
+    const viaticoAsignado = $("#viaticoAsignado").value || "0";
+    const body = { empleado, periodo, viaticoAsignado, comprobantes: state.comprobantes, declaraciones: state.declaraciones, movilidad: state.movilidad };
     const endpoint = formato === "excel" ? "/api/generar-excel" : "/api/generar-pdf";
-    const resp = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
-    });
-
-    if (!resp.ok) throw new Error("Error al generar archivo");
+    const resp = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (!resp.ok) throw new Error();
 
     const blob = await resp.blob();
     const reader = new FileReader();
-
     reader.onload = async () => {
       const base64 = reader.result.split(",")[1];
       const ext = formato === "excel" ? "xlsx" : "pdf";
-      const nombreArchivo = `Rendicion_Viaticos_${empleado.replace(/\s+/g, "_")}_${periodo || ""}.${ext}`;
-
       try {
-        const envioResp = await fetch("/api/enviar-correo", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            destinatario,
-            empleado,
-            periodo,
-            archivoBase64: base64,
-            nombreArchivo,
-            formato
-          })
+        const r = await fetch("/api/enviar-correo", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ destinatario, empleado, periodo, archivoBase64: base64, nombreArchivo: `Rendicion_${empleado.replace(/\s+/g,"_")}.${ext}`, formato })
         });
-
-        const data = await envioResp.json();
-
+        const data = await r.json();
         $("#modalCorreo").style.display = "none";
-        if (data.ok) {
-          toast("Correo enviado exitosamente", "success");
-        } else {
-          toast(data.error || "Error al enviar correo", "error");
-        }
-      } catch (err) {
-        toast("Error de conexión al enviar correo", "error");
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = `
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-            <line x1="22" y1="2" x2="11" y2="13"/>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-          </svg>
-          Enviar
-        `;
-      }
+        toast(data.ok ? "Correo enviado" : (data.error || "Error al enviar"), data.ok ? "success" : "error");
+      } catch { toast("Error de conexi\u00f3n", "error"); }
+      finally { resetBtn(); }
     };
-
     reader.readAsDataURL(blob);
-  } catch (err) {
-    toast("Error al preparar el archivo", "error");
+  } catch { toast("Error al preparar archivo", "error"); resetBtn(); }
+
+  function resetBtn() {
     btn.disabled = false;
-    btn.innerHTML = `
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-        <line x1="22" y1="2" x2="11" y2="13"/>
-        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-      </svg>
-      Enviar
-    `;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Enviar';
   }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PERSISTENCIA LOCAL
+// PERSISTENCE
 // ═══════════════════════════════════════════════════════════════════════════
 function guardarDatos() {
-  const datos = {
-    empleado: $("#empleado").value,
-    cargo: $("#cargo").value,
-    area: $("#area").value,
-    periodo: $("#periodo").value,
+  localStorage.setItem("rendicion_viaticos", JSON.stringify({
+    empleado: $("#empleado").value, cargo: $("#cargo").value,
+    area: $("#area").value, periodo: $("#periodo").value,
     viaticoAsignado: $("#viaticoAsignado").value,
-    comprobantes: state.comprobantes,
-    declaraciones: state.declaraciones,
-    movilidad: state.movilidad
-  };
-  localStorage.setItem("rendicion_viaticos", JSON.stringify(datos));
+    comprobantes: state.comprobantes, declaraciones: state.declaraciones, movilidad: state.movilidad
+  }));
 }
 
 function cargarDatosGuardados() {
   const saved = localStorage.getItem("rendicion_viaticos");
-  if (!saved) return;
-
-  try {
-    const datos = JSON.parse(saved);
-    if (datos.empleado) $("#empleado").value = datos.empleado;
-    if (datos.cargo) $("#cargo").value = datos.cargo;
-    if (datos.area) $("#area").value = datos.area;
-    if (datos.periodo) $("#periodo").value = datos.periodo;
-    if (datos.viaticoAsignado) $("#viaticoAsignado").value = datos.viaticoAsignado;
-    if (datos.comprobantes) state.comprobantes = datos.comprobantes;
-    if (datos.declaraciones) state.declaraciones = datos.declaraciones;
-    if (datos.movilidad) state.movilidad = datos.movilidad;
-
-    renderComprobantes();
-    renderDeclaraciones();
-    renderMovilidad();
-    actualizarTotales();
-  } catch (e) {
-    // datos corruptos, ignorar
+  if (saved) {
+    try {
+      const d = JSON.parse(saved);
+      if (d.empleado) $("#empleado").value = d.empleado;
+      if (d.cargo) $("#cargo").value = d.cargo;
+      if (d.area) $("#area").value = d.area;
+      if (d.periodo) $("#periodo").value = d.periodo;
+      if (d.viaticoAsignado) $("#viaticoAsignado").value = d.viaticoAsignado;
+      if (d.comprobantes) state.comprobantes = d.comprobantes;
+      if (d.declaraciones) state.declaraciones = d.declaraciones;
+      if (d.movilidad) state.movilidad = d.movilidad;
+      renderComprobantes(); renderDeclaraciones(); renderMovilidad(); actualizarTotales();
+    } catch {}
   }
 
-  // Guardar al cambiar datos del empleado
-  ["empleado", "cargo", "area", "periodo"].forEach(id => {
-    $(`#${id}`).addEventListener("input", guardarDatos);
-  });
-
-  // Actualizar saldo al cambiar viático asignado
-  $("#viaticoAsignado").addEventListener("input", () => {
-    guardarDatos();
-    actualizarTotales();
-  });
+  ["empleado","cargo","area","periodo"].forEach(id => $(`#${id}`).addEventListener("input", guardarDatos));
+  $("#viaticoAsignado").addEventListener("input", () => { guardarDatos(); actualizarTotales(); });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// UTILIDADES
+// UTILS
 // ═══════════════════════════════════════════════════════════════════════════
-function formatearFecha(dateStr) {
-  if (!dateStr) return "";
-  const [y, m, d] = dateStr.split("-");
-  return `${d}/${m}/${y}`;
-}
+function fmtFecha(d) { if (!d) return ""; const [y,m,dd] = d.split("-"); return `${dd}/${m}/${y}`; }
 
-function toast(mensaje, tipo = "info") {
-  const container = $("#toastContainer");
-  const div = document.createElement("div");
-  div.className = `toast toast-${tipo}`;
-  div.textContent = mensaje;
-  container.appendChild(div);
+function toast(msg, type = "info") {
+  const c = $("#toastContainer");
+  const el = document.createElement("div");
+  el.className = `toast toast-${type}`;
+  el.textContent = msg;
+  c.appendChild(el);
   setTimeout(() => {
-    div.style.opacity = "0";
-    div.style.transform = "translateX(100%)";
-    div.style.transition = "all 0.3s ease";
-    setTimeout(() => div.remove(), 300);
-  }, 4000);
+    el.style.opacity = "0"; el.style.transform = "translateX(100%)";
+    el.style.transition = "all .3s ease";
+    setTimeout(() => el.remove(), 300);
+  }, 3500);
 }
