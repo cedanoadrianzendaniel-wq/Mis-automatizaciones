@@ -16,6 +16,10 @@ const $$ = (sel) => document.querySelectorAll(sel);
 
 // ─── INICIALIZACIÓN ─────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
+  // Asegurar que el modal esté cerrado al cargar
+  const modal = document.getElementById("modalCorreo");
+  if (modal) modal.style.display = "none";
+
   initTabs();
   initScanArea();
   initFormularios();
@@ -484,15 +488,14 @@ function initModal() {
       toast("No hay datos para enviar", "warning");
       return;
     }
-    modal.hidden = false;
+    modal.style.display = "flex";
   });
 
-  function cerrarModal() { modal.hidden = true; }
+  function cerrarModal() { modal.style.display = "none"; }
   $("#btnCerrarModal").addEventListener("click", cerrarModal);
   $("#btnCancelarCorreo").addEventListener("click", cerrarModal);
   modal.addEventListener("click", (e) => { if (e.target === modal) cerrarModal(); });
-  // Cerrar con Escape
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !modal.hidden) cerrarModal(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && modal.style.display !== "none") cerrarModal(); });
 
   $("#btnConfirmarEnvio").addEventListener("click", enviarPorCorreo);
 }
@@ -555,7 +558,7 @@ async function enviarPorCorreo() {
 
         const data = await envioResp.json();
 
-        $("#modalCorreo").hidden = true;
+        $("#modalCorreo").style.display = "none";
         if (data.ok) {
           toast("Correo enviado exitosamente", "success");
         } else {
