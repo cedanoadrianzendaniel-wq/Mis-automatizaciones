@@ -410,6 +410,37 @@ function actualizarTotales() {
 
   // Badge header
   $("#badgeTotal").textContent = `Total: S/ ${totalGeneral.toFixed(2)}`;
+
+  // Panel de saldo
+  actualizarSaldo(totalGeneral);
+}
+
+function actualizarSaldo(totalGastado) {
+  const viaticoAsignado = parseFloat($("#viaticoAsignado").value) || 0;
+  const saldo = viaticoAsignado - totalGastado;
+
+  $("#saldoAsignado").textContent = `S/ ${viaticoAsignado.toFixed(2)}`;
+  $("#saldoGastado").textContent = `S/ ${totalGastado.toFixed(2)}`;
+  $("#saldoRestante").textContent = `S/ ${Math.abs(saldo).toFixed(2)}`;
+
+  const saldoEl = $(".saldo-restante");
+  const detalleEl = $("#saldoDetalle");
+
+  saldoEl.classList.remove("positivo", "negativo", "neutro");
+
+  if (viaticoAsignado === 0) {
+    saldoEl.classList.add("neutro");
+    detalleEl.textContent = "Ingrese el viático asignado";
+  } else if (saldo > 0) {
+    saldoEl.classList.add("positivo");
+    detalleEl.textContent = "Saldo a favor (devolver)";
+  } else if (saldo < 0) {
+    saldoEl.classList.add("negativo");
+    detalleEl.textContent = "Monto excedido (por reembolsar)";
+  } else {
+    saldoEl.classList.add("positivo");
+    detalleEl.textContent = "Rendición exacta";
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -434,9 +465,11 @@ async function exportar(formato) {
     return;
   }
 
+  const viaticoAsignado = $("#viaticoAsignado").value || "0";
   const body = {
     empleado,
     periodo,
+    viaticoAsignado,
     comprobantes: state.comprobantes,
     declaraciones: state.declaraciones,
     movilidad: state.movilidad
@@ -601,6 +634,7 @@ function guardarDatos() {
     cargo: $("#cargo").value,
     area: $("#area").value,
     periodo: $("#periodo").value,
+    viaticoAsignado: $("#viaticoAsignado").value,
     comprobantes: state.comprobantes,
     declaraciones: state.declaraciones,
     movilidad: state.movilidad
@@ -618,6 +652,7 @@ function cargarDatosGuardados() {
     if (datos.cargo) $("#cargo").value = datos.cargo;
     if (datos.area) $("#area").value = datos.area;
     if (datos.periodo) $("#periodo").value = datos.periodo;
+    if (datos.viaticoAsignado) $("#viaticoAsignado").value = datos.viaticoAsignado;
     if (datos.comprobantes) state.comprobantes = datos.comprobantes;
     if (datos.declaraciones) state.declaraciones = datos.declaraciones;
     if (datos.movilidad) state.movilidad = datos.movilidad;
@@ -633,6 +668,12 @@ function cargarDatosGuardados() {
   // Guardar al cambiar datos del empleado
   ["empleado", "cargo", "area", "periodo"].forEach(id => {
     $(`#${id}`).addEventListener("input", guardarDatos);
+  });
+
+  // Actualizar saldo al cambiar viático asignado
+  $("#viaticoAsignado").addEventListener("input", () => {
+    guardarDatos();
+    actualizarTotales();
   });
 }
 

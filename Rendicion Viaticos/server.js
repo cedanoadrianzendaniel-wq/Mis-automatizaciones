@@ -95,7 +95,8 @@ app.post("/api/escanear", upload.single("comprobante"), async (req, res) => {
 // ═══════════════════════════════════════════════════════════════════════════
 app.post("/api/generar-excel", async (req, res) => {
   try {
-    const { empleado, periodo, comprobantes, declaraciones, movilidad } = req.body;
+    const { empleado, periodo, viaticoAsignado, comprobantes, declaraciones, movilidad } = req.body;
+    const montoAsignado = parseFloat(viaticoAsignado) || 0;
 
     const workbook = new ExcelJS.Workbook();
     workbook.creator = EMPRESA_NOMBRE;
@@ -214,11 +215,16 @@ app.post("/api/generar-excel", async (req, res) => {
     wsRes.getColumn(1).width = 40;
     wsRes.getColumn(2).width = 20;
 
+    const totalGeneral = totalComp + totalDJ + totalMov;
+    const saldo = montoAsignado - totalGeneral;
+
     const resData = [
+      ["Viático Asignado", montoAsignado],
       ["Comprobantes de Pago", totalComp],
       ["Declaraciones Juradas", totalDJ],
       ["Movilización", totalMov],
-      ["TOTAL GENERAL", totalComp + totalDJ + totalMov]
+      ["TOTAL GASTADO", totalGeneral],
+      [saldo >= 0 ? "SALDO A FAVOR (devolver)" : "MONTO EXCEDIDO (por reembolsar)", Math.abs(saldo)]
     ];
     resData.forEach(([cat, monto], i) => {
       const row = wsRes.addRow([cat, monto]);
@@ -227,11 +233,25 @@ app.post("/api/generar-excel", async (req, res) => {
         cell.border = borderThin();
         cell.alignment = { vertical: "middle" };
       });
-      if (i === 3) {
+      if (i === 0) {
+        row.getCell(1).font = { bold: true, size: 11 };
+        row.getCell(2).font = { bold: true, size: 11, color: { argb: "FF1A56DB" } };
+        row.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE8F0FE" } };
+        row.getCell(2).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE8F0FE" } };
+      }
+      if (i === 4) {
         row.getCell(1).font = { bold: true, size: 12 };
         row.getCell(2).font = { bold: true, size: 12, color: { argb: "FF0066CC" } };
         row.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE8F0FE" } };
         row.getCell(2).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE8F0FE" } };
+      }
+      if (i === 5) {
+        const color = saldo >= 0 ? "FF059669" : "FFDC2626";
+        row.getCell(1).font = { bold: true, size: 12 };
+        row.getCell(2).font = { bold: true, size: 14, color: { argb: color } };
+        const bgColor = saldo >= 0 ? "FFD1FAE5" : "FFFEE2E2";
+        row.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: bgColor } };
+        row.getCell(2).fill = { type: "pattern", pattern: "solid", fgColor: { argb: bgColor } };
       }
     });
 

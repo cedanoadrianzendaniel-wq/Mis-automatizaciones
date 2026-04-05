@@ -61,6 +61,47 @@
           <label for="periodo">Período de rendición</label>
           <input type="text" id="periodo" placeholder="Ej: Marzo 2026">
         </div>
+        <div class="form-group">
+          <label for="viaticoAsignado">Viático asignado (S/)</label>
+          <input type="number" id="viaticoAsignado" step="0.01" min="0" placeholder="0.00" class="input-viatico">
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PANEL DE SALDO ═══ -->
+    <div class="card saldo-card">
+      <div class="saldo-grid">
+        <div class="saldo-item saldo-asignado">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+            <line x1="1" y1="10" x2="23" y2="10"/>
+          </svg>
+          <div>
+            <span class="saldo-label">Viático Asignado</span>
+            <span class="saldo-value" id="saldoAsignado">S/ 0.00</span>
+          </div>
+        </div>
+        <div class="saldo-item saldo-gastado">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+            <line x1="12" y1="1" x2="12" y2="23"/>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+          <div>
+            <span class="saldo-label">Total Gastado</span>
+            <span class="saldo-value" id="saldoGastado">S/ 0.00</span>
+          </div>
+        </div>
+        <div class="saldo-item saldo-restante">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+            <polyline points="17 6 23 6 23 12"/>
+          </svg>
+          <div>
+            <span class="saldo-label">Saldo</span>
+            <span class="saldo-value" id="saldoRestante">S/ 0.00</span>
+            <span class="saldo-detalle" id="saldoDetalle"></span>
+          </div>
+        </div>
       </div>
     </div>
   </section>
