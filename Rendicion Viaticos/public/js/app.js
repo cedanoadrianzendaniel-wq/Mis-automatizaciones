@@ -69,15 +69,73 @@ function initScanArea() {
   function cargarArchivo(file) {
     if (file.size > 10 * 1024 * 1024) { toast("Archivo excede 10MB", "error"); return; }
     archivoSeleccionado = file;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      previewImg.src = e.target.result;
+
+    const isPDF = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+
+    if (isPDF) {
+      // Convertir PDF a imagen usando pdf.js
       placeholder.hidden = true;
       preview.hidden = false;
-      // Iniciar OCR automáticamente
-      ejecutarOCR(file);
-    };
-    reader.readAsDataURL(file);
+      previewImg.src = "";
+      previewImg.alt = "Procesando PDF...";
+      scanProgress.hidden = false;
+      scanProgress.querySelector("span").textContent = "Convirtiendo PDF a imagen...";
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const pdfData = new Uint8Array(e.target.result);
+          const pdfjsLib = window["pdfjs-dist/build/pdf"] || window.pdfjsLib;
+
+          if (!pdfjsLib) {
+            // Cargar pdf.js dinámicamente si no está disponible
+            const script = await import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs");
+            window.pdfjsLib = script;
+          }
+
+          const lib = window.pdfjsLib || pdfjsLib;
+          lib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs";
+
+          const pdf = await lib.getDocument({ data: pdfData }).promise;
+          const page = await pdf.getPage(1);
+
+          const scale = 2.0;
+          const viewport = page.getViewport({ scale });
+          const canvas = document.createElement("canvas");
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          const ctx = canvas.getContext("2d");
+
+          await page.render({ canvasContext: ctx, viewport }).promise;
+
+          const imgDataUrl = canvas.toDataURL("image/png");
+          previewImg.src = imgDataUrl;
+          previewImg.alt = "Vista previa del PDF";
+
+          // Convertir canvas a blob para OCR
+          canvas.toBlob((blob) => {
+            const imgFile = new File([blob], "pdf_page.png", { type: "image/png" });
+            ejecutarOCR(imgFile);
+          }, "image/png");
+
+        } catch (err) {
+          console.error("Error PDF:", err);
+          toast("Error al procesar PDF. Intente con una imagen.", "error");
+          scanProgress.hidden = true;
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      // Imagen normal
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        previewImg.src = e.target.result;
+        placeholder.hidden = true;
+        preview.hidden = false;
+        ejecutarOCR(file);
+      };
+      reader.readAsDataURL(file);
+    }
   }
 
   btnRemove.addEventListener("click", (e) => {
