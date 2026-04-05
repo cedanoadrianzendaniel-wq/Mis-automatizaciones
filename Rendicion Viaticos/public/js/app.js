@@ -47,7 +47,8 @@ function initTabs() {
 // ═══════════════════════════════════════════════════════════════════════════
 function initScanArea() {
   const scanArea = $("#scanArea");
-  const fileInput = $("#fileInput");
+  const fileCamara = $("#fileCamara");
+  const fileGaleria = $("#fileGaleria");
   const placeholder = $("#scanPlaceholder");
   const preview = $("#scanPreview");
   const previewImg = $("#previewImg");
@@ -57,13 +58,23 @@ function initScanArea() {
 
   let archivoSeleccionado = null;
 
-  // Click para seleccionar archivo
-  scanArea.addEventListener("click", (e) => {
-    if (e.target.closest("#btnRemoveImg")) return;
-    fileInput.click();
+  // Botón "Tomar Foto" — abre cámara directa en celular
+  $("#btnTomarFoto").addEventListener("click", () => {
+    fileCamara.click();
   });
 
-  // Drag & drop
+  // Botón "Subir Imagen" — abre galería/archivos
+  $("#btnSubirArchivo").addEventListener("click", () => {
+    fileGaleria.click();
+  });
+
+  // Click en el área de preview también abre galería
+  scanArea.addEventListener("click", (e) => {
+    if (e.target.closest("#btnRemoveImg")) return;
+    fileGaleria.click();
+  });
+
+  // Drag & drop (para escritorio)
   scanArea.addEventListener("dragover", (e) => {
     e.preventDefault();
     scanArea.classList.add("dragover");
@@ -81,9 +92,16 @@ function initScanArea() {
     }
   });
 
-  fileInput.addEventListener("change", () => {
-    if (fileInput.files.length > 0) {
-      cargarArchivo(fileInput.files[0]);
+  // Listener para ambos inputs de archivo
+  fileCamara.addEventListener("change", () => {
+    if (fileCamara.files.length > 0) {
+      cargarArchivo(fileCamara.files[0]);
+    }
+  });
+
+  fileGaleria.addEventListener("change", () => {
+    if (fileGaleria.files.length > 0) {
+      cargarArchivo(fileGaleria.files[0]);
     }
   });
 
@@ -106,7 +124,8 @@ function initScanArea() {
   btnRemove.addEventListener("click", (e) => {
     e.stopPropagation();
     archivoSeleccionado = null;
-    fileInput.value = "";
+    fileCamara.value = "";
+    fileGaleria.value = "";
     placeholder.hidden = false;
     preview.hidden = true;
     btnEscanear.disabled = true;

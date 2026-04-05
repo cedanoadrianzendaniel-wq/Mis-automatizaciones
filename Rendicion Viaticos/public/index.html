@@ -151,16 +151,35 @@
         </div>
         <p class="scan-hint">Sube una foto o imagen del comprobante de pago y el sistema extraerá automáticamente los datos.</p>
 
-        <div class="scan-area" id="scanArea">
-          <input type="file" id="fileInput" accept="image/*" capture="environment" hidden>
-          <div class="scan-placeholder" id="scanPlaceholder">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
+        <div class="scan-buttons-top">
+          <button class="btn btn-camera" id="btnTomarFoto">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+            Tomar Foto
+          </button>
+          <button class="btn btn-gallery" id="btnSubirArchivo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
               <rect x="3" y="3" width="18" height="18" rx="2"/>
               <circle cx="8.5" cy="8.5" r="1.5"/>
               <polyline points="21 15 16 10 5 21"/>
             </svg>
-            <p>Haz clic o arrastra una imagen aquí</p>
-            <span>JPG, PNG, BMP — Máx. 10MB</span>
+            Subir Imagen
+          </button>
+        </div>
+
+        <input type="file" id="fileCamara" accept="image/*" capture="environment" hidden>
+        <input type="file" id="fileGaleria" accept="image/*" hidden>
+
+        <div class="scan-area" id="scanArea">
+          <div class="scan-placeholder" id="scanPlaceholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+            <p>Toma una foto o sube una imagen del comprobante</p>
+            <span>La cámara se abrirá automáticamente en el celular</span>
           </div>
           <div class="scan-preview" id="scanPreview" hidden>
             <img id="previewImg" alt="Vista previa del comprobante">
