@@ -683,6 +683,8 @@ function guardarDatos() {
     area: $("#area").value, periodo: $("#periodo").value,
     centroCostos: $("#centroCostos").value, nroContrato: $("#nroContrato").value,
     viaticoAsignado: $("#viaticoAsignado").value,
+    dniEmpleado: $("#dniEmpleado").value,
+    dniAprobador: $("#dniAprobador").value,
     firmaEmpleadoNombre: $("#firmaEmpleadoNombre").value,
     firmaEmpleadoCargo: $("#firmaEmpleadoCargo").value,
     firmaAprobadorNombre: $("#firmaAprobadorNombre").value,
@@ -705,6 +707,8 @@ function cargarDatosGuardados() {
       if (d.viaticoAsignado) $("#viaticoAsignado").value = d.viaticoAsignado;
       if (d.firmaEmpleadoNombre) $("#firmaEmpleadoNombre").value = d.firmaEmpleadoNombre;
       if (d.firmaEmpleadoCargo) $("#firmaEmpleadoCargo").value = d.firmaEmpleadoCargo;
+      if (d.dniEmpleado) $("#dniEmpleado").value = d.dniEmpleado;
+      if (d.dniAprobador) $("#dniAprobador").value = d.dniAprobador;
       if (d.firmaAprobadorNombre) $("#firmaAprobadorNombre").value = d.firmaAprobadorNombre;
       if (d.firmaAprobadorCargo) $("#firmaAprobadorCargo").value = d.firmaAprobadorCargo;
       if (d.comprobantes) state.comprobantes = d.comprobantes;
@@ -714,7 +718,7 @@ function cargarDatosGuardados() {
     } catch {}
   }
 
-  ["empleado","cargo","area","periodo","centroCostos","nroContrato"].forEach(id => $(`#${id}`).addEventListener("input", guardarDatos));
+  ["empleado","cargo","area","periodo","centroCostos","nroContrato","dniEmpleado","dniAprobador"].forEach(id => $(`#${id}`).addEventListener("input", guardarDatos));
   $("#viaticoAsignado").addEventListener("input", () => { guardarDatos(); actualizarTotales(); });
 }
 
@@ -731,6 +735,29 @@ function initFirmas() {
   // Guardar nombres/cargos
   ["firmaEmpleadoNombre","firmaEmpleadoCargo","firmaAprobadorNombre","firmaAprobadorCargo"].forEach(id => {
     $(`#${id}`).addEventListener("input", guardarDatos);
+  });
+
+  // DNI lookup para empleado
+  setupDniLookup("dniEmpleado", "btnBuscarFirmaEmpleado", "dniEmpleadoStatus",
+    "firmaEmpleado", "firmaEmpleadoPlaceholder", "firmaEmpleadoNombre", "firmaEmpleadoCargo");
+
+  // DNI lookup para aprobador
+  setupDniLookup("dniAprobador", "btnBuscarFirmaAprobador", "dniAprobadorStatus",
+    "firmaAprobador", "firmaAprobadorPlaceholder", "firmaAprobadorNombre", "firmaAprobadorCargo");
+
+  // Guardar firma con DNI
+  $("#btnGuardarFirmaDniEmpleado").addEventListener("click", () => {
+    guardarFirmaConDni("dniEmpleado", "firmaEmpleado", "firmaEmpleadoNombre", "firmaEmpleadoCargo", "dniEmpleadoStatus");
+  });
+  $("#btnGuardarFirmaDniAprobador").addEventListener("click", () => {
+    guardarFirmaConDni("dniAprobador", "firmaAprobador", "firmaAprobadorNombre", "firmaAprobadorCargo", "dniAprobadorStatus");
+  });
+
+  // Permitir solo numeros en DNI
+  ["dniEmpleado", "dniAprobador"].forEach(id => {
+    $(`#${id}`).addEventListener("input", function() {
+      this.value = this.value.replace(/\D/g, "");
+    });
   });
 }
 
@@ -835,6 +862,103 @@ function setupSignaturePad(canvasId, placeholderId, clearBtnId) {
     localStorage.removeItem(`firma_${canvasId}`);
     guardarDatos();
   });
+}
+
+// ─── DNI-FIRMA LOOKUP ──────────────────────────────────────────────────────
+function setupDniLookup(dniId, btnId, statusId, canvasId, placeholderId, nombreId, cargoId) {
+  const btn = document.getElementById(btnId);
+  const dniInput = document.getElementById(dniId);
+
+  btn.addEventListener("click", () => buscarFirmaPorDni(dniId, statusId, canvasId, placeholderId, nombreId, cargoId));
+
+  // Buscar al presionar Enter en el campo DNI
+  dniInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      buscarFirmaPorDni(dniId, statusId, canvasId, placeholderId, nombreId, cargoId);
+    }
+  });
+}
+
+function buscarFirmaPorDni(dniId, statusId, canvasId, placeholderId, nombreId, cargoId) {
+  const dni = document.getElementById(dniId).value.trim();
+  const status = document.getElementById(statusId);
+
+  if (!dni || dni.length < 8) {
+    mostrarDniStatus(status, "Ingrese un DNI v\u00e1lido de 8 d\u00edgitos", "error");
+    return;
+  }
+
+  const savedData = localStorage.getItem(`firma_dni_${dni}`);
+  if (!savedData) {
+    mostrarDniStatus(status, "No se encontr\u00f3 firma registrada para este DNI", "error");
+    return;
+  }
+
+  try {
+    const data = JSON.parse(savedData);
+    const canvas = document.getElementById(canvasId);
+    const placeholder = document.getElementById(placeholderId);
+    const ctx = canvas.getContext("2d");
+    const rect = canvas.getBoundingClientRect();
+
+    // Cargar firma en el canvas
+    if (data.firma) {
+      const img = new Image();
+      img.onload = () => {
+        const dpr = window.devicePixelRatio || 1;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, rect.width, rect.height);
+        placeholder.classList.add("hidden");
+        // Guardar en localStorage del canvas para que funcione con el export
+        localStorage.setItem(`firma_${canvasId}`, data.firma);
+        guardarDatos();
+      };
+      img.src = data.firma;
+    }
+
+    // Cargar nombre y cargo
+    if (data.nombre) document.getElementById(nombreId).value = data.nombre;
+    if (data.cargo) document.getElementById(cargoId).value = data.cargo;
+
+    mostrarDniStatus(status, `Firma cargada: ${data.nombre || ""}`, "success");
+    guardarDatos();
+  } catch {
+    mostrarDniStatus(status, "Error al cargar la firma", "error");
+  }
+}
+
+function guardarFirmaConDni(dniId, canvasId, nombreId, cargoId, statusId) {
+  const dni = document.getElementById(dniId).value.trim();
+  const status = document.getElementById(statusId);
+
+  if (!dni || dni.length < 8) {
+    mostrarDniStatus(status, "Ingrese un DNI v\u00e1lido de 8 d\u00edgitos", "error");
+    return;
+  }
+
+  const firmaData = localStorage.getItem(`firma_${canvasId}`);
+  if (!firmaData) {
+    mostrarDniStatus(status, "Primero dibuje una firma en el recuadro", "error");
+    return;
+  }
+
+  const nombre = document.getElementById(nombreId).value.trim();
+  const cargo = document.getElementById(cargoId).value.trim();
+
+  localStorage.setItem(`firma_dni_${dni}`, JSON.stringify({
+    firma: firmaData,
+    nombre: nombre,
+    cargo: cargo,
+    fechaRegistro: new Date().toISOString()
+  }));
+
+  mostrarDniStatus(status, `Firma guardada para DNI ${dni}. Se cargar\u00e1 autom\u00e1ticamente en futuras rendiciones.`, "success");
+}
+
+function mostrarDniStatus(el, msg, type) {
+  el.textContent = msg;
+  el.className = `dni-status ${type}`;
 }
 
 function getFirmaData(canvasId) {

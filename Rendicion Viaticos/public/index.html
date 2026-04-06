@@ -454,32 +454,48 @@
           <!-- Firma del empleado -->
           <div class="signature-box">
             <label class="signature-label">Firma del Empleado (Rindente)</label>
+            <div class="dni-lookup-row">
+              <input type="text" id="dniEmpleado" class="signature-dni" placeholder="DNI del empleado" maxlength="8" inputmode="numeric">
+              <button class="btn btn--brand btn--sm" id="btnBuscarFirmaEmpleado">Buscar firma</button>
+            </div>
+            <div class="dni-status hidden" id="dniEmpleadoStatus"></div>
             <div class="signature-canvas-wrap">
               <canvas id="firmaEmpleado" class="signature-canvas" width="400" height="160"></canvas>
               <div class="signature-placeholder" id="firmaEmpleadoPlaceholder">
-                Firme aqu&iacute;
+                Firme aqu&iacute; o ingrese su DNI
               </div>
             </div>
             <div class="signature-actions">
               <input type="text" id="firmaEmpleadoNombre" class="signature-name" placeholder="Nombre completo">
               <input type="text" id="firmaEmpleadoCargo" class="signature-cargo" placeholder="Cargo">
-              <button class="btn btn--ghost btn--sm" id="btnLimpiarFirmaEmpleado">Limpiar firma</button>
+              <div class="signature-btn-row">
+                <button class="btn btn--ghost btn--sm" id="btnLimpiarFirmaEmpleado">Limpiar firma</button>
+                <button class="btn btn--success btn--sm" id="btnGuardarFirmaDniEmpleado">Guardar firma con DNI</button>
+              </div>
             </div>
           </div>
 
           <!-- Firma del aprobador -->
           <div class="signature-box">
             <label class="signature-label">Firma del Aprobador</label>
+            <div class="dni-lookup-row">
+              <input type="text" id="dniAprobador" class="signature-dni" placeholder="DNI del aprobador" maxlength="8" inputmode="numeric">
+              <button class="btn btn--brand btn--sm" id="btnBuscarFirmaAprobador">Buscar firma</button>
+            </div>
+            <div class="dni-status hidden" id="dniAprobadorStatus"></div>
             <div class="signature-canvas-wrap">
               <canvas id="firmaAprobador" class="signature-canvas" width="400" height="160"></canvas>
               <div class="signature-placeholder" id="firmaAprobadorPlaceholder">
-                Firme aqu&iacute;
+                Firme aqu&iacute; o ingrese su DNI
               </div>
             </div>
             <div class="signature-actions">
               <input type="text" id="firmaAprobadorNombre" class="signature-name" placeholder="Nombre del aprobador">
               <input type="text" id="firmaAprobadorCargo" class="signature-cargo" placeholder="Cargo del aprobador">
-              <button class="btn btn--ghost btn--sm" id="btnLimpiarFirmaAprobador">Limpiar firma</button>
+              <div class="signature-btn-row">
+                <button class="btn btn--ghost btn--sm" id="btnLimpiarFirmaAprobador">Limpiar firma</button>
+                <button class="btn btn--success btn--sm" id="btnGuardarFirmaDniAprobador">Guardar firma con DNI</button>
+              </div>
             </div>
           </div>
         </div>
