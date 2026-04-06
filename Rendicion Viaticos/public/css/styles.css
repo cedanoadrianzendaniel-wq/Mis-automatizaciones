@@ -199,6 +199,11 @@ body {
   width: 100%;
 }
 
+.input-total {
+  font-weight: 700 !important;
+  color: var(--brand-600) !important;
+}
+
 .form-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));

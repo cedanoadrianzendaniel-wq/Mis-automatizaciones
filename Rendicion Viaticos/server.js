@@ -106,34 +106,44 @@ app.post("/api/generar-excel", async (req, res) => {
     const wsComp = workbook.addWorksheet("Comprobantes de Pago");
     agregarEncabezado(wsComp, empleado, periodo, "RENDICIÓN DE COMPROBANTES DE PAGO");
 
-    wsComp.getRow(5).values = ["N°", "Fecha", "Tipo Comprobante", "N° Comprobante", "Concepto / Detalle", "Monto (S/)"];
+    wsComp.getRow(5).values = ["N°", "Fecha", "Tipo Comprobante", "N° Comprobante", "Concepto / Detalle", "Subtotal (S/)", "IGV (S/)", "Total (S/)"];
     const headerRow1 = wsComp.getRow(5);
-    estiloEncabezadoTabla(headerRow1, 6);
+    estiloEncabezadoTabla(headerRow1, 8);
 
     wsComp.getColumn(1).width = 6;
     wsComp.getColumn(2).width = 14;
     wsComp.getColumn(3).width = 22;
     wsComp.getColumn(4).width = 20;
-    wsComp.getColumn(5).width = 40;
-    wsComp.getColumn(6).width = 16;
+    wsComp.getColumn(5).width = 35;
+    wsComp.getColumn(6).width = 14;
+    wsComp.getColumn(7).width = 14;
+    wsComp.getColumn(8).width = 14;
 
     let totalComp = 0;
+    let totalSubtotal = 0;
+    let totalIGV = 0;
     if (comprobantes && comprobantes.length > 0) {
       comprobantes.forEach((c, i) => {
-        const row = wsComp.addRow([i + 1, c.fecha, c.tipo, c.numero, c.concepto, parseFloat(c.monto) || 0]);
-        row.getCell(6).numFmt = '#,##0.00';
+        const sub = parseFloat(c.subtotal) || 0;
+        const igv = parseFloat(c.igv) || 0;
+        const tot = parseFloat(c.monto) || 0;
+        const row = wsComp.addRow([i + 1, c.fecha, c.tipo, c.numero, c.concepto, sub, igv, tot]);
+        [6, 7, 8].forEach(col => { row.getCell(col).numFmt = '#,##0.00'; });
         row.eachCell(cell => {
           cell.border = borderThin();
           cell.alignment = { vertical: "middle" };
         });
-        totalComp += parseFloat(c.monto) || 0;
+        totalSubtotal += sub;
+        totalIGV += igv;
+        totalComp += tot;
       });
     }
 
-    const totalRow1 = wsComp.addRow(["", "", "", "", "TOTAL", totalComp]);
-    totalRow1.getCell(5).font = { bold: true, size: 11 };
-    totalRow1.getCell(6).font = { bold: true, size: 11 };
-    totalRow1.getCell(6).numFmt = '#,##0.00';
+    const totalRow1 = wsComp.addRow(["", "", "", "", "TOTALES", totalSubtotal, totalIGV, totalComp]);
+    [5, 6, 7, 8].forEach(col => {
+      totalRow1.getCell(col).font = { bold: true, size: 11 };
+      if (col >= 6) totalRow1.getCell(col).numFmt = '#,##0.00';
+    });
     totalRow1.eachCell(cell => { cell.border = borderThin(); });
 
     // ── Hoja 2: Declaraciones Juradas ─────────────────────────────────────

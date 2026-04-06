@@ -217,10 +217,15 @@ function initScanArea() {
 
       $("#compNumero").value = `${serie}-${numero}`;
 
-      if (total) $("#compMonto").value = parseFloat(total.replace(/,/g, "")) || "";
+      const totalNum = parseFloat(total.replace(/,/g, "")) || 0;
+      const igvNum = parseFloat(igv.replace(/,/g, "")) || 0;
+      const subtotalNum = totalNum - igvNum;
+
+      if (totalNum) $("#compMonto").value = totalNum.toFixed(2);
+      if (igvNum) $("#compIGV").value = igvNum.toFixed(2);
+      if (subtotalNum > 0) $("#compSubtotal").value = subtotalNum.toFixed(2);
 
       if (fecha) {
-        // fecha puede venir como dd/mm/yyyy o yyyy-mm-dd
         let fmtDate = "";
         if (fecha.includes("/")) {
           const [d, m, y] = fecha.split("/");
@@ -234,7 +239,7 @@ function initScanArea() {
       $("#compConcepto").value = `Proveedor RUC: ${ruc}`;
 
       // Resaltar campos
-      ["compFecha","compTipo","compNumero","compConcepto","compMonto"].forEach(id => {
+      ["compFecha","compTipo","compNumero","compConcepto","compSubtotal","compIGV","compMonto"].forEach(id => {
         const el = $(`#${id}`);
         if (el.value) {
           el.style.borderColor = "var(--green-500)";
@@ -292,10 +297,19 @@ function initScanArea() {
       }
       if (datos.numero) $("#compNumero").value = datos.numero;
       if (datos.concepto) $("#compConcepto").value = datos.concepto;
-      if (datos.monto) $("#compMonto").value = datos.monto;
+      if (datos.monto) {
+        $("#compMonto").value = datos.monto;
+        // Calcular subtotal e IGV desde el total
+        const totalOCR = parseFloat(datos.monto) || 0;
+        if (totalOCR > 0) {
+          const subOCR = totalOCR / 1.18;
+          $("#compSubtotal").value = subOCR.toFixed(2);
+          $("#compIGV").value = (totalOCR - subOCR).toFixed(2);
+        }
+      }
 
       // Resaltar campos completados
-      ["compFecha","compTipo","compNumero","compConcepto","compMonto"].forEach(id => {
+      ["compFecha","compTipo","compNumero","compConcepto","compSubtotal","compIGV","compMonto"].forEach(id => {
         const el = $(`#${id}`);
         if (el.value) {
           el.style.borderColor = "var(--green-500)";
@@ -318,15 +332,42 @@ function initScanArea() {
 // FORMULARIOS
 // ═══════════════════════════════════════════════════════════════════════════
 function initFormularios() {
+  // Auto-cálculo IGV: al ingresar subtotal, calcular IGV y total
+  $("#compSubtotal").addEventListener("input", () => {
+    const sub = parseFloat($("#compSubtotal").value) || 0;
+    if (sub > 0) {
+      const igvCalc = sub * 0.18;
+      $("#compIGV").value = igvCalc.toFixed(2);
+      $("#compMonto").value = (sub + igvCalc).toFixed(2);
+    }
+  });
+
+  // Al ingresar total, calcular subtotal e IGV hacia atrás
+  $("#compMonto").addEventListener("input", () => {
+    const total = parseFloat($("#compMonto").value) || 0;
+    if (total > 0 && !$("#compSubtotal").value) {
+      const sub = total / 1.18;
+      $("#compSubtotal").value = sub.toFixed(2);
+      $("#compIGV").value = (total - sub).toFixed(2);
+    }
+  });
+
   // Comprobantes
   $("#btnAgregarComp").addEventListener("click", () => {
     const fecha = $("#compFecha").value, tipo = $("#compTipo").value;
     const numero = $("#compNumero").value.trim(), concepto = $("#compConcepto").value.trim();
+    const subtotal = $("#compSubtotal").value;
+    const igv = $("#compIGV").value;
     const monto = $("#compMonto").value;
 
-    if (!fecha || !tipo || !numero || !monto) { toast("Complete: Fecha, Tipo, N\u00b0 y Monto", "warning"); return; }
+    if (!fecha || !tipo || !numero || !monto) { toast("Complete: Fecha, Tipo, N\u00b0 y Total", "warning"); return; }
 
-    state.comprobantes.push({ fecha: fmtFecha(fecha), tipo, numero, concepto, monto: parseFloat(monto).toFixed(2) });
+    state.comprobantes.push({
+      fecha: fmtFecha(fecha), tipo, numero, concepto,
+      subtotal: parseFloat(subtotal || 0).toFixed(2),
+      igv: parseFloat(igv || 0).toFixed(2),
+      monto: parseFloat(monto).toFixed(2)
+    });
     limpiarFormComp(); renderComprobantes(); actualizarTotales(); guardarDatos();
     toast("Comprobante agregado", "success");
   });
@@ -362,7 +403,7 @@ function initFormularios() {
 }
 
 function limpiarFormComp() {
-  ["compFecha","compTipo","compNumero","compConcepto","compMonto"].forEach(id => $(`#${id}`).value = "");
+  ["compFecha","compTipo","compNumero","compConcepto","compSubtotal","compIGV","compMonto"].forEach(id => $(`#${id}`).value = "");
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -372,9 +413,11 @@ const trashSVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 
 function renderComprobantes() {
   const tb = $("#tbodyComp");
-  if (!state.comprobantes.length) { tb.innerHTML = '<tr class="row-empty"><td colspan="7">Sin comprobantes registrados</td></tr>'; return; }
+  if (!state.comprobantes.length) { tb.innerHTML = '<tr class="row-empty"><td colspan="9">Sin comprobantes registrados</td></tr>'; return; }
   tb.innerHTML = state.comprobantes.map((c, i) => `<tr>
     <td>${i+1}</td><td>${c.fecha}</td><td>${c.tipo}</td><td><strong>${c.numero}</strong></td><td>${c.concepto}</td>
+    <td class="text-right">S/ ${parseFloat(c.subtotal||0).toFixed(2)}</td>
+    <td class="text-right">S/ ${parseFloat(c.igv||0).toFixed(2)}</td>
     <td class="text-right"><strong>S/ ${parseFloat(c.monto).toFixed(2)}</strong></td>
     <td><button class="btn-icon" onclick="eliminarComprobante(${i})" title="Eliminar">${trashSVG}</button></td></tr>`).join("");
 }

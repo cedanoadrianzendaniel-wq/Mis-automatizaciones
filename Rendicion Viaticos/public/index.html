@@ -260,15 +260,25 @@
               <label for="compNumero">N&deg; Comprobante</label>
               <input type="text" id="compNumero" placeholder="E001-00012345">
             </div>
-            <div class="field">
-              <label for="compMonto">Monto (S/)</label>
-              <input type="number" id="compMonto" step="0.01" min="0" placeholder="0.00">
-            </div>
           </div>
           <div class="form-row">
             <div class="field field--full">
               <label for="compConcepto">Concepto / Detalle</label>
               <input type="text" id="compConcepto" placeholder="Descripci&oacute;n del gasto">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label for="compSubtotal">Subtotal / Valor Venta (S/)</label>
+              <input type="number" id="compSubtotal" step="0.01" min="0" placeholder="0.00">
+            </div>
+            <div class="field">
+              <label for="compIGV">IGV 18% (S/)</label>
+              <input type="number" id="compIGV" step="0.01" min="0" placeholder="0.00">
+            </div>
+            <div class="field">
+              <label for="compMonto">Total (S/)</label>
+              <input type="number" id="compMonto" step="0.01" min="0" placeholder="0.00" class="input-total">
             </div>
           </div>
           <div class="panel-footer">
@@ -291,11 +301,11 @@
             <table>
               <thead>
                 <tr>
-                  <th>#</th><th>Fecha</th><th>Tipo</th><th>N&deg; Comprobante</th><th>Concepto</th><th class="text-right">Monto</th><th></th>
+                  <th>#</th><th>Fecha</th><th>Tipo</th><th>N&deg; Comprobante</th><th>Concepto</th><th class="text-right">Subtotal</th><th class="text-right">IGV</th><th class="text-right">Total</th><th></th>
                 </tr>
               </thead>
               <tbody id="tbodyComp">
-                <tr class="row-empty"><td colspan="7">Sin comprobantes registrados</td></tr>
+                <tr class="row-empty"><td colspan="9">Sin comprobantes registrados</td></tr>
               </tbody>
             </table>
           </div>
