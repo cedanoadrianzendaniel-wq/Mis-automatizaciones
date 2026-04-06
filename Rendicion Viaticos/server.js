@@ -95,7 +95,7 @@ app.post("/api/escanear", upload.single("comprobante"), async (req, res) => {
 // ═══════════════════════════════════════════════════════════════════════════
 app.post("/api/generar-excel", async (req, res) => {
   try {
-    const { empleado, periodo, viaticoAsignado, comprobantes, declaraciones, movilidad } = req.body;
+    const { empleado, periodo, viaticoAsignado, centroCostos, nroContrato, comprobantes, declaraciones, movilidad } = req.body;
     const montoAsignado = parseFloat(viaticoAsignado) || 0;
 
     const workbook = new ExcelJS.Workbook();
@@ -104,7 +104,7 @@ app.post("/api/generar-excel", async (req, res) => {
 
     // ── Hoja 1: Comprobantes ──────────────────────────────────────────────
     const wsComp = workbook.addWorksheet("Comprobantes de Pago");
-    agregarEncabezado(wsComp, empleado, periodo, "RENDICIÓN DE COMPROBANTES DE PAGO");
+    agregarEncabezado(wsComp, empleado, periodo, "RENDICIÓN DE COMPROBANTES DE PAGO", { centroCostos, nroContrato });
 
     wsComp.getRow(5).values = ["N°", "Fecha", "Tipo Comprobante", "N° Comprobante", "Concepto / Detalle", "Subtotal (S/)", "IGV (S/)", "Total (S/)"];
     const headerRow1 = wsComp.getRow(5);
@@ -148,7 +148,7 @@ app.post("/api/generar-excel", async (req, res) => {
 
     // ── Hoja 2: Declaraciones Juradas ─────────────────────────────────────
     const wsDJ = workbook.addWorksheet("Declaraciones Juradas");
-    agregarEncabezado(wsDJ, empleado, periodo, "DECLARACIONES JURADAS — GASTOS SIN COMPROBANTE");
+    agregarEncabezado(wsDJ, empleado, periodo, "DECLARACIONES JURADAS — GASTOS SIN COMPROBANTE", { centroCostos, nroContrato });
 
     wsDJ.getRow(5).values = ["N°", "Fecha", "Concepto / Detalle", "Motivo (sin comprobante)", "Monto (S/)"];
     const headerRow2 = wsDJ.getRow(5);
@@ -181,7 +181,7 @@ app.post("/api/generar-excel", async (req, res) => {
 
     // ── Hoja 3: Movilización ──────────────────────────────────────────────
     const wsMov = workbook.addWorksheet("Movilización");
-    agregarEncabezado(wsMov, empleado, periodo, "DECLARACIÓN DE MOVILIZACIÓN");
+    agregarEncabezado(wsMov, empleado, periodo, "DECLARACIÓN DE MOVILIZACIÓN", { centroCostos, nroContrato });
 
     wsMov.getRow(5).values = ["N°", "Fecha", "Origen", "Destino", "Medio de Transporte", "Motivo", "Monto (S/)"];
     const headerRow3 = wsMov.getRow(5);
@@ -216,7 +216,7 @@ app.post("/api/generar-excel", async (req, res) => {
 
     // ── Hoja 4: Resumen ───────────────────────────────────────────────────
     const wsRes = workbook.addWorksheet("Resumen");
-    agregarEncabezado(wsRes, empleado, periodo, "RESUMEN DE RENDICIÓN DE VIÁTICOS");
+    agregarEncabezado(wsRes, empleado, periodo, "RESUMEN DE RENDICIÓN DE VIÁTICOS", { centroCostos, nroContrato });
 
     wsRes.getRow(5).values = ["Categoría", "Total (S/)"];
     const headerRow4 = wsRes.getRow(5);
@@ -284,7 +284,7 @@ app.post("/api/generar-excel", async (req, res) => {
 // ═══════════════════════════════════════════════════════════════════════════
 app.post("/api/generar-pdf", async (req, res) => {
   try {
-    const { empleado, periodo, firmaEmpleado, firmaAprobador, comprobantes, declaraciones, movilidad } = req.body;
+    const { empleado, periodo, centroCostos, nroContrato, firmaEmpleado, firmaAprobador, comprobantes, declaraciones, movilidad } = req.body;
 
     const doc = new PDFDocument({ size: "A4", margin: 40, bufferPages: true });
     const chunks = [];
@@ -309,6 +309,8 @@ app.post("/api/generar-pdf", async (req, res) => {
     doc.moveDown(2);
     doc.fontSize(11).text(`Empleado: ${empleado || "—"}`, 40);
     doc.text(`Período: ${periodo || "—"}`);
+    if (centroCostos) doc.text(`Centro de Costos: ${centroCostos}`);
+    if (nroContrato) doc.text(`N° Contrato: ${nroContrato}`);
     doc.text(`Fecha de emisión: ${new Date().toLocaleDateString("es-PE")}`);
     doc.moveDown(1);
 
@@ -511,6 +513,42 @@ app.post("/api/generar-pdf", async (req, res) => {
     doc.text(firmaAprobador?.nombre || "", firmaX2, yFirma + 103, { width: firmaW, align: "center" });
     doc.text(firmaAprobador?.cargo || "", firmaX2, yFirma + 115, { width: firmaW, align: "center" });
 
+    // ── Anexo: Evidencias de Comprobantes ────────────────────────────────
+    const compConEvidencia = (comprobantes || []).filter(c => c.evidencia);
+    if (compConEvidencia.length > 0) {
+      doc.addPage();
+      doc.rect(0, 0, 595.28, 50).fill(azul);
+      doc.fontSize(16).fillColor("#ffffff").text("ANEXO: EVIDENCIAS DE COMPROBANTES", 40, 15, { align: "center" });
+
+      let yEvid = 70;
+      compConEvidencia.forEach((c, i) => {
+        if (yEvid > 550) { doc.addPage(); yEvid = 50; }
+
+        // Título del comprobante
+        doc.fontSize(10).fillColor(azul).text(`${i + 1}. ${c.tipo} — ${c.numero} — ${c.fecha} — S/ ${parseFloat(c.monto).toFixed(2)}`, 40, yEvid);
+        yEvid += 18;
+
+        // Imagen
+        try {
+          const imgData = c.evidencia.replace(/^data:image\/\w+;base64,/, "");
+          const imgBuffer = Buffer.from(imgData, "base64");
+          const imgWidth = 400;
+          const imgHeight = 280;
+          doc.image(imgBuffer, 95, yEvid, { fit: [imgWidth, imgHeight], align: "center" });
+          yEvid += imgHeight + 20;
+        } catch (e) {
+          doc.fontSize(8).fillColor("#999").text("(Imagen no disponible)", 40, yEvid);
+          yEvid += 20;
+        }
+
+        // Separador
+        if (i < compConEvidencia.length - 1) {
+          doc.moveTo(40, yEvid).lineTo(555, yEvid).stroke("#e5e7eb");
+          yEvid += 15;
+        }
+      });
+    }
+
     doc.end();
 
   } catch (err) {
@@ -651,8 +689,8 @@ function extraerDatosComprobante(texto) {
   return datos;
 }
 
-function agregarEncabezado(ws, empleado, periodo, titulo) {
-  ws.mergeCells("A1:F1");
+function agregarEncabezado(ws, empleado, periodo, titulo, extra) {
+  ws.mergeCells("A1:H1");
   const titleCell = ws.getCell("A1");
   titleCell.value = titulo;
   titleCell.font = { bold: true, size: 14, color: { argb: "FF1A56DB" } };
@@ -661,8 +699,12 @@ function agregarEncabezado(ws, empleado, periodo, titulo) {
 
   ws.getCell("A2").value = `Empleado: ${empleado || "—"}`;
   ws.getCell("A2").font = { size: 10 };
+  ws.getCell("D2").value = `Centro de Costos: ${extra?.centroCostos || "—"}`;
+  ws.getCell("D2").font = { size: 10 };
   ws.getCell("A3").value = `Período: ${periodo || "—"}`;
   ws.getCell("A3").font = { size: 10 };
+  ws.getCell("D3").value = `N° Contrato: ${extra?.nroContrato || "—"}`;
+  ws.getCell("D3").font = { size: 10 };
   ws.getCell("A4").value = `Fecha de emisión: ${new Date().toLocaleDateString("es-PE")}`;
   ws.getCell("A4").font = { size: 10, color: { argb: "FF666666" } };
 }

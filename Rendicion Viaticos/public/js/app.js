@@ -363,14 +363,27 @@ function initFormularios() {
 
     if (!fecha || !tipo || !numero || !monto) { toast("Complete: Fecha, Tipo, N\u00b0 y Total", "warning"); return; }
 
+    // Capturar imagen de evidencia si existe
+    const previewImg = $("#previewImg");
+    const evidencia = (previewImg && previewImg.src && !previewImg.src.endsWith("#")) ? previewImg.src : null;
+
     state.comprobantes.push({
       fecha: fmtFecha(fecha), tipo, numero, concepto,
       subtotal: parseFloat(subtotal || 0).toFixed(2),
       igv: parseFloat(igv || 0).toFixed(2),
-      monto: parseFloat(monto).toFixed(2)
+      monto: parseFloat(monto).toFixed(2),
+      evidencia
     });
+
+    // Limpiar preview de imagen también
+    const placeholder = $("#scanPlaceholder");
+    const preview = $("#scanPreview");
+    if (placeholder) placeholder.hidden = false;
+    if (preview) preview.hidden = true;
+    if (previewImg) previewImg.src = "";
+
     limpiarFormComp(); renderComprobantes(); actualizarTotales(); guardarDatos();
-    toast("Comprobante agregado", "success");
+    toast("Comprobante agregado con evidencia", "success");
   });
 
   $("#btnLimpiarComp").addEventListener("click", limpiarFormComp);
@@ -415,8 +428,10 @@ const trashSVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 function renderComprobantes() {
   const tb = $("#tbodyComp");
   if (!state.comprobantes.length) { tb.innerHTML = '<tr class="row-empty"><td colspan="9">Sin comprobantes registrados</td></tr>'; return; }
+  const evidIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="color:var(--green-600);vertical-align:middle" title="Con evidencia"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
+  const noEvid = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="color:var(--n400);vertical-align:middle" title="Sin evidencia"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>';
   tb.innerHTML = state.comprobantes.map((c, i) => `<tr>
-    <td>${i+1}</td><td>${c.fecha}</td><td>${c.tipo}</td><td><strong>${c.numero}</strong></td><td>${c.concepto}</td>
+    <td>${i+1} ${c.evidencia ? evidIcon : noEvid}</td><td>${c.fecha}</td><td>${c.tipo}</td><td><strong>${c.numero}</strong></td><td>${c.concepto}</td>
     <td class="text-right">S/ ${parseFloat(c.subtotal||0).toFixed(2)}</td>
     <td class="text-right">S/ ${parseFloat(c.igv||0).toFixed(2)}</td>
     <td class="text-right"><strong>S/ ${parseFloat(c.monto).toFixed(2)}</strong></td>
@@ -571,8 +586,10 @@ async function exportar(formato) {
   if (!state.comprobantes.length && !state.declaraciones.length && !state.movilidad.length) { toast("No hay datos", "warning"); return; }
 
   const viaticoAsignado = $("#viaticoAsignado").value || "0";
+  const centroCostos = $("#centroCostos").value.trim();
+  const nroContrato = $("#nroContrato").value.trim();
   const body = {
-    empleado, periodo, viaticoAsignado,
+    empleado, periodo, viaticoAsignado, centroCostos, nroContrato,
     firmaEmpleado: { nombre: $("#firmaEmpleadoNombre").value, cargo: $("#firmaEmpleadoCargo").value, imagen: getFirmaData("firmaEmpleado") },
     firmaAprobador: { nombre: $("#firmaAprobadorNombre").value, cargo: $("#firmaAprobadorCargo").value, imagen: getFirmaData("firmaAprobador") },
     comprobantes: state.comprobantes, declaraciones: state.declaraciones, movilidad: state.movilidad
@@ -664,6 +681,7 @@ function guardarDatos() {
   localStorage.setItem("rendicion_viaticos", JSON.stringify({
     empleado: $("#empleado").value, cargo: $("#cargo").value,
     area: $("#area").value, periodo: $("#periodo").value,
+    centroCostos: $("#centroCostos").value, nroContrato: $("#nroContrato").value,
     viaticoAsignado: $("#viaticoAsignado").value,
     firmaEmpleadoNombre: $("#firmaEmpleadoNombre").value,
     firmaEmpleadoCargo: $("#firmaEmpleadoCargo").value,
@@ -682,6 +700,8 @@ function cargarDatosGuardados() {
       if (d.cargo) $("#cargo").value = d.cargo;
       if (d.area) $("#area").value = d.area;
       if (d.periodo) $("#periodo").value = d.periodo;
+      if (d.centroCostos) $("#centroCostos").value = d.centroCostos;
+      if (d.nroContrato) $("#nroContrato").value = d.nroContrato;
       if (d.viaticoAsignado) $("#viaticoAsignado").value = d.viaticoAsignado;
       if (d.firmaEmpleadoNombre) $("#firmaEmpleadoNombre").value = d.firmaEmpleadoNombre;
       if (d.firmaEmpleadoCargo) $("#firmaEmpleadoCargo").value = d.firmaEmpleadoCargo;
@@ -694,7 +714,7 @@ function cargarDatosGuardados() {
     } catch {}
   }
 
-  ["empleado","cargo","area","periodo"].forEach(id => $(`#${id}`).addEventListener("input", guardarDatos));
+  ["empleado","cargo","area","periodo","centroCostos","nroContrato"].forEach(id => $(`#${id}`).addEventListener("input", guardarDatos));
   $("#viaticoAsignado").addEventListener("input", () => { guardarDatos(); actualizarTotales(); });
 }
 
