@@ -284,7 +284,7 @@ app.post("/api/generar-excel", async (req, res) => {
 // ═══════════════════════════════════════════════════════════════════════════
 app.post("/api/generar-pdf", async (req, res) => {
   try {
-    const { empleado, periodo, comprobantes, declaraciones, movilidad } = req.body;
+    const { empleado, periodo, firmaEmpleado, firmaAprobador, comprobantes, declaraciones, movilidad } = req.body;
 
     const doc = new PDFDocument({ size: "A4", margin: 40, bufferPages: true });
     const chunks = [];
@@ -472,12 +472,44 @@ app.post("/api/generar-pdf", async (req, res) => {
     doc.text("TOTAL GENERAL:", 50, yRes + 72, { width: 300 });
     doc.text(`S/ ${totalGeneral.toFixed(2)}`, 400, yRes + 72, { width: 150, align: "right" });
 
-    // ── Firma ────────────────────────────────────────────────────────────
+    // ── Firmas ───────────────────────────────────────────────────────────
     doc.fillColor("#333333");
-    doc.y = yRes + 130;
-    doc.moveTo(150, doc.y).lineTo(440, doc.y).stroke("#999");
-    doc.fontSize(10).text("Firma del Empleado", 150, doc.y + 5, { width: 290, align: "center" });
-    doc.fontSize(9).text(empleado || "", 150, doc.y + 18, { width: 290, align: "center" });
+    let yFirma = yRes + 120;
+    if (yFirma > 620) { doc.addPage(); yFirma = 60; }
+
+    const firmaW = 220;
+    const firmaX1 = 60;
+    const firmaX2 = 315;
+
+    // Firma del empleado
+    if (firmaEmpleado && firmaEmpleado.imagen) {
+      try {
+        const imgData = firmaEmpleado.imagen.replace(/^data:image\/\w+;base64,/, "");
+        const imgBuffer = Buffer.from(imgData, "base64");
+        doc.image(imgBuffer, firmaX1, yFirma, { width: firmaW, height: 80, fit: [firmaW, 80] });
+      } catch (e) { /* ignore */ }
+    }
+    doc.moveTo(firmaX1, yFirma + 85).lineTo(firmaX1 + firmaW, yFirma + 85).stroke("#999");
+    doc.fontSize(9).fillColor("#333");
+    doc.text("Firma del Empleado (Rindente)", firmaX1, yFirma + 90, { width: firmaW, align: "center" });
+    doc.fontSize(9).fillColor("#555");
+    doc.text(firmaEmpleado?.nombre || empleado || "", firmaX1, yFirma + 103, { width: firmaW, align: "center" });
+    doc.text(firmaEmpleado?.cargo || "", firmaX1, yFirma + 115, { width: firmaW, align: "center" });
+
+    // Firma del aprobador
+    if (firmaAprobador && firmaAprobador.imagen) {
+      try {
+        const imgData = firmaAprobador.imagen.replace(/^data:image\/\w+;base64,/, "");
+        const imgBuffer = Buffer.from(imgData, "base64");
+        doc.image(imgBuffer, firmaX2, yFirma, { width: firmaW, height: 80, fit: [firmaW, 80] });
+      } catch (e) { /* ignore */ }
+    }
+    doc.moveTo(firmaX2, yFirma + 85).lineTo(firmaX2 + firmaW, yFirma + 85).stroke("#999");
+    doc.fontSize(9).fillColor("#333");
+    doc.text("Firma del Aprobador", firmaX2, yFirma + 90, { width: firmaW, align: "center" });
+    doc.fontSize(9).fillColor("#555");
+    doc.text(firmaAprobador?.nombre || "", firmaX2, yFirma + 103, { width: firmaW, align: "center" });
+    doc.text(firmaAprobador?.cargo || "", firmaX2, yFirma + 115, { width: firmaW, align: "center" });
 
     doc.end();
 

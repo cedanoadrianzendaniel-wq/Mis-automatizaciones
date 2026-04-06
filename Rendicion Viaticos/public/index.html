@@ -437,6 +437,46 @@
         </div>
       </div>
 
+      <!-- ═══ FIRMAS DIGITALES ═══ -->
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Firmas Digitales</h3>
+        </div>
+        <div class="signatures-grid">
+          <!-- Firma del empleado -->
+          <div class="signature-box">
+            <label class="signature-label">Firma del Empleado (Rindente)</label>
+            <div class="signature-canvas-wrap">
+              <canvas id="firmaEmpleado" class="signature-canvas" width="400" height="160"></canvas>
+              <div class="signature-placeholder" id="firmaEmpleadoPlaceholder">
+                Firme aqu&iacute;
+              </div>
+            </div>
+            <div class="signature-actions">
+              <input type="text" id="firmaEmpleadoNombre" class="signature-name" placeholder="Nombre completo">
+              <input type="text" id="firmaEmpleadoCargo" class="signature-cargo" placeholder="Cargo">
+              <button class="btn btn--ghost btn--sm" id="btnLimpiarFirmaEmpleado">Limpiar firma</button>
+            </div>
+          </div>
+
+          <!-- Firma del aprobador -->
+          <div class="signature-box">
+            <label class="signature-label">Firma del Aprobador</label>
+            <div class="signature-canvas-wrap">
+              <canvas id="firmaAprobador" class="signature-canvas" width="400" height="160"></canvas>
+              <div class="signature-placeholder" id="firmaAprobadorPlaceholder">
+                Firme aqu&iacute;
+              </div>
+            </div>
+            <div class="signature-actions">
+              <input type="text" id="firmaAprobadorNombre" class="signature-name" placeholder="Nombre del aprobador">
+              <input type="text" id="firmaAprobadorCargo" class="signature-cargo" placeholder="Cargo del aprobador">
+              <button class="btn btn--ghost btn--sm" id="btnLimpiarFirmaAprobador">Limpiar firma</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ═══ RESUMEN BOTTOM BAR (mobile) ═══ -->
       <div class="summary-bar">
         <div class="summary-items">

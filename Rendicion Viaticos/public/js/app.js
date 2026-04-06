@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initFormularios();
   initExportacion();
   initModal();
+  initFirmas();
   initMobileToggle();
   cargarDatosGuardados();
 });
@@ -570,7 +571,12 @@ async function exportar(formato) {
   if (!state.comprobantes.length && !state.declaraciones.length && !state.movilidad.length) { toast("No hay datos", "warning"); return; }
 
   const viaticoAsignado = $("#viaticoAsignado").value || "0";
-  const body = { empleado, periodo, viaticoAsignado, comprobantes: state.comprobantes, declaraciones: state.declaraciones, movilidad: state.movilidad };
+  const body = {
+    empleado, periodo, viaticoAsignado,
+    firmaEmpleado: { nombre: $("#firmaEmpleadoNombre").value, cargo: $("#firmaEmpleadoCargo").value, imagen: getFirmaData("firmaEmpleado") },
+    firmaAprobador: { nombre: $("#firmaAprobadorNombre").value, cargo: $("#firmaAprobadorCargo").value, imagen: getFirmaData("firmaAprobador") },
+    comprobantes: state.comprobantes, declaraciones: state.declaraciones, movilidad: state.movilidad
+  };
   const endpoint = formato === "excel" ? "/api/generar-excel" : "/api/generar-pdf";
   const ext = formato === "excel" ? "xlsx" : "pdf";
 
@@ -659,6 +665,10 @@ function guardarDatos() {
     empleado: $("#empleado").value, cargo: $("#cargo").value,
     area: $("#area").value, periodo: $("#periodo").value,
     viaticoAsignado: $("#viaticoAsignado").value,
+    firmaEmpleadoNombre: $("#firmaEmpleadoNombre").value,
+    firmaEmpleadoCargo: $("#firmaEmpleadoCargo").value,
+    firmaAprobadorNombre: $("#firmaAprobadorNombre").value,
+    firmaAprobadorCargo: $("#firmaAprobadorCargo").value,
     comprobantes: state.comprobantes, declaraciones: state.declaraciones, movilidad: state.movilidad
   }));
 }
@@ -673,6 +683,10 @@ function cargarDatosGuardados() {
       if (d.area) $("#area").value = d.area;
       if (d.periodo) $("#periodo").value = d.periodo;
       if (d.viaticoAsignado) $("#viaticoAsignado").value = d.viaticoAsignado;
+      if (d.firmaEmpleadoNombre) $("#firmaEmpleadoNombre").value = d.firmaEmpleadoNombre;
+      if (d.firmaEmpleadoCargo) $("#firmaEmpleadoCargo").value = d.firmaEmpleadoCargo;
+      if (d.firmaAprobadorNombre) $("#firmaAprobadorNombre").value = d.firmaAprobadorNombre;
+      if (d.firmaAprobadorCargo) $("#firmaAprobadorCargo").value = d.firmaAprobadorCargo;
       if (d.comprobantes) state.comprobantes = d.comprobantes;
       if (d.declaraciones) state.declaraciones = d.declaraciones;
       if (d.movilidad) state.movilidad = d.movilidad;
@@ -687,6 +701,128 @@ function cargarDatosGuardados() {
 // ═══════════════════════════════════════════════════════════════════════════
 // UTILS
 // ═══════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════
+// FIRMAS DIGITALES
+// ═══════════════════════════════════════════════════════════════════════════
+function initFirmas() {
+  setupSignaturePad("firmaEmpleado", "firmaEmpleadoPlaceholder", "btnLimpiarFirmaEmpleado");
+  setupSignaturePad("firmaAprobador", "firmaAprobadorPlaceholder", "btnLimpiarFirmaAprobador");
+
+  // Guardar nombres/cargos
+  ["firmaEmpleadoNombre","firmaEmpleadoCargo","firmaAprobadorNombre","firmaAprobadorCargo"].forEach(id => {
+    $(`#${id}`).addEventListener("input", guardarDatos);
+  });
+}
+
+function setupSignaturePad(canvasId, placeholderId, clearBtnId) {
+  const canvas = document.getElementById(canvasId);
+  const placeholder = document.getElementById(placeholderId);
+  const clearBtn = document.getElementById(clearBtnId);
+  const ctx = canvas.getContext("2d");
+
+  let drawing = false;
+  let hasFirma = false;
+
+  // Ajustar resolución del canvas
+  function resizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = "#1e293b";
+
+    // Restaurar firma guardada si existe
+    const saved = localStorage.getItem(`firma_${canvasId}`);
+    if (saved) {
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, rect.width, rect.height);
+        hasFirma = true;
+        placeholder.classList.add("hidden");
+      };
+      img.src = saved;
+    }
+  }
+
+  resizeCanvas();
+  window.addEventListener("resize", () => {
+    const savedData = hasFirma ? canvas.toDataURL() : null;
+    resizeCanvas();
+    if (savedData && hasFirma) {
+      const img = new Image();
+      const rect = canvas.getBoundingClientRect();
+      img.onload = () => ctx.drawImage(img, 0, 0, rect.width, rect.height);
+      img.src = savedData;
+    }
+  });
+
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches ? e.touches[0] : e;
+    return { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+  }
+
+  function startDraw(e) {
+    e.preventDefault();
+    drawing = true;
+    hasFirma = true;
+    placeholder.classList.add("hidden");
+    const pos = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+  }
+
+  function draw(e) {
+    if (!drawing) return;
+    e.preventDefault();
+    const pos = getPos(e);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+  }
+
+  function endDraw(e) {
+    if (!drawing) return;
+    e.preventDefault();
+    drawing = false;
+    ctx.closePath();
+    // Guardar firma
+    localStorage.setItem(`firma_${canvasId}`, canvas.toDataURL());
+    guardarDatos();
+  }
+
+  // Mouse events
+  canvas.addEventListener("mousedown", startDraw);
+  canvas.addEventListener("mousemove", draw);
+  canvas.addEventListener("mouseup", endDraw);
+  canvas.addEventListener("mouseleave", endDraw);
+
+  // Touch events
+  canvas.addEventListener("touchstart", startDraw, { passive: false });
+  canvas.addEventListener("touchmove", draw, { passive: false });
+  canvas.addEventListener("touchend", endDraw, { passive: false });
+
+  // Limpiar
+  clearBtn.addEventListener("click", () => {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    ctx.clearRect(0, 0, rect.width * dpr, rect.height * dpr);
+    hasFirma = false;
+    placeholder.classList.remove("hidden");
+    localStorage.removeItem(`firma_${canvasId}`);
+    guardarDatos();
+  });
+}
+
+function getFirmaData(canvasId) {
+  const canvas = document.getElementById(canvasId);
+  const saved = localStorage.getItem(`firma_${canvasId}`);
+  return saved || null;
+}
+
 function fmtFecha(d) { if (!d) return ""; const [y,m,dd] = d.split("-"); return `${dd}/${m}/${y}`; }
 
 function initMobileToggle() {
