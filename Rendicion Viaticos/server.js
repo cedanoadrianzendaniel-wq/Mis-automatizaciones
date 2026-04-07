@@ -91,6 +91,82 @@ app.post("/api/escanear", upload.single("comprobante"), async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
+// ENDPOINT: Consultar RUC en SUNAT
+// ═══════════════════════════════════════════════════════════════════════════
+// Usa apis.net.pe (free tier requiere token en variable APIS_NET_PE_TOKEN).
+// Si no hay token, intenta el endpoint público sin auth como fallback.
+async function fetchJson(url, options = {}) {
+  const res = await fetch(url, options);
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); } catch { data = { raw: text }; }
+  return { ok: res.ok, status: res.status, data };
+}
+
+app.get("/api/consultar-ruc/:ruc", async (req, res) => {
+  const ruc = (req.params.ruc || "").replace(/\D/g, "");
+  if (ruc.length !== 11) {
+    return res.status(400).json({ ok: false, error: "RUC debe tener 11 dígitos" });
+  }
+
+  const token = process.env.APIS_NET_PE_TOKEN || "";
+  try {
+    const url = `https://api.apis.net.pe/v2/sunat/ruc?numero=${ruc}`;
+    const headers = { "Accept": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const { ok, data } = await fetchJson(url, { headers });
+    if (!ok || !data || !data.razonSocial) {
+      return res.status(404).json({ ok: false, error: "RUC no encontrado o servicio no disponible. Configure APIS_NET_PE_TOKEN en .env para mejor disponibilidad." });
+    }
+
+    return res.json({
+      ok: true,
+      ruc: data.numeroDocumento || ruc,
+      razonSocial: data.razonSocial || data.nombre || "",
+      estado: data.estado || "",
+      condicion: data.condicion || "",
+      direccion: data.direccion || ""
+    });
+  } catch (err) {
+    console.error("Error consultando RUC:", err.message);
+    return res.status(500).json({ ok: false, error: "Error consultando SUNAT" });
+  }
+});
+
+app.get("/api/consultar-dni/:dni", async (req, res) => {
+  const dni = (req.params.dni || "").replace(/\D/g, "");
+  if (dni.length !== 8) {
+    return res.status(400).json({ ok: false, error: "DNI debe tener 8 dígitos" });
+  }
+
+  const token = process.env.APIS_NET_PE_TOKEN || "";
+  try {
+    const url = `https://api.apis.net.pe/v2/reniec/dni?numero=${dni}`;
+    const headers = { "Accept": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const { ok, data } = await fetchJson(url, { headers });
+    if (!ok || !data || (!data.nombres && !data.nombreCompleto)) {
+      return res.status(404).json({ ok: false, error: "DNI no encontrado. Configure APIS_NET_PE_TOKEN en .env." });
+    }
+
+    const nombre = data.nombreCompleto ||
+      `${data.nombres || ""} ${data.apellidoPaterno || ""} ${data.apellidoMaterno || ""}`.trim();
+
+    return res.json({
+      ok: true,
+      dni: data.numeroDocumento || dni,
+      nombre,
+      razonSocial: nombre
+    });
+  } catch (err) {
+    console.error("Error consultando DNI:", err.message);
+    return res.status(500).json({ ok: false, error: "Error consultando RENIEC" });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
 // ENDPOINT: Generar Excel
 // ═══════════════════════════════════════════════════════════════════════════
 app.post("/api/generar-excel", async (req, res) => {
@@ -264,6 +340,193 @@ app.post("/api/generar-excel", async (req, res) => {
         row.getCell(2).fill = { type: "pattern", pattern: "solid", fgColor: { argb: bgColor } };
       }
     });
+
+    // ── Hoja 5: Asiento Contable PCGE ─────────────────────────────────────
+    // Formato genérico Plan Contable General Empresarial (Perú) compatible
+    // con la mayoría de ERPs contables (SAP B1, Defontana, Concar, Siigo,
+    // Starsoft, Contasis, etc.) con adaptación mínima.
+    const wsAsiento = workbook.addWorksheet("Asiento Contable PCGE");
+    agregarEncabezado(wsAsiento, empleado, periodo, "ASIENTO CONTABLE — RENDICIÓN DE VIÁTICOS (PCGE)", { centroCostos, nroContrato });
+
+    wsAsiento.getRow(5).values = [
+      "Fecha", "Cuenta", "Glosa", "Debe (S/)", "Haber (S/)",
+      "C. Costo", "Tipo Doc", "Serie-N°", "RUC Proveedor", "Razón Social"
+    ];
+    estiloEncabezadoTabla(wsAsiento.getRow(5), 10);
+
+    wsAsiento.getColumn(1).width = 12;
+    wsAsiento.getColumn(2).width = 10;
+    wsAsiento.getColumn(3).width = 38;
+    wsAsiento.getColumn(4).width = 13;
+    wsAsiento.getColumn(5).width = 13;
+    wsAsiento.getColumn(6).width = 12;
+    wsAsiento.getColumn(7).width = 10;
+    wsAsiento.getColumn(8).width = 18;
+    wsAsiento.getColumn(9).width = 14;
+    wsAsiento.getColumn(10).width = 30;
+
+    // Mapeo SUNAT de tipos de documento
+    const tipoDocSunat = {
+      "Factura Electrónica": "01",
+      "Boleta de Venta": "03",
+      "Recibo por Honorarios": "02",
+      "Nota de Crédito": "07",
+      "Ticket": "12",
+      "Otro": "00"
+    };
+
+    let totalDebe = 0;
+    let totalHaber = 0;
+    const cc = centroCostos || "";
+
+    // Asientos por comprobantes (cargo a gasto + IGV, abono a entregas a rendir)
+    if (comprobantes && comprobantes.length > 0) {
+      comprobantes.forEach(c => {
+        const sub = parseFloat(c.subtotal) || 0;
+        const igv = parseFloat(c.igv) || 0;
+        const tot = parseFloat(c.monto) || 0;
+        const cuenta = c.cuenta || "631";
+        const tipoDoc = tipoDocSunat[c.tipo] || "00";
+        const glosa = `${c.concepto || c.tipo} - ${c.numero}`;
+
+        // Cargo a gasto (subtotal o total si no hay IGV)
+        const montoGasto = sub > 0 ? sub : tot;
+        const filaGasto = wsAsiento.addRow([
+          c.fecha, cuenta, glosa, montoGasto, 0,
+          cc, tipoDoc, c.numero, c.ruc || "", c.razonSocial || ""
+        ]);
+        filaGasto.getCell(4).numFmt = '#,##0.00';
+        filaGasto.getCell(5).numFmt = '#,##0.00';
+        filaGasto.eachCell(cell => { cell.border = borderThin(); cell.alignment = { vertical: "middle" }; });
+        totalDebe += montoGasto;
+
+        // Cargo a IGV crédito fiscal (solo si hay IGV)
+        if (igv > 0) {
+          const filaIgv = wsAsiento.addRow([
+            c.fecha, "40111", `IGV - ${c.numero}`, igv, 0,
+            cc, tipoDoc, c.numero, c.ruc || "", c.razonSocial || ""
+          ]);
+          filaIgv.getCell(4).numFmt = '#,##0.00';
+          filaIgv.getCell(5).numFmt = '#,##0.00';
+          filaIgv.eachCell(cell => { cell.border = borderThin(); cell.alignment = { vertical: "middle" }; });
+          totalDebe += igv;
+        }
+      });
+    }
+
+    // Asientos por declaraciones juradas (sin IGV, sin proveedor)
+    if (declaraciones && declaraciones.length > 0) {
+      declaraciones.forEach(d => {
+        const monto = parseFloat(d.monto) || 0;
+        const fila = wsAsiento.addRow([
+          d.fecha, "6315", `DJ - ${d.concepto || ""}`, monto, 0,
+          cc, "00", "", "", ""
+        ]);
+        fila.getCell(4).numFmt = '#,##0.00';
+        fila.getCell(5).numFmt = '#,##0.00';
+        fila.eachCell(cell => { cell.border = borderThin(); cell.alignment = { vertical: "middle" }; });
+        totalDebe += monto;
+      });
+    }
+
+    // Asientos por movilización
+    if (movilidad && movilidad.length > 0) {
+      movilidad.forEach(m => {
+        const monto = parseFloat(m.monto) || 0;
+        const fila = wsAsiento.addRow([
+          m.fecha, "6311", `Movilidad ${m.origen || ""}-${m.destino || ""}`, monto, 0,
+          cc, "00", "", "", ""
+        ]);
+        fila.getCell(4).numFmt = '#,##0.00';
+        fila.getCell(5).numFmt = '#,##0.00';
+        fila.eachCell(cell => { cell.border = borderThin(); cell.alignment = { vertical: "middle" }; });
+        totalDebe += monto;
+      });
+    }
+
+    // Contrapartida: abono a "Entregas a rendir cuenta" (cuenta 1411)
+    if (totalDebe > 0) {
+      const fechaCierre = new Date().toLocaleDateString("es-PE");
+      const filaAbono = wsAsiento.addRow([
+        fechaCierre, "1411", `Rendición viáticos - ${empleado || ""} - ${periodo || ""}`,
+        0, totalDebe, cc, "", "", "", ""
+      ]);
+      filaAbono.getCell(4).numFmt = '#,##0.00';
+      filaAbono.getCell(5).numFmt = '#,##0.00';
+      filaAbono.eachCell(cell => { cell.border = borderThin(); cell.alignment = { vertical: "middle" }; });
+      totalHaber = totalDebe;
+    }
+
+    // Fila de totales
+    const filaTotales = wsAsiento.addRow(["", "", "TOTALES", totalDebe, totalHaber, "", "", "", "", ""]);
+    filaTotales.getCell(3).font = { bold: true, size: 11 };
+    filaTotales.getCell(4).font = { bold: true, size: 11 };
+    filaTotales.getCell(5).font = { bold: true, size: 11 };
+    filaTotales.getCell(4).numFmt = '#,##0.00';
+    filaTotales.getCell(5).numFmt = '#,##0.00';
+    filaTotales.eachCell(cell => { cell.border = borderThin(); });
+
+    // Nota informativa al pie
+    wsAsiento.addRow([]);
+    const notaRow = wsAsiento.addRow(["Nota: Asiento generado en formato PCGE (Plan Contable General Empresarial - Perú). Adaptable a SAP B1, Defontana, Concar, Siigo, Starsoft, Contasis y otros ERPs."]);
+    notaRow.getCell(1).font = { italic: true, size: 9, color: { argb: "FF64748B" } };
+    wsAsiento.mergeCells(`A${notaRow.number}:J${notaRow.number}`);
+
+    // ── Hoja 6: Registro de Compras (formato PLE SUNAT) ───────────────────
+    const wsPle = workbook.addWorksheet("Registro Compras PLE");
+    agregarEncabezado(wsPle, empleado, periodo, "REGISTRO DE COMPRAS — FORMATO PLE 8.1 (SUNAT)", { centroCostos, nroContrato });
+
+    wsPle.getRow(5).values = [
+      "Período", "CUO", "Fecha Emisión", "Fecha Vcto.",
+      "Tipo CP", "Serie", "Número", "Tipo Doc. Prov.", "N° Doc. Prov.",
+      "Razón Social", "B. Imponible Gravada", "IGV", "Importe Total",
+      "Moneda", "Tipo Cambio"
+    ];
+    estiloEncabezadoTabla(wsPle.getRow(5), 15);
+
+    [10, 8, 12, 12, 8, 8, 14, 10, 14, 30, 14, 12, 14, 8, 10].forEach((w, i) => {
+      wsPle.getColumn(i + 1).width = w;
+    });
+
+    const periodoPle = (periodo || "").replace(/\D/g, "").padEnd(6, "0").slice(0, 6) || "000000";
+    let cuo = 1;
+
+    if (comprobantes && comprobantes.length > 0) {
+      comprobantes.forEach(c => {
+        const sub = parseFloat(c.subtotal) || 0;
+        const igv = parseFloat(c.igv) || 0;
+        const tot = parseFloat(c.monto) || 0;
+        const tipoCp = tipoDocSunat[c.tipo] || "00";
+        const tipoDocProv = (c.ruc || "").length === 11 ? "6" : ((c.ruc || "").length === 8 ? "1" : "0");
+
+        // Separar serie y número (E001-00012345)
+        let serie = "", numero = c.numero || "";
+        if (numero.includes("-")) {
+          const partes = numero.split("-");
+          serie = partes[0];
+          numero = partes.slice(1).join("-");
+        }
+
+        const fila = wsPle.addRow([
+          periodoPle,
+          String(cuo++).padStart(6, "0"),
+          c.fecha, c.fecha,
+          tipoCp, serie, numero,
+          tipoDocProv, c.ruc || "",
+          c.razonSocial || "",
+          sub, igv, tot,
+          "PEN", 1.000
+        ]);
+        [11, 12, 13].forEach(col => fila.getCell(col).numFmt = '#,##0.00');
+        fila.getCell(15).numFmt = '0.000';
+        fila.eachCell(cell => { cell.border = borderThin(); cell.alignment = { vertical: "middle" }; });
+      });
+    }
+
+    wsPle.addRow([]);
+    const notaPle = wsPle.addRow(["Nota: Formato compatible con PLE 8.1 SUNAT. Tipo Doc. Prov.: 6=RUC, 1=DNI, 0=Sin doc. Tipo CP: 01=Factura, 03=Boleta, 02=RxH, 07=NC, 12=Ticket."]);
+    notaPle.getCell(1).font = { italic: true, size: 9, color: { argb: "FF64748B" } };
+    wsPle.mergeCells(`A${notaPle.number}:O${notaPle.number}`);
 
     // Generar buffer y enviar
     const buffer = await workbook.xlsx.writeBuffer();

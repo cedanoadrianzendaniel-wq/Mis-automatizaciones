@@ -2,7 +2,7 @@
 // RENDIGASTOS — app.js v2.0
 // ═══════════════════════════════════════════════════════════════════════════
 
-const state = { comprobantes: [], declaraciones: [], movilidad: [] };
+const state = { comprobantes: [], declaraciones: [], movilidad: [], editingCompIdx: null };
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
 
@@ -360,6 +360,9 @@ function initFormularios() {
     const subtotal = $("#compSubtotal").value;
     const igv = $("#compIGV").value;
     const monto = $("#compMonto").value;
+    const ruc = $("#compRuc").value.trim();
+    const razonSocial = $("#compRazonSocial").value.trim();
+    const cuenta = $("#compCuenta").value;
 
     if (!fecha || !tipo || !numero || !monto) { toast("Complete: Fecha, Tipo, N\u00b0 y Total", "warning"); return; }
 
@@ -367,13 +370,27 @@ function initFormularios() {
     const previewImg = $("#previewImg");
     const evidencia = (previewImg && previewImg.src && !previewImg.src.endsWith("#")) ? previewImg.src : null;
 
-    state.comprobantes.push({
+    const nuevoComp = {
       fecha: fmtFecha(fecha), tipo, numero, concepto,
       subtotal: parseFloat(subtotal || 0).toFixed(2),
       igv: parseFloat(igv || 0).toFixed(2),
       monto: parseFloat(monto).toFixed(2),
+      ruc, razonSocial, cuenta: cuenta || "631",
       evidencia
-    });
+    };
+
+    if (state.editingCompIdx !== null) {
+      // Mantener evidencia previa si no se cargó una nueva
+      if (!evidencia && state.comprobantes[state.editingCompIdx].evidencia) {
+        nuevoComp.evidencia = state.comprobantes[state.editingCompIdx].evidencia;
+      }
+      state.comprobantes[state.editingCompIdx] = nuevoComp;
+      state.editingCompIdx = null;
+      const btnAgregar = $("#btnAgregarComp");
+      btnAgregar.innerHTML = btnAgregar.dataset.originalHtml || btnAgregar.innerHTML;
+    } else {
+      state.comprobantes.push(nuevoComp);
+    }
 
     // Limpiar preview de imagen también
     const placeholder = $("#scanPlaceholder");
@@ -382,11 +399,28 @@ function initFormularios() {
     if (preview) preview.hidden = true;
     if (previewImg) previewImg.src = "";
 
+    const fueEdicion = state.editingCompIdx === null && nuevoComp; // ya se reseteo arriba
     limpiarFormComp(); renderComprobantes(); actualizarTotales(); guardarDatos();
-    toast("Comprobante agregado con evidencia", "success");
+    toast(nuevoComp ? "Comprobante guardado" : "Comprobante agregado", "success");
   });
 
-  $("#btnLimpiarComp").addEventListener("click", limpiarFormComp);
+  $("#btnLimpiarComp").addEventListener("click", () => {
+    state.editingCompIdx = null;
+    limpiarFormComp();
+    const btn = $("#btnAgregarComp");
+    if (btn.dataset.originalHtml) btn.innerHTML = btn.dataset.originalHtml;
+  });
+
+  // Solo numeros en RUC
+  $("#compRuc").addEventListener("input", function() {
+    this.value = this.value.replace(/\D/g, "");
+  });
+
+  // Consultar RUC en SUNAT
+  $("#btnConsultarRuc").addEventListener("click", consultarRucSunat);
+  $("#compRuc").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); consultarRucSunat(); }
+  });
 
   // Declaraciones
   $("#btnAgregarDJ").addEventListener("click", () => {
@@ -416,14 +450,51 @@ function initFormularios() {
   });
 }
 
+async function consultarRucSunat() {
+  const rucInput = $("#compRuc");
+  const razonInput = $("#compRazonSocial");
+  const btn = $("#btnConsultarRuc");
+  const ruc = rucInput.value.trim();
+
+  if (ruc.length !== 11 && ruc.length !== 8) {
+    toast("Ingrese un RUC (11 d\u00edgitos) o DNI (8 d\u00edgitos)", "warning");
+    return;
+  }
+
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "...";
+
+  try {
+    const endpoint = ruc.length === 11 ? `/api/consultar-ruc/${ruc}` : `/api/consultar-dni/${ruc}`;
+    const res = await fetch(endpoint);
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) {
+      toast(data.error || "No se encontr\u00f3 el documento", "warning");
+      return;
+    }
+
+    razonInput.value = data.razonSocial || data.nombre || "";
+    toast("Datos cargados desde SUNAT/RENIEC", "success");
+  } catch (err) {
+    toast("Error consultando SUNAT. Ingrese los datos manualmente.", "warning");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
 function limpiarFormComp() {
-  ["compFecha","compTipo","compNumero","compConcepto","compSubtotal","compIGV","compMonto"].forEach(id => $(`#${id}`).value = "");
+  ["compFecha","compTipo","compNumero","compConcepto","compSubtotal","compIGV","compMonto","compRuc","compRazonSocial"].forEach(id => $(`#${id}`).value = "");
+  const cuentaSel = $("#compCuenta"); if (cuentaSel) cuentaSel.value = "631";
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // RENDER
 // ═══════════════════════════════════════════════════════════════════════════
 const trashSVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+const editSVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
 
 function renderComprobantes() {
   const tb = $("#tbodyComp");
@@ -435,7 +506,10 @@ function renderComprobantes() {
     <td class="text-right">S/ ${parseFloat(c.subtotal||0).toFixed(2)}</td>
     <td class="text-right">S/ ${parseFloat(c.igv||0).toFixed(2)}</td>
     <td class="text-right"><strong>S/ ${parseFloat(c.monto).toFixed(2)}</strong></td>
-    <td><button class="btn-icon" onclick="eliminarComprobante(${i})" title="Eliminar">${trashSVG}</button></td></tr>`).join("");
+    <td>
+      <button class="btn-icon" onclick="editarComprobante(${i})" title="Editar">${editSVG}</button>
+      <button class="btn-icon" onclick="eliminarComprobante(${i})" title="Eliminar">${trashSVG}</button>
+    </td></tr>`).join("");
 }
 
 function renderDeclaraciones() {
@@ -456,7 +530,44 @@ function renderMovilidad() {
     <td><button class="btn-icon" onclick="eliminarMovilidad(${i})" title="Eliminar">${trashSVG}</button></td></tr>`).join("");
 }
 
-function eliminarComprobante(i) { state.comprobantes.splice(i,1); renderComprobantes(); actualizarTotales(); guardarDatos(); }
+function eliminarComprobante(i) {
+  if (state.editingCompIdx === i) {
+    state.editingCompIdx = null;
+    limpiarFormComp();
+    const btn = $("#btnAgregarComp");
+    if (btn.dataset.originalHtml) btn.innerHTML = btn.dataset.originalHtml;
+  } else if (state.editingCompIdx !== null && i < state.editingCompIdx) {
+    state.editingCompIdx--;
+  }
+  state.comprobantes.splice(i,1); renderComprobantes(); actualizarTotales(); guardarDatos();
+}
+
+function editarComprobante(i) {
+  const c = state.comprobantes[i];
+  if (!c) return;
+  // Convertir fecha dd/mm/yyyy a yyyy-mm-dd para input type=date
+  const f = (c.fecha || "").split("/");
+  $("#compFecha").value = f.length === 3 ? `${f[2]}-${f[1]}-${f[0]}` : "";
+  $("#compTipo").value = c.tipo || "";
+  $("#compNumero").value = c.numero || "";
+  $("#compConcepto").value = c.concepto || "";
+  $("#compSubtotal").value = c.subtotal || "";
+  $("#compIGV").value = c.igv || "";
+  $("#compMonto").value = c.monto || "";
+  $("#compRuc").value = c.ruc || "";
+  $("#compRazonSocial").value = c.razonSocial || "";
+  $("#compCuenta").value = c.cuenta || "631";
+  state.editingCompIdx = i;
+
+  const btn = $("#btnAgregarComp");
+  if (!btn.dataset.originalHtml) btn.dataset.originalHtml = btn.innerHTML;
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M5 13l4 4L19 7"/></svg> Actualizar Comprobante';
+
+  // Scroll al formulario
+  const formPanel = $("#compFecha").closest(".panel");
+  if (formPanel) formPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+  toast("Editando comprobante #" + (i + 1), "info");
+}
 function eliminarDeclaracion(i) { state.declaraciones.splice(i,1); renderDeclaraciones(); actualizarTotales(); guardarDatos(); }
 function eliminarMovilidad(i) { state.movilidad.splice(i,1); renderMovilidad(); actualizarTotales(); guardarDatos(); }
 
@@ -683,6 +794,8 @@ function guardarDatos() {
     area: $("#area").value, periodo: $("#periodo").value,
     centroCostos: $("#centroCostos").value, nroContrato: $("#nroContrato").value,
     viaticoAsignado: $("#viaticoAsignado").value,
+    dniEmpleado: $("#dniEmpleado").value,
+    dniAprobador: $("#dniAprobador").value,
     firmaEmpleadoNombre: $("#firmaEmpleadoNombre").value,
     firmaEmpleadoCargo: $("#firmaEmpleadoCargo").value,
     firmaAprobadorNombre: $("#firmaAprobadorNombre").value,
@@ -705,6 +818,8 @@ function cargarDatosGuardados() {
       if (d.viaticoAsignado) $("#viaticoAsignado").value = d.viaticoAsignado;
       if (d.firmaEmpleadoNombre) $("#firmaEmpleadoNombre").value = d.firmaEmpleadoNombre;
       if (d.firmaEmpleadoCargo) $("#firmaEmpleadoCargo").value = d.firmaEmpleadoCargo;
+      if (d.dniEmpleado) $("#dniEmpleado").value = d.dniEmpleado;
+      if (d.dniAprobador) $("#dniAprobador").value = d.dniAprobador;
       if (d.firmaAprobadorNombre) $("#firmaAprobadorNombre").value = d.firmaAprobadorNombre;
       if (d.firmaAprobadorCargo) $("#firmaAprobadorCargo").value = d.firmaAprobadorCargo;
       if (d.comprobantes) state.comprobantes = d.comprobantes;
@@ -714,7 +829,7 @@ function cargarDatosGuardados() {
     } catch {}
   }
 
-  ["empleado","cargo","area","periodo","centroCostos","nroContrato"].forEach(id => $(`#${id}`).addEventListener("input", guardarDatos));
+  ["empleado","cargo","area","periodo","centroCostos","nroContrato","dniEmpleado","dniAprobador"].forEach(id => $(`#${id}`).addEventListener("input", guardarDatos));
   $("#viaticoAsignado").addEventListener("input", () => { guardarDatos(); actualizarTotales(); });
 }
 
@@ -731,6 +846,29 @@ function initFirmas() {
   // Guardar nombres/cargos
   ["firmaEmpleadoNombre","firmaEmpleadoCargo","firmaAprobadorNombre","firmaAprobadorCargo"].forEach(id => {
     $(`#${id}`).addEventListener("input", guardarDatos);
+  });
+
+  // DNI lookup para empleado
+  setupDniLookup("dniEmpleado", "btnBuscarFirmaEmpleado", "dniEmpleadoStatus",
+    "firmaEmpleado", "firmaEmpleadoPlaceholder", "firmaEmpleadoNombre", "firmaEmpleadoCargo");
+
+  // DNI lookup para aprobador
+  setupDniLookup("dniAprobador", "btnBuscarFirmaAprobador", "dniAprobadorStatus",
+    "firmaAprobador", "firmaAprobadorPlaceholder", "firmaAprobadorNombre", "firmaAprobadorCargo");
+
+  // Guardar firma con DNI
+  $("#btnGuardarFirmaDniEmpleado").addEventListener("click", () => {
+    guardarFirmaConDni("dniEmpleado", "firmaEmpleado", "firmaEmpleadoNombre", "firmaEmpleadoCargo", "dniEmpleadoStatus");
+  });
+  $("#btnGuardarFirmaDniAprobador").addEventListener("click", () => {
+    guardarFirmaConDni("dniAprobador", "firmaAprobador", "firmaAprobadorNombre", "firmaAprobadorCargo", "dniAprobadorStatus");
+  });
+
+  // Permitir solo numeros en DNI
+  ["dniEmpleado", "dniAprobador"].forEach(id => {
+    $(`#${id}`).addEventListener("input", function() {
+      this.value = this.value.replace(/\D/g, "");
+    });
   });
 }
 
@@ -835,6 +973,103 @@ function setupSignaturePad(canvasId, placeholderId, clearBtnId) {
     localStorage.removeItem(`firma_${canvasId}`);
     guardarDatos();
   });
+}
+
+// ─── DNI-FIRMA LOOKUP ──────────────────────────────────────────────────────
+function setupDniLookup(dniId, btnId, statusId, canvasId, placeholderId, nombreId, cargoId) {
+  const btn = document.getElementById(btnId);
+  const dniInput = document.getElementById(dniId);
+
+  btn.addEventListener("click", () => buscarFirmaPorDni(dniId, statusId, canvasId, placeholderId, nombreId, cargoId));
+
+  // Buscar al presionar Enter en el campo DNI
+  dniInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      buscarFirmaPorDni(dniId, statusId, canvasId, placeholderId, nombreId, cargoId);
+    }
+  });
+}
+
+function buscarFirmaPorDni(dniId, statusId, canvasId, placeholderId, nombreId, cargoId) {
+  const dni = document.getElementById(dniId).value.trim();
+  const status = document.getElementById(statusId);
+
+  if (!dni || dni.length < 8) {
+    mostrarDniStatus(status, "Ingrese un DNI v\u00e1lido de 8 d\u00edgitos", "error");
+    return;
+  }
+
+  const savedData = localStorage.getItem(`firma_dni_${dni}`);
+  if (!savedData) {
+    mostrarDniStatus(status, "No se encontr\u00f3 firma registrada para este DNI", "error");
+    return;
+  }
+
+  try {
+    const data = JSON.parse(savedData);
+    const canvas = document.getElementById(canvasId);
+    const placeholder = document.getElementById(placeholderId);
+    const ctx = canvas.getContext("2d");
+    const rect = canvas.getBoundingClientRect();
+
+    // Cargar firma en el canvas
+    if (data.firma) {
+      const img = new Image();
+      img.onload = () => {
+        const dpr = window.devicePixelRatio || 1;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, rect.width, rect.height);
+        placeholder.classList.add("hidden");
+        // Guardar en localStorage del canvas para que funcione con el export
+        localStorage.setItem(`firma_${canvasId}`, data.firma);
+        guardarDatos();
+      };
+      img.src = data.firma;
+    }
+
+    // Cargar nombre y cargo
+    if (data.nombre) document.getElementById(nombreId).value = data.nombre;
+    if (data.cargo) document.getElementById(cargoId).value = data.cargo;
+
+    mostrarDniStatus(status, `Firma cargada: ${data.nombre || ""}`, "success");
+    guardarDatos();
+  } catch {
+    mostrarDniStatus(status, "Error al cargar la firma", "error");
+  }
+}
+
+function guardarFirmaConDni(dniId, canvasId, nombreId, cargoId, statusId) {
+  const dni = document.getElementById(dniId).value.trim();
+  const status = document.getElementById(statusId);
+
+  if (!dni || dni.length < 8) {
+    mostrarDniStatus(status, "Ingrese un DNI v\u00e1lido de 8 d\u00edgitos", "error");
+    return;
+  }
+
+  const firmaData = localStorage.getItem(`firma_${canvasId}`);
+  if (!firmaData) {
+    mostrarDniStatus(status, "Primero dibuje una firma en el recuadro", "error");
+    return;
+  }
+
+  const nombre = document.getElementById(nombreId).value.trim();
+  const cargo = document.getElementById(cargoId).value.trim();
+
+  localStorage.setItem(`firma_dni_${dni}`, JSON.stringify({
+    firma: firmaData,
+    nombre: nombre,
+    cargo: cargo,
+    fechaRegistro: new Date().toISOString()
+  }));
+
+  mostrarDniStatus(status, `Firma guardada para DNI ${dni}. Se cargar\u00e1 autom\u00e1ticamente en futuras rendiciones.`, "success");
+}
+
+function mostrarDniStatus(el, msg, type) {
+  el.textContent = msg;
+  el.className = `dni-status ${type}`;
 }
 
 function getFirmaData(canvasId) {

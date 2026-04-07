@@ -666,6 +666,69 @@ tbody tr:last-child td { border-bottom: none; }
 
 .signature-name { font-weight: 600; }
 
+/* Input con botón al lado */
+.input-with-btn {
+  display: flex; gap: var(--s2); align-items: stretch;
+}
+.input-with-btn input { flex: 1; }
+
+/* DNI lookup */
+.dni-lookup-row {
+  display: flex; gap: var(--s2); align-items: center;
+}
+
+.signature-dni {
+  flex: 1;
+  height: 36px;
+  padding: 0 var(--s3);
+  border: 1px solid var(--n300);
+  border-radius: var(--r-md);
+  font-size: var(--text-sm);
+  font-family: var(--font);
+  color: var(--n800);
+  background: var(--n0);
+  letter-spacing: 0.05em;
+}
+
+.signature-dni:focus {
+  outline: none;
+  border-color: var(--brand-500);
+  box-shadow: 0 0 0 3px rgba(99,102,241,.15);
+}
+
+.dni-status {
+  font-size: var(--text-xs);
+  padding: var(--s1) var(--s3);
+  border-radius: var(--r-sm);
+  font-weight: 500;
+}
+
+.dni-status.hidden { display: none; }
+
+.dni-status.success {
+  color: var(--green-700);
+  background: var(--green-50);
+}
+
+.dni-status.error {
+  color: var(--red-600);
+  background: var(--red-50);
+}
+
+.signature-btn-row {
+  display: flex; gap: var(--s2); flex-wrap: wrap;
+}
+
+.btn--success {
+  background: var(--green-600);
+  color: white;
+  border: none;
+}
+
+.btn--success:hover {
+  background: var(--green-700);
+}
+
 @media (max-width: 768px) {
   .signatures-grid { grid-template-columns: 1fr; }
 }
