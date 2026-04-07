@@ -2,7 +2,7 @@
 // RENDIGASTOS — app.js v2.0
 // ═══════════════════════════════════════════════════════════════════════════
 
-const state = { comprobantes: [], declaraciones: [], movilidad: [] };
+const state = { comprobantes: [], declaraciones: [], movilidad: [], editingCompIdx: null };
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
 
@@ -370,14 +370,27 @@ function initFormularios() {
     const previewImg = $("#previewImg");
     const evidencia = (previewImg && previewImg.src && !previewImg.src.endsWith("#")) ? previewImg.src : null;
 
-    state.comprobantes.push({
+    const nuevoComp = {
       fecha: fmtFecha(fecha), tipo, numero, concepto,
       subtotal: parseFloat(subtotal || 0).toFixed(2),
       igv: parseFloat(igv || 0).toFixed(2),
       monto: parseFloat(monto).toFixed(2),
       ruc, razonSocial, cuenta: cuenta || "631",
       evidencia
-    });
+    };
+
+    if (state.editingCompIdx !== null) {
+      // Mantener evidencia previa si no se cargó una nueva
+      if (!evidencia && state.comprobantes[state.editingCompIdx].evidencia) {
+        nuevoComp.evidencia = state.comprobantes[state.editingCompIdx].evidencia;
+      }
+      state.comprobantes[state.editingCompIdx] = nuevoComp;
+      state.editingCompIdx = null;
+      const btnAgregar = $("#btnAgregarComp");
+      btnAgregar.innerHTML = btnAgregar.dataset.originalHtml || btnAgregar.innerHTML;
+    } else {
+      state.comprobantes.push(nuevoComp);
+    }
 
     // Limpiar preview de imagen también
     const placeholder = $("#scanPlaceholder");
@@ -386,11 +399,28 @@ function initFormularios() {
     if (preview) preview.hidden = true;
     if (previewImg) previewImg.src = "";
 
+    const fueEdicion = state.editingCompIdx === null && nuevoComp; // ya se reseteo arriba
     limpiarFormComp(); renderComprobantes(); actualizarTotales(); guardarDatos();
-    toast("Comprobante agregado con evidencia", "success");
+    toast(nuevoComp ? "Comprobante guardado" : "Comprobante agregado", "success");
   });
 
-  $("#btnLimpiarComp").addEventListener("click", limpiarFormComp);
+  $("#btnLimpiarComp").addEventListener("click", () => {
+    state.editingCompIdx = null;
+    limpiarFormComp();
+    const btn = $("#btnAgregarComp");
+    if (btn.dataset.originalHtml) btn.innerHTML = btn.dataset.originalHtml;
+  });
+
+  // Solo numeros en RUC
+  $("#compRuc").addEventListener("input", function() {
+    this.value = this.value.replace(/\D/g, "");
+  });
+
+  // Consultar RUC en SUNAT
+  $("#btnConsultarRuc").addEventListener("click", consultarRucSunat);
+  $("#compRuc").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); consultarRucSunat(); }
+  });
 
   // Declaraciones
   $("#btnAgregarDJ").addEventListener("click", () => {
@@ -420,6 +450,41 @@ function initFormularios() {
   });
 }
 
+async function consultarRucSunat() {
+  const rucInput = $("#compRuc");
+  const razonInput = $("#compRazonSocial");
+  const btn = $("#btnConsultarRuc");
+  const ruc = rucInput.value.trim();
+
+  if (ruc.length !== 11 && ruc.length !== 8) {
+    toast("Ingrese un RUC (11 d\u00edgitos) o DNI (8 d\u00edgitos)", "warning");
+    return;
+  }
+
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "...";
+
+  try {
+    const endpoint = ruc.length === 11 ? `/api/consultar-ruc/${ruc}` : `/api/consultar-dni/${ruc}`;
+    const res = await fetch(endpoint);
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) {
+      toast(data.error || "No se encontr\u00f3 el documento", "warning");
+      return;
+    }
+
+    razonInput.value = data.razonSocial || data.nombre || "";
+    toast("Datos cargados desde SUNAT/RENIEC", "success");
+  } catch (err) {
+    toast("Error consultando SUNAT. Ingrese los datos manualmente.", "warning");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
 function limpiarFormComp() {
   ["compFecha","compTipo","compNumero","compConcepto","compSubtotal","compIGV","compMonto","compRuc","compRazonSocial"].forEach(id => $(`#${id}`).value = "");
   const cuentaSel = $("#compCuenta"); if (cuentaSel) cuentaSel.value = "631";
@@ -429,6 +494,7 @@ function limpiarFormComp() {
 // RENDER
 // ═══════════════════════════════════════════════════════════════════════════
 const trashSVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+const editSVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
 
 function renderComprobantes() {
   const tb = $("#tbodyComp");
@@ -440,7 +506,10 @@ function renderComprobantes() {
     <td class="text-right">S/ ${parseFloat(c.subtotal||0).toFixed(2)}</td>
     <td class="text-right">S/ ${parseFloat(c.igv||0).toFixed(2)}</td>
     <td class="text-right"><strong>S/ ${parseFloat(c.monto).toFixed(2)}</strong></td>
-    <td><button class="btn-icon" onclick="eliminarComprobante(${i})" title="Eliminar">${trashSVG}</button></td></tr>`).join("");
+    <td>
+      <button class="btn-icon" onclick="editarComprobante(${i})" title="Editar">${editSVG}</button>
+      <button class="btn-icon" onclick="eliminarComprobante(${i})" title="Eliminar">${trashSVG}</button>
+    </td></tr>`).join("");
 }
 
 function renderDeclaraciones() {
@@ -461,7 +530,44 @@ function renderMovilidad() {
     <td><button class="btn-icon" onclick="eliminarMovilidad(${i})" title="Eliminar">${trashSVG}</button></td></tr>`).join("");
 }
 
-function eliminarComprobante(i) { state.comprobantes.splice(i,1); renderComprobantes(); actualizarTotales(); guardarDatos(); }
+function eliminarComprobante(i) {
+  if (state.editingCompIdx === i) {
+    state.editingCompIdx = null;
+    limpiarFormComp();
+    const btn = $("#btnAgregarComp");
+    if (btn.dataset.originalHtml) btn.innerHTML = btn.dataset.originalHtml;
+  } else if (state.editingCompIdx !== null && i < state.editingCompIdx) {
+    state.editingCompIdx--;
+  }
+  state.comprobantes.splice(i,1); renderComprobantes(); actualizarTotales(); guardarDatos();
+}
+
+function editarComprobante(i) {
+  const c = state.comprobantes[i];
+  if (!c) return;
+  // Convertir fecha dd/mm/yyyy a yyyy-mm-dd para input type=date
+  const f = (c.fecha || "").split("/");
+  $("#compFecha").value = f.length === 3 ? `${f[2]}-${f[1]}-${f[0]}` : "";
+  $("#compTipo").value = c.tipo || "";
+  $("#compNumero").value = c.numero || "";
+  $("#compConcepto").value = c.concepto || "";
+  $("#compSubtotal").value = c.subtotal || "";
+  $("#compIGV").value = c.igv || "";
+  $("#compMonto").value = c.monto || "";
+  $("#compRuc").value = c.ruc || "";
+  $("#compRazonSocial").value = c.razonSocial || "";
+  $("#compCuenta").value = c.cuenta || "631";
+  state.editingCompIdx = i;
+
+  const btn = $("#btnAgregarComp");
+  if (!btn.dataset.originalHtml) btn.dataset.originalHtml = btn.innerHTML;
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M5 13l4 4L19 7"/></svg> Actualizar Comprobante';
+
+  // Scroll al formulario
+  const formPanel = $("#compFecha").closest(".panel");
+  if (formPanel) formPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+  toast("Editando comprobante #" + (i + 1), "info");
+}
 function eliminarDeclaracion(i) { state.declaraciones.splice(i,1); renderDeclaraciones(); actualizarTotales(); guardarDatos(); }
 function eliminarMovilidad(i) { state.movilidad.splice(i,1); renderMovilidad(); actualizarTotales(); guardarDatos(); }
 

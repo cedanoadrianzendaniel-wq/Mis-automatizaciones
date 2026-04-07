@@ -91,6 +91,82 @@ app.post("/api/escanear", upload.single("comprobante"), async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
+// ENDPOINT: Consultar RUC en SUNAT
+// ═══════════════════════════════════════════════════════════════════════════
+// Usa apis.net.pe (free tier requiere token en variable APIS_NET_PE_TOKEN).
+// Si no hay token, intenta el endpoint público sin auth como fallback.
+async function fetchJson(url, options = {}) {
+  const res = await fetch(url, options);
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); } catch { data = { raw: text }; }
+  return { ok: res.ok, status: res.status, data };
+}
+
+app.get("/api/consultar-ruc/:ruc", async (req, res) => {
+  const ruc = (req.params.ruc || "").replace(/\D/g, "");
+  if (ruc.length !== 11) {
+    return res.status(400).json({ ok: false, error: "RUC debe tener 11 dígitos" });
+  }
+
+  const token = process.env.APIS_NET_PE_TOKEN || "";
+  try {
+    const url = `https://api.apis.net.pe/v2/sunat/ruc?numero=${ruc}`;
+    const headers = { "Accept": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const { ok, data } = await fetchJson(url, { headers });
+    if (!ok || !data || !data.razonSocial) {
+      return res.status(404).json({ ok: false, error: "RUC no encontrado o servicio no disponible. Configure APIS_NET_PE_TOKEN en .env para mejor disponibilidad." });
+    }
+
+    return res.json({
+      ok: true,
+      ruc: data.numeroDocumento || ruc,
+      razonSocial: data.razonSocial || data.nombre || "",
+      estado: data.estado || "",
+      condicion: data.condicion || "",
+      direccion: data.direccion || ""
+    });
+  } catch (err) {
+    console.error("Error consultando RUC:", err.message);
+    return res.status(500).json({ ok: false, error: "Error consultando SUNAT" });
+  }
+});
+
+app.get("/api/consultar-dni/:dni", async (req, res) => {
+  const dni = (req.params.dni || "").replace(/\D/g, "");
+  if (dni.length !== 8) {
+    return res.status(400).json({ ok: false, error: "DNI debe tener 8 dígitos" });
+  }
+
+  const token = process.env.APIS_NET_PE_TOKEN || "";
+  try {
+    const url = `https://api.apis.net.pe/v2/reniec/dni?numero=${dni}`;
+    const headers = { "Accept": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const { ok, data } = await fetchJson(url, { headers });
+    if (!ok || !data || (!data.nombres && !data.nombreCompleto)) {
+      return res.status(404).json({ ok: false, error: "DNI no encontrado. Configure APIS_NET_PE_TOKEN en .env." });
+    }
+
+    const nombre = data.nombreCompleto ||
+      `${data.nombres || ""} ${data.apellidoPaterno || ""} ${data.apellidoMaterno || ""}`.trim();
+
+    return res.json({
+      ok: true,
+      dni: data.numeroDocumento || dni,
+      nombre,
+      razonSocial: nombre
+    });
+  } catch (err) {
+    console.error("Error consultando DNI:", err.message);
+    return res.status(500).json({ ok: false, error: "Error consultando RENIEC" });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
 // ENDPOINT: Generar Excel
 // ═══════════════════════════════════════════════════════════════════════════
 app.post("/api/generar-excel", async (req, res) => {

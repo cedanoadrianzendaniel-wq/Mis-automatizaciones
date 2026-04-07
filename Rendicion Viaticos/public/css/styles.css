@@ -666,6 +666,12 @@ tbody tr:last-child td { border-bottom: none; }
 
 .signature-name { font-weight: 600; }
 
+/* Input con botón al lado */
+.input-with-btn {
+  display: flex; gap: var(--s2); align-items: stretch;
+}
+.input-with-btn input { flex: 1; }
+
 /* DNI lookup */
 .dni-lookup-row {
   display: flex; gap: var(--s2); align-items: center;
