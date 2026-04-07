@@ -173,7 +173,7 @@ async function registrarEnSheet(sheets, datos, urlArchivo, ahora, fecha) {
       }
     });
   }
-  const sem = semanaDelAno(new Date());
+  const sem = semanaDelAno(new Date(fecha + "T00:00:00"));
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
     range: `${SHEET_NAME}!A1`,
@@ -226,7 +226,7 @@ async function registrarEnSheetHSE(sheets, datos, urlArchivo, ahora, fecha) {
       }
     });
   }
-  const sem = semanaDelAno(new Date());
+  const sem = semanaDelAno(new Date(fecha + "T00:00:00"));
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID_HSE,
     range: `${SHEET_NAME}!A1`,
@@ -359,7 +359,7 @@ app.post("/api/reporte-hse", async (req, res) => {
   const datos = req.body;
   try {
     const ahora = fechaLima().replace("T", " ");
-    const hoy   = fechaCorta();
+    const hoy   = datos.fecha || fechaCorta();
     let urlArchivo = "";
 
     const auth   = getGoogleAuth();
@@ -459,7 +459,7 @@ app.post("/api/reporte", async (req, res) => {
   const datos = req.body;
   try {
     const ahora = fechaLima().replace("T", " ");
-    const hoy   = fechaCorta();
+    const hoy   = datos.fecha || fechaCorta();
     let urlArchivo = "";
 
     const auth   = getGoogleAuth();
