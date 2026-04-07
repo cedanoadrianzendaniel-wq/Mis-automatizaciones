@@ -360,6 +360,9 @@ function initFormularios() {
     const subtotal = $("#compSubtotal").value;
     const igv = $("#compIGV").value;
     const monto = $("#compMonto").value;
+    const ruc = $("#compRuc").value.trim();
+    const razonSocial = $("#compRazonSocial").value.trim();
+    const cuenta = $("#compCuenta").value;
 
     if (!fecha || !tipo || !numero || !monto) { toast("Complete: Fecha, Tipo, N\u00b0 y Total", "warning"); return; }
 
@@ -372,6 +375,7 @@ function initFormularios() {
       subtotal: parseFloat(subtotal || 0).toFixed(2),
       igv: parseFloat(igv || 0).toFixed(2),
       monto: parseFloat(monto).toFixed(2),
+      ruc, razonSocial, cuenta: cuenta || "631",
       evidencia
     });
 
@@ -417,7 +421,8 @@ function initFormularios() {
 }
 
 function limpiarFormComp() {
-  ["compFecha","compTipo","compNumero","compConcepto","compSubtotal","compIGV","compMonto"].forEach(id => $(`#${id}`).value = "");
+  ["compFecha","compTipo","compNumero","compConcepto","compSubtotal","compIGV","compMonto","compRuc","compRazonSocial"].forEach(id => $(`#${id}`).value = "");
+  const cuentaSel = $("#compCuenta"); if (cuentaSel) cuentaSel.value = "631";
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

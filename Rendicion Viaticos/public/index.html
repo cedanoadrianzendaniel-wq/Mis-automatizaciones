@@ -277,6 +277,30 @@
           </div>
           <div class="form-row">
             <div class="field">
+              <label for="compRuc">RUC / DNI Proveedor</label>
+              <input type="text" id="compRuc" placeholder="20123456789" maxlength="11" inputmode="numeric">
+            </div>
+            <div class="field">
+              <label for="compRazonSocial">Raz&oacute;n Social Proveedor</label>
+              <input type="text" id="compRazonSocial" placeholder="Nombre o raz&oacute;n social">
+            </div>
+            <div class="field">
+              <label for="compCuenta">Cuenta Contable (PCGE)</label>
+              <select id="compCuenta">
+                <option value="631">631 - Transporte y gastos de viaje</option>
+                <option value="6311">6311 - Transporte de pasajeros</option>
+                <option value="6313">6313 - Alojamiento</option>
+                <option value="6314">6314 - Alimentaci&oacute;n</option>
+                <option value="6315">6315 - Otros gastos de viaje</option>
+                <option value="632">632 - Asesor&iacute;a y consultor&iacute;a</option>
+                <option value="634">634 - Mantenimiento y reparaciones</option>
+                <option value="656">656 - Suministros</option>
+                <option value="639">639 - Otros servicios prestados por terceros</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
               <label for="compSubtotal">Subtotal / Valor Venta (S/)</label>
               <input type="number" id="compSubtotal" step="0.01" min="0" placeholder="0.00">
             </div>
