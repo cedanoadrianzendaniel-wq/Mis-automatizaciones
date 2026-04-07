@@ -492,7 +492,6 @@ function buildDaySheet(wb, dayStr, sector, yearMonth, reportes, logoImageId, fir
     for (const r of reportes) {
       comentarios += `${r.responsable}\n`;
       if (r.descripcion) comentarios += `* ${r.descripcion}\n`;
-      if (r.observaciones) comentarios += `* Obs: ${r.observaciones}\n`;
       comentarios += "\n";
     }
 
