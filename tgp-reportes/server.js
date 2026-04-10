@@ -58,24 +58,67 @@ const FRENTES = {
   ]
 };
 
+// ─── CAPEX — Proyectos con Elemento PEP ─────────────────────────────────────
+const PROYECTOS_CAPEX_PEP = [
+  { proyecto: "Protecciones mecanicas ductos NG/NG",                  elementoPEP: "TGPY/OPE-1501-2-2" },
+  { proyecto: "Mejoras Skids Gas combustible en PS's",                elementoPEP: "TGPY/OPE-1901-2-4" },
+  { proyecto: "Construccion nuevas instalaciones Lurin",              elementoPEP: "TGPY/OPE-1902-2-2" },
+  { proyecto: "Mejora instalaciones Aerodromo Kiteni",                elementoPEP: "TGPY/OPE-2101-1-2" },
+  { proyecto: "Actualizacion Sistema de Automatizacion",              elementoPEP: "TGPY/OPE-2201-2-4" },
+  { proyecto: "Cambio Tableros / Luminarias Areas Clasificadas",      elementoPEP: "TGPY/OPE-2301-2-3" },
+  { proyecto: "Plan Mitigacion Ruido PC Kamani (venteo)",             elementoPEP: "TGPY/OPE-2302-2-4" },
+  { proyecto: "Adecuacion Valvula Sobrepresion NG32 PS1",             elementoPEP: "TGPY/OPE-2304-2-4" },
+  { proyecto: "Upgrade motores Waukesha PS's",                        elementoPEP: "TGPY/OPE-2602-2-3" },
+  { proyecto: "Cerco perimetrico KP12 XV-10000 / XV-50001",           elementoPEP: "TGPY/OPE-2603-1-3" },
+  { proyecto: "Plan multianual reemplazo valvulas NG-NGL",            elementoPEP: "TGPY/OPE-2305-2-4" },
+  { proyecto: "Instalacion Sistema Monitoreo de fuego en PS's",       elementoPEP: "TGPY/OPE-2403-1-4" },
+  { proyecto: "Adecuacion Sistema contra incendios BOK",              elementoPEP: "TGPY/OPE-2406-2-3" },
+  { proyecto: "Instalacion motogenerador GN Camp PS3",                elementoPEP: "TGPY/OPE-2408-2-3" },
+  { proyecto: "Reemplazo de Pisos Campamentos Geotecnia",             elementoPEP: "TGPY/OPE-2409-2-3" },
+  { proyecto: "Medicion calidad gas puntos de entrega",               elementoPEP: "TGPY/OPE-2414-2-3" },
+  { proyecto: "Actualizacion Computador Flujo CG Lurin",              elementoPEP: "TGPY/OPE-2503-2-3" },
+  { proyecto: "Mejoras Sala de Servidores Torre Panama",              elementoPEP: "TGPY/OPE-2509-2-3" },
+  { proyecto: "Cerco perimetrico KP75 XV-10002 / XV-50003",           elementoPEP: "TGPY/OPE-2604-1-3" },
+  { proyecto: "Nuevo cerco valvulas XV-50014 / XV-50018",             elementoPEP: "TGPY/OPE-2608-1-2" },
+  { proyecto: "Supervision Instalacion KP43 (Selva)",                 elementoPEP: "TGPY/OPE-2609-2-2" }
+];
+
+// ─── CAPEX — Proyectos con Cuenta/Orden ─────────────────────────────────────
+const PROYECTOS_CAPEX_CO = [
+  { proyecto: "Reemplazo de PTARD en PS3",                    cuenta: "A111078",  orden: "TGP6-2502" },
+  { proyecto: "Servicio de Supervision HSE - Selva",          cuenta: "6325000",  orden: "TG3CDV1" },
+  { proyecto: "Mantenimiento Mayor Puente Comercial KP151+850", cuenta: "6323004", orden: "TGCI-2503" }
+];
+
 const SUPERVISORES = [
-  { nombre: "CRISTHIAN BAQUERIZO",       sector: "", subcategoria: "" },
-  { nombre: "WALTER JESUS",              sector: "", subcategoria: "" },
-  { nombre: "LIZ GUERRERO",              sector: "", subcategoria: "" },
-  { nombre: "CARLOS DE LA CRUZ",         sector: "", subcategoria: "" },
-  { nombre: "ROY HERRADA",               sector: "", subcategoria: "" },
-  { nombre: "ABEL SANCHEZ QUIHUI",       sector: "", subcategoria: "" },
-  { nombre: "SAMUEL JARA MAYTA",         sector: "", subcategoria: "" },
-  { nombre: "NIKOLAI ARANGOITIA",        sector: "", subcategoria: "" },
-  { nombre: "ROGELIO CHAMPI CHOQUEPATA", sector: "", subcategoria: "" },
-  { nombre: "JHON FUENTES",              sector: "", subcategoria: "" },
-  { nombre: "RUBEN NUÑEZ",               sector: "", subcategoria: "" },
-  { nombre: "JORDAN GALLO",              sector: "", subcategoria: "" },
-  { nombre: "ABRAHAM JIMENEZ",           sector: "", subcategoria: "" },
-  { nombre: "NEISSER MAMANI",            sector: "", subcategoria: "" },
-  { nombre: "PAUL PACSI ALAVE",          sector: "", subcategoria: "" },
-  { nombre: "DANIEL ATAYUPANQUI TARCO",  sector: "", subcategoria: "" },
-  { nombre: "CARLOS PUENTE",             sector: "", subcategoria: "" }
+  // ── Geotecnia ──
+  { nombre: "CRISTHIAN BAQUERIZO",       sector: "", subcategoria: "Geotecnia" },
+  { nombre: "WALTER JESUS",              sector: "", subcategoria: "Geotecnia" },
+  { nombre: "LIZ GUERRERO",              sector: "", subcategoria: "Geotecnia" },
+  { nombre: "CARLOS DE LA CRUZ",         sector: "", subcategoria: "Geotecnia" },
+  { nombre: "ROY HERRADA",               sector: "", subcategoria: "Geotecnia" },
+  { nombre: "ABEL SANCHEZ QUIHUI",       sector: "", subcategoria: "Geotecnia" },
+  { nombre: "SAMUEL JARA MAYTA",         sector: "", subcategoria: "Geotecnia" },
+  { nombre: "NIKOLAI ARANGOITIA",        sector: "", subcategoria: "Geotecnia" },
+  { nombre: "ROGELIO CHAMPI CHOQUEPATA", sector: "", subcategoria: "Geotecnia" },
+  { nombre: "JHON FUENTES",              sector: "", subcategoria: "Geotecnia" },
+  { nombre: "RUBEN NUÑEZ",               sector: "", subcategoria: "Geotecnia" },
+  { nombre: "JORDAN GALLO",              sector: "", subcategoria: "Geotecnia" },
+  { nombre: "ABRAHAM JIMENEZ",           sector: "", subcategoria: "Geotecnia" },
+  { nombre: "NEISSER MAMANI",            sector: "", subcategoria: "Geotecnia" },
+  { nombre: "PAUL PACSI ALAVE",          sector: "", subcategoria: "Geotecnia" },
+  { nombre: "DANIEL ATAYUPANQUI TARCO",  sector: "", subcategoria: "Geotecnia" },
+  { nombre: "CARLOS PUENTE",             sector: "", subcategoria: "Geotecnia" },
+  // ── CAPEX ──
+  { nombre: "FERNANDO DAVILA",           sector: "", subcategoria: "CAPEX" },
+  { nombre: "GREGORY VELASQUEZ",         sector: "", subcategoria: "CAPEX" },
+  { nombre: "JAIME GALVAN",              sector: "", subcategoria: "CAPEX" },
+  { nombre: "SANTIAGO ROJAS",            sector: "", subcategoria: "CAPEX" },
+  { nombre: "RICARDO QUEZADA",           sector: "", subcategoria: "CAPEX" },
+  { nombre: "GUSTAVO CANDIOTTI",         sector: "", subcategoria: "CAPEX" },
+  { nombre: "RONALDO MONTERO",           sector: "", subcategoria: "CAPEX" },
+  { nombre: "EDWIN HERBOZO",             sector: "", subcategoria: "CAPEX" },
+  { nombre: "LUIS JAUREGUI",             sector: "", subcategoria: "CAPEX" }
 ];
 
 // ─── GOOGLE AUTH (OAuth2) ────────────────────────────────────────────────────
@@ -338,11 +381,21 @@ async function enviarEmailHSE(datos, urlArchivo, ahora) {
 // ─── RUTAS — CAMPO ───────────────────────────────────────────────────────────
 app.get("/",          (req, res) => res.sendFile(path.join(__dirname, "public", "formulario.html")));
 app.get("/dashboard", (req, res) => res.sendFile(path.join(__dirname, "public", "dashboard.html")));
-app.get("/api/supervisores",   (req, res) => res.json(SUPERVISORES));
+app.get("/api/supervisores", (req, res) => {
+  const { subcategoria } = req.query;
+  if (subcategoria) {
+    res.json(SUPERVISORES.filter(s => s.subcategoria === subcategoria));
+  } else {
+    res.json(SUPERVISORES);
+  }
+});
 app.get("/api/todos-frentes",  (req, res) => res.json(FRENTES));
 app.get("/api/frentes", (req, res) => {
   const { sector, subcat } = req.query;
   res.json(FRENTES[`${sector}_${subcat}`] || []);
+});
+app.get("/api/proyectos-capex", (req, res) => {
+  res.json({ pep: PROYECTOS_CAPEX_PEP, cuentaOrden: PROYECTOS_CAPEX_CO });
 });
 app.post("/api/verificar-clave", (req, res) => {
   const { clave } = req.body;
@@ -359,7 +412,7 @@ app.post("/api/reporte-hse", async (req, res) => {
   const datos = req.body;
   try {
     const ahora = fechaLima().replace("T", " ");
-    const hoy   = fechaCorta();
+    const hoy   = datos.fecha || fechaCorta();
     let urlArchivo = "";
 
     const auth   = getGoogleAuth();
@@ -459,7 +512,7 @@ app.post("/api/reporte", async (req, res) => {
   const datos = req.body;
   try {
     const ahora = fechaLima().replace("T", " ");
-    const hoy   = fechaCorta();
+    const hoy   = datos.fecha || fechaCorta();
     let urlArchivo = "";
 
     const auth   = getGoogleAuth();
