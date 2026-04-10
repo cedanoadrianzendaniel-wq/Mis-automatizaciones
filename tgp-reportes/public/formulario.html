@@ -50,6 +50,8 @@ textarea{resize:vertical;min-height:72px}
 .link-dash a{color:#2E75B6}
 .ruta-preview{background:#F0F7FF;border:1px solid #BDD7EE;border-radius:8px;padding:10px;font-size:11px;color:#1F3864;margin-top:10px;display:none}
 .ruta-preview b{display:block;margin-bottom:4px;font-size:10px;color:#6B7280;text-transform:uppercase}
+.pep-display{background:#FFF7ED;border:1px solid #FED7AA;border-radius:8px;padding:10px;font-size:13px;color:#9A3412;margin-top:8px;display:none;font-weight:bold}
+.pep-display b{display:block;font-size:10px;color:#6B7280;text-transform:uppercase;font-weight:600;margin-bottom:2px}
 </style>
 </head>
 <body>
@@ -64,16 +66,16 @@ textarea{resize:vertical;min-height:72px}
     <div class="card-title">Tipo de Reporte <span class="req">*</span></div>
     <div class="tipo-grid">
       <button class="tipo-btn" onclick="seleccionarTipo('diario',this)">
-        <span class="icono">📊</span><div><b>Reporte Diario</b></div>
+        <span class="icono">&#128202;</span><span><strong>Reporte Diario</strong></span>
       </button>
       <button class="tipo-btn" onclick="seleccionarTipo('semanal',this)">
-        <span class="icono">📅</span><div><b>Reporte Semanal</b></div>
+        <span class="icono">&#128197;</span><span><strong>Reporte Semanal</strong></span>
       </button>
       <button class="tipo-btn" onclick="seleccionarTipo('final',this)">
-        <span class="icono">📋</span><div><b>Reporte Final</b></div>
+        <span class="icono">&#128203;</span><span><strong>Reporte Final</strong></span>
       </button>
       <button class="tipo-btn" onclick="seleccionarTipo('mensual',this)">
-        <span class="icono">📆</span><div><b>Reporte Mensual</b></div>
+        <span class="icono">&#128198;</span><span><strong>Reporte Mensual</strong></span>
       </button>
     </div>
   </div>
@@ -82,10 +84,19 @@ textarea{resize:vertical;min-height:72px}
     <div class="card-title">Datos Generales</div>
     <label>Fecha <span class="req">*</span></label>
     <input type="date" id="fecha">
+
+    <label>Subcategoria <span class="req">*</span></label>
+    <select id="subcategoria" onchange="cambiarSubcategoria()">
+      <option value="">Seleccionar</option>
+      <option value="Geotecnia">Geotecnia</option>
+      <option value="CAPEX">CAPEX</option>
+    </select>
+
     <label>Responsable <span class="req">*</span></label>
     <select id="responsable" onchange="autocompletarSector()">
-      <option value="">Cargando...</option>
+      <option value="">Seleccionar subcategoria primero</option>
     </select>
+
     <label>Puesto <span class="req">*</span></label>
     <select id="puesto">
       <option value="">Seleccionar puesto</option>
@@ -96,251 +107,375 @@ textarea{resize:vertical;min-height:72px}
       <option>SUPERVISOR CIVIL</option>
       <option>SUPERVISOR SEGURIDAD</option>
     </select>
-    <div class="row2">
-      <div>
-        <label>Sector <span class="req">*</span></label>
-        <select id="sector" onchange="actualizarFrentes()">
-          <option value="">Sector</option>
-          <option>Costa</option>
-          <option>Sierra</option>
-          <option>Selva</option>
-        </select>
-      </div>
-      <div>
-        <label>Subcategoria <span class="req">*</span></label>
-        <select id="subcategoria" onchange="actualizarFrentes()">
-          <option value="">Subcat.</option>
-          <option>Geotecnia</option>
-        </select>
-      </div>
-    </div>
-    <label>Frente de Trabajo <span class="req">*</span></label>
-    <select id="frente" onchange="mostrarRuta(); actualizarCuentaOrden()">
+
+    <label>Sector <span class="req">*</span></label>
+    <select id="sector" onchange="actualizarFrentes()">
+      <option value="">Sector</option>
+      <option value="Costa">Costa</option>
+      <option value="Sierra">Sierra</option>
+      <option value="Selva">Selva</option>
+    </select>
+
+    <label id="lblFrente">Frente de Trabajo <span class="req">*</span></label>
+    <select id="frente" onchange="mostrarRuta()">
       <option value="">Selecciona sector y subcategoria primero</option>
     </select>
-    <p class="frente-hint" id="frenteHint">Elige sector y subcategoria para ver los frentes disponibles</p>
-    <div class="row2">
-      <div>
-        <label>Cuenta</label>
-        <select id="cuenta"><option value="">Seleccionar cuenta</option></select>
-      </div>
-      <div>
-        <label>Orden</label>
-        <select id="orden"><option value="">Seleccionar orden</option></select>
-      </div>
+    <p id="frenteHint" class="frente-hint">Elige sector y subcategoria para ver las opciones</p>
+
+    <!-- Elemento PEP (solo CAPEX-PEP) -->
+    <div class="pep-display" id="pepDisplay">
+      <b>Elemento PEP</b>
+      <span id="pepValue"></span>
     </div>
-    <div class="ruta-preview" id="rutaPreview">
+
+    <!-- Cuenta y Orden (Geotecnia y CAPEX-CO) -->
+    <div id="cuentaOrdenWrap">
+      <label>Cuenta</label>
+      <select id="cuenta">
+        <option value="">Seleccionar cuenta</option>
+      </select>
+      <label>Orden</label>
+      <select id="orden">
+        <option value="">Seleccionar orden</option>
+      </select>
+    </div>
+
+    <div id="rutaPreview" class="ruta-preview">
       <b>El archivo se guardara en:</b>
       <span id="rutaTexto"></span>
     </div>
   </div>
 
-  <div class="card" id="cardMovilidad" style="display:none">
+  <div id="cardMovilidad" class="card" style="display:none;">
     <div class="card-title">Movilidad</div>
-    <div class="row2">
-      <div>
-        <label>Camioneta</label>
-        <select id="camioneta" onchange="mostrarPlacaOtro()">
-          <option value="No">No</option>
-          <option value="BDV-878">BDV-878</option>
-          <option value="BDV-807">BDV-807</option>
-          <option value="BUJ-832">BUJ-832</option>
-          <option value="BUK-783">BUK-783</option>
-          <option value="BUK-723">BUK-723</option>
-          <option value="BVD-793">BVD-793</option>
-          <option value="Otro">Otro</option>
-        </select>
-      </div>
-      <div>
-        <label>Placa</label>
-        <input type="text" id="placa" placeholder="Placa asignada" style="text-transform:uppercase" readonly>
-        <input type="text" id="placaOtro" placeholder="Ingrese placa" style="text-transform:uppercase;display:none;margin-top:4px">
-      </div>
-    </div>
-    <div class="row2" style="margin-top:4px">
-      <div><label>KM Inicial</label><input type="number" id="kmInicial" placeholder="0" min="0" step="1"></div>
-      <div><label>KM Final</label><input type="number" id="kmFinal" placeholder="0" min="0" step="1"></div>
-    </div>
-    <div class="row2" style="margin-top:4px">
-      <div><label>Origen</label><input type="text" id="origen" placeholder="Ej: Lima"></div>
-      <div><label>Destino</label><input type="text" id="destino" placeholder="Ej: KP 45+200"></div>
-    </div>
+    <label>Camioneta</label>
+    <select id="camioneta" onchange="mostrarPlacaOtro()">
+      <option value="No">No</option>
+      <option value="BDV-878">BDV-878</option>
+      <option value="BDV-807">BDV-807</option>
+      <option value="BUJ-832">BUJ-832</option>
+      <option value="BUK-783">BUK-783</option>
+      <option value="BUK-723">BUK-723</option>
+      <option value="BVD-793">BVD-793</option>
+      <option value="Otro">Otro</option>
+    </select>
+    <label>Placa</label>
+    <input type="text" id="placa" placeholder="Placa asignada" readonly style="display:block;">
+    <input type="text" id="placaOtro" placeholder="Ingresa placa" style="display:none;">
+    <label>KM Inicial</label>
+    <input type="number" id="kmInicial">
+    <label>KM Final</label>
+    <input type="number" id="kmFinal">
+    <label>Origen</label>
+    <input type="text" id="origen">
+    <label>Destino</label>
+    <input type="text" id="destino">
   </div>
 
-  <div class="card" id="cardGastos" style="display:none">
+  <div id="cardGastos" class="card" style="display:none;">
     <div class="card-title">Gastos Logisticos</div>
     <div class="row2">
-      <div><label>Alimentacion</label><select id="alimentacion"><option value="No">No</option><option value="Si">Si</option></select></div>
-      <div><label>Hospedaje</label><select id="hospedaje"><option value="No">No</option><option value="Si">Si</option></select></div>
+      <div>
+        <label>Alimentacion</label>
+        <select id="alimentacion"><option value="No">No</option><option value="Si">Si</option></select>
+      </div>
+      <div>
+        <label>Hospedaje</label>
+        <select id="hospedaje"><option value="No">No</option><option value="Si">Si</option></select>
+      </div>
     </div>
   </div>
 
-  <div class="card seccion" id="sec-diario">
-    <div class="card-title">Detalle Reporte Diario</div>
-    <label>Actividad desarrollada <span class="req">*</span></label>
-    <textarea id="actividad" placeholder="Describe las actividades desarrolladas hoy..."></textarea>
-    <label>% de avance acumulado</label>
-    <input type="number" id="avance" placeholder="Ej: 74.20" min="0" max="100" step="0.01" style="width:100%;padding:10px 12px;border:1.5px solid #D1D5DB;border-radius:8px;font-size:15px;font-weight:bold;color:#1F3864;background:#F0F7FF">
-    <p style="font-size:10px;color:#9CA3AF;margin-top:3px">Valor entre 0 y 100. Acepta decimales.</p>
-    <label>Observaciones</label>
-    <textarea id="problemas" placeholder="Observaciones o impedimentos (opcional)"></textarea>
-  </div>
-
-  <div class="card seccion" id="sec-semanal">
-    <div class="card-title">Reporte Semanal</div>
-    <label>% de Avance de Obra</label>
-    <input type="number" id="avanceSemanal" placeholder="Ej: 74.20" min="0" max="100" step="0.01" style="width:100%;padding:10px 12px;border:1.5px solid #D1D5DB;border-radius:8px;font-size:15px;font-weight:bold;color:#1F3864;background:#F0F7FF">
-    <p style="font-size:10px;color:#9CA3AF;margin-top:3px">Valor entre 0 y 100. Acepta decimales.</p>
-    <label>Observaciones</label>
-    <textarea id="obsSemanal" placeholder="Observaciones (opcional)"></textarea>
-  </div>
-
-  <div class="card seccion" id="sec-final">
-    <div class="card-title">Reporte Final</div>
-    <label>% de Avance de Obra</label>
-    <input type="number" id="avanceFinal" placeholder="Ej: 100.00" min="0" max="100" step="0.01" style="width:100%;padding:10px 12px;border:1.5px solid #D1D5DB;border-radius:8px;font-size:15px;font-weight:bold;color:#1F3864;background:#F0F7FF">
-    <p style="font-size:10px;color:#9CA3AF;margin-top:3px">Valor entre 0 y 100. Acepta decimales.</p>
-    <label>Observaciones</label>
-    <textarea id="obsFinal" placeholder="Observaciones (opcional)"></textarea>
-  </div>
-
-  <div class="card seccion" id="sec-mensual">
-    <div class="card-title">Reporte Mensual</div>
-    <label>% de Avance de Obra</label>
-    <input type="number" id="avanceMensual" placeholder="Ej: 74.20" min="0" max="100" step="0.01" style="width:100%;padding:10px 12px;border:1.5px solid #D1D5DB;border-radius:8px;font-size:15px;font-weight:bold;color:#1F3864;background:#F0F7FF">
-    <p style="font-size:10px;color:#9CA3AF;margin-top:3px">Valor entre 0 y 100. Acepta decimales.</p>
-    <label>Observaciones</label>
-    <textarea id="obsMensual" placeholder="Observaciones (opcional)"></textarea>
+  <div class="card">
+    <div id="sec-diario" class="seccion">
+      <div class="card-title">Detalle Reporte Diario</div>
+      <label>Actividad desarrollada <span class="req">*</span></label>
+      <textarea id="actividad" placeholder="Describe la actividad del dia"></textarea>
+      <label>% de avance acumulado</label>
+      <input type="number" id="avance" min="0" max="100" step="0.01" placeholder="Valor entre 0 y 100. Acepta decimales.">
+      <label>Observaciones</label>
+      <textarea id="problemas" placeholder="Problemas o inconvenientes..."></textarea>
+    </div>
+    <div id="sec-semanal" class="seccion">
+      <div class="card-title">Reporte Semanal</div>
+      <label>% de Avance de Obra</label>
+      <input type="number" id="avanceSemanal" min="0" max="100" step="0.01" placeholder="Valor entre 0 y 100. Acepta decimales.">
+      <label>Observaciones</label>
+      <textarea id="obsSemanal" placeholder="Observaciones..."></textarea>
+    </div>
+    <div id="sec-final" class="seccion">
+      <div class="card-title">Reporte Final</div>
+      <label>% de Avance de Obra</label>
+      <input type="number" id="avanceFinal" min="0" max="100" step="0.01" placeholder="Valor entre 0 y 100. Acepta decimales.">
+      <label>Observaciones</label>
+      <textarea id="obsFinal" placeholder="Observaciones..."></textarea>
+    </div>
+    <div id="sec-mensual" class="seccion">
+      <div class="card-title">Reporte Mensual</div>
+      <label>% de Avance de Obra</label>
+      <input type="number" id="avanceMensual" min="0" max="100" step="0.01" placeholder="Valor entre 0 y 100. Acepta decimales.">
+      <label>Observaciones</label>
+      <textarea id="obsMensual" placeholder="Observaciones..."></textarea>
+    </div>
   </div>
 
   <div class="card">
     <div class="card-title">Adjuntar Archivo</div>
-    <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
-      <div class="uico">📁</div>
+    <div class="upload-zone" onclick="document.getElementById('fileInput').click();">
+      <div class="uico">&#128193;</div>
       <p>Toca aqui para seleccionar un archivo</p>
       <small>PDF, JPG, PNG, Excel - max. 50 MB</small>
-      <div class="fname" id="nombreArchivo"></div>
     </div>
-    <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.docx" onchange="mostrarArchivo(this)">
+    <input type="file" id="fileInput" onchange="mostrarArchivo(this)">
+    <div id="nombreArchivo" class="fname"></div>
   </div>
 
-  <button class="btn" id="btnEnviar" onclick="enviar()">Enviar Reporte</button>
-
-  <div class="progress" id="progreso">
-    <div class="pbar"><div class="pfill" id="pfill"></div></div>
-    <p class="ptxt" id="ptxt">Enviando...</p>
+  <button id="btnEnviar" class="btn" onclick="enviar()">Enviar Reporte</button>
+  <div id="progreso" class="progress">
+    <div class="pbar"><div id="pfill" class="pfill"></div></div>
+    <div id="ptxt" class="ptxt">Enviando...</div>
   </div>
-
-  <div class="resultado" id="resultado"></div>
-  <p class="link-dash">Eres el coordinador? <a href="/dashboard">Ir al Dashboard</a></p>
+  <div id="resultado" class="resultado"></div>
+  <div class="link-dash">Eres el coordinador? <a href="/portal">Ir al Portal</a></div>
 </div>
 
 <script>
 var supervisoresCache = [];
+var capexData = { pep: [], cuentaOrden: [] };
 var tipoActual = "";
 
+// ─── FRENTES GEOTECNIA ──────────────────────────────────────────────────
 var FRENTES_LOCAL = {
   "Costa_Geotecnia": ["SOPORTE A INGENIERIA","VIAL","URGENCIA VIAL KP 472+700 AL KP 482+000","KP 714+155 AL KP 730+698","MG KP 519+526 AL KP 540+839"],
   "Sierra_Geotecnia": ["MG KP 170+000 AL KP 179+850","MG KP 179+850 AL KP 194+000","MG KP 194+000 AL KP 209+360","APOYO A INGENIERIA"],
   "Selva_Geotecnia": ["M.G. KP 43+830 - KP 53+000 - ETAPA 1","M.G. KP 0+000 - KP 12+000 - ETAPA 1","M.G. KP 25+000 - KP 35+000","TAI KP 112+300","Reparacion de F.O. KP61+150","Perforaciones del KP126","Perforaciones del KP55+118","Apoyo / Ingenieria"]
 };
 
+// ─── CUENTAS/ORDENES GEOTECNIA ──────────────────────────────────────────
 var CUENTAS_ORDENES = {
-  "SOPORTE A INGENIERIA":                    { cuenta: "63800018", orden: "TGGA/COS-26-02-01" },
-  "VIAL":                                    { cuenta: "63800018", orden: "TG3CDV1" },
-  "URGENCIA VIAL KP 472+700 AL KP 482+000":  { cuenta: "63440004", orden: "TGCI-2644" },
-  "KP 714+155 AL KP 730+698":                { cuenta: "63440002", orden: "TGEO-2629" },
-  "MG KP 519+526 AL KP 540+839":             { cuenta: "63440002", orden: "TGEO-2631" },
-  "MG KP 170+000 AL KP 179+850":             { cuenta: "63440002", orden: "TGEO-2621" },
-  "MG KP 179+850 AL KP 194+000":             { cuenta: "63440002", orden: "TGEO-2622" },
-  "MG KP 194+000 AL KP 209+360":             { cuenta: "63440002", orden: "TGEO-2623" },
-  "APOYO A INGENIERIA":                      { cuenta: "63290002", orden: "TGGA/SIE-26-02-02" },
-  "M.G. KP 43+830 - KP 53+000 - ETAPA 1":   { cuenta: "63800018", orden: "TGEO-2610" },
-  "M.G. KP 0+000 - KP 12+000 - ETAPA 1":    { cuenta: "63800018", orden: "TGEO-2606" },
-  "M.G. KP 25+000 - KP 35+000":             { cuenta: "63800018", orden: "TGEO-2608" },
-  "TAI KP 112+300":                          { cuenta: "63800018", orden: "TGEO-2601" },
-  "Reparacion de F.O. KP61+150":             { cuenta: "63800018", orden: "TG1CDV1" },
-  "Perforaciones del KP126":                 { cuenta: "63800018", orden: "TGGA/SEL-25-08-07" },
-  "Perforaciones del KP55+118":              { cuenta: "63800018", orden: "TGGA/SEL-26-02-01" },
-  "Apoyo / Ingenieria":                      { cuenta: "63800018", orden: "TGGA/SEL-26-03-01" }
+  "SOPORTE A INGENIERIA":                   { cuenta:"63800018", orden:"TGGA/COS-26-02-01" },
+  "VIAL":                                   { cuenta:"63800018", orden:"TG3CDV1" },
+  "URGENCIA VIAL KP 472+700 AL KP 482+000": { cuenta:"63440004", orden:"TGCI-2644" },
+  "KP 714+155 AL KP 730+698":               { cuenta:"63440002", orden:"TGEO-2629" },
+  "MG KP 519+526 AL KP 540+839":            { cuenta:"63440002", orden:"TGEO-2631" },
+  "MG KP 170+000 AL KP 179+850":            { cuenta:"63440002", orden:"TGEO-2621" },
+  "MG KP 179+850 AL KP 194+000":            { cuenta:"63440002", orden:"TGEO-2622" },
+  "MG KP 194+000 AL KP 209+360":            { cuenta:"63440002", orden:"TGEO-2623" },
+  "APOYO A INGENIERIA":                     { cuenta:"63290002", orden:"TGGA/SIE-26-02-02" },
+  "M.G. KP 43+830 - KP 53+000 - ETAPA 1":  { cuenta:"63800018", orden:"TGEO-2610" },
+  "M.G. KP 0+000 - KP 12+000 - ETAPA 1":   { cuenta:"63800018", orden:"TGEO-2606" },
+  "M.G. KP 25+000 - KP 35+000":            { cuenta:"63800018", orden:"TGEO-2608" },
+  "TAI KP 112+300":                         { cuenta:"63800018", orden:"TGEO-2601" },
+  "Reparacion de F.O. KP61+150":            { cuenta:"63800018", orden:"TG1CDV1" },
+  "Perforaciones del KP126":                { cuenta:"63800018", orden:"TGGA/SEL-25-08-07" },
+  "Perforaciones del KP55+118":             { cuenta:"63800018", orden:"TGGA/SEL-26-02-01" },
+  "Apoyo / Ingenieria":                     { cuenta:"63800018", orden:"TGGA/SEL-26-03-01" }
 };
 
-fetch("/api/supervisores")
-  .then(function(r){ return r.json(); })
-  .then(function(lista) {
-    supervisoresCache = lista;
-    var sel = document.getElementById("responsable");
-    sel.innerHTML = '<option value="">Seleccionar</option>';
-    lista.forEach(function(s) {
-      var op = document.createElement("option");
-      op.value = s.nombre; op.textContent = s.nombre;
-      sel.appendChild(op);
-    });
-  })
-  .catch(function(){ document.getElementById("responsable").innerHTML = '<option value="">Error al cargar</option>'; });
-
+// ─── INIT ───────────────────────────────────────────────────────────────
 document.getElementById("fecha").valueAsDate = new Date();
 
+// Cargar datos CAPEX del server
+fetch("/api/proyectos-capex")
+  .then(function(r){ return r.json(); })
+  .then(function(data){ capexData = data; })
+  .catch(function(){ console.warn("No se pudo cargar datos CAPEX"); });
+
+// ─── CAMBIAR SUBCATEGORIA ───────────────────────────────────────────────
+function cambiarSubcategoria() {
+  var subcat = document.getElementById("subcategoria").value;
+  var selResp = document.getElementById("responsable");
+  var lblFrente = document.getElementById("lblFrente");
+  var pepDisplay = document.getElementById("pepDisplay");
+  var cuentaOrdenWrap = document.getElementById("cuentaOrdenWrap");
+
+  // Reset
+  selResp.innerHTML = '<option value="">Cargando...</option>';
+  document.getElementById("frente").innerHTML = '<option value="">Selecciona sector primero</option>';
+  document.getElementById("frenteHint").textContent = "";
+  pepDisplay.style.display = "none";
+  document.getElementById("cuenta").innerHTML = '<option value="">Seleccionar cuenta</option>';
+  document.getElementById("orden").innerHTML = '<option value="">Seleccionar orden</option>';
+
+  if (!subcat) {
+    selResp.innerHTML = '<option value="">Seleccionar subcategoria primero</option>';
+    lblFrente.innerHTML = 'Frente de Trabajo <span class="req">*</span>';
+    cuentaOrdenWrap.style.display = "block";
+    return;
+  }
+
+  // Cambiar label segun subcategoria
+  if (subcat === "CAPEX") {
+    lblFrente.innerHTML = 'Proyecto <span class="req">*</span>';
+  } else {
+    lblFrente.innerHTML = 'Frente de Trabajo <span class="req">*</span>';
+  }
+
+  // Cargar supervisores filtrados
+  fetch("/api/supervisores?subcategoria=" + encodeURIComponent(subcat))
+    .then(function(r){ return r.json(); })
+    .then(function(lista){
+      supervisoresCache = lista;
+      selResp.innerHTML = '<option value="">Seleccionar</option>';
+      lista.forEach(function(s){
+        var op = document.createElement("option");
+        op.value = s.nombre; op.textContent = s.nombre;
+        selResp.appendChild(op);
+      });
+    })
+    .catch(function(){
+      selResp.innerHTML = '<option value="">Error al cargar</option>';
+    });
+
+  actualizarFrentes();
+}
+
+// ─── AUTOCOMPLETAR SECTOR ───────────────────────────────────────────────
 function autocompletarSector() {
   var nombre = document.getElementById("responsable").value;
   var s = supervisoresCache.find(function(x){ return x.nombre === nombre; });
   if (s && s.sector) {
     document.getElementById("sector").value = s.sector;
-    document.getElementById("subcategoria").value = s.subcategoria || "Geotecnia";
     actualizarFrentes();
   }
 }
 
+// ─── ACTUALIZAR FRENTES / PROYECTOS ─────────────────────────────────────
 function actualizarFrentes() {
   var sector = document.getElementById("sector").value;
   var subcat = document.getElementById("subcategoria").value;
   var sel = document.getElementById("frente");
   var hint = document.getElementById("frenteHint");
-  sel.innerHTML = '<option value="">Seleccionar frente</option>';
-  if (!sector || !subcat) { hint.textContent = "Elige sector y subcategoria para ver los frentes disponibles"; document.getElementById("rutaPreview").style.display="none"; return; }
-  var key = sector + "_" + subcat;
-  var frentes = FRENTES_LOCAL[key] || [];
-  if (frentes.length === 0) { sel.innerHTML = '<option value="">Sin frentes configurados</option>'; hint.textContent = "No hay frentes para esta combinacion"; return; }
-  frentes.forEach(function(f) { var op = document.createElement("option"); op.value = f; op.textContent = f; sel.appendChild(op); });
-  hint.textContent = frentes.length + " frente(s) disponibles para " + sector + " / " + subcat;
-  mostrarRuta(); actualizarCuentaOrden();
+
+  sel.innerHTML = '<option value="">Seleccionar</option>';
+  document.getElementById("rutaPreview").style.display = "none";
+  document.getElementById("pepDisplay").style.display = "none";
+  document.getElementById("cuenta").innerHTML = '<option value="">Seleccionar cuenta</option>';
+  document.getElementById("orden").innerHTML = '<option value="">Seleccionar orden</option>';
+
+  if (!sector || !subcat) {
+    hint.textContent = "Elige sector y subcategoria para ver las opciones";
+    return;
+  }
+
+  if (subcat === "CAPEX") {
+    // CAPEX: mostrar todos los proyectos (PEP + Cuenta/Orden)
+    var todos = [];
+    capexData.pep.forEach(function(p){ todos.push(p.proyecto); });
+    capexData.cuentaOrden.forEach(function(p){ todos.push(p.proyecto); });
+
+    if (todos.length === 0) {
+      sel.innerHTML = '<option value="">Sin proyectos configurados</option>';
+      hint.textContent = "No hay proyectos CAPEX disponibles";
+      return;
+    }
+    todos.forEach(function(p){
+      var op = document.createElement("option");
+      op.value = p; op.textContent = p;
+      sel.appendChild(op);
+    });
+    hint.textContent = todos.length + " proyecto(s) CAPEX disponibles";
+  } else {
+    // Geotecnia: mostrar frentes normales
+    var key = sector + "_" + subcat;
+    var frentes = FRENTES_LOCAL[key] || [];
+    if (frentes.length === 0) {
+      sel.innerHTML = '<option value="">Sin frentes configurados</option>';
+      hint.textContent = "No hay frentes para esta combinacion";
+      return;
+    }
+    frentes.forEach(function(f){
+      var op = document.createElement("option");
+      op.value = f; op.textContent = f;
+      sel.appendChild(op);
+    });
+    hint.textContent = frentes.length + " frente(s) disponibles para " + sector + " / " + subcat;
+  }
 }
 
+// ─── MOSTRAR RUTA + ACTUALIZAR CUENTA/ORDEN/PEP ─────────────────────────
 function mostrarRuta() {
   var sector = document.getElementById("sector").value;
   var subcat = document.getElementById("subcategoria").value;
   var frente = document.getElementById("frente").value;
   var div = document.getElementById("rutaPreview");
-  if (sector && subcat && frente) {
-    var hoy = new Date().toISOString().substring(0,10);
-    document.getElementById("rutaTexto").textContent = "Reportes de Campo 2026 / " + sector + " / " + subcat + " / " + frente + " / " + hoy;
-    div.style.display = "block";
-  } else { div.style.display = "none"; }
-  actualizarCuentaOrden();
-}
-
-function actualizarCuentaOrden() {
-  var frente = document.getElementById("frente").value;
+  var pepDisplay = document.getElementById("pepDisplay");
+  var cuentaOrdenWrap = document.getElementById("cuentaOrdenWrap");
   var selCuenta = document.getElementById("cuenta");
   var selOrden = document.getElementById("orden");
+
+  // Reset
+  pepDisplay.style.display = "none";
   selCuenta.innerHTML = '<option value="">Seleccionar cuenta</option>';
   selOrden.innerHTML = '<option value="">Seleccionar orden</option>';
+
+  if (sector && subcat && frente) {
+    var hoy = document.getElementById("fecha").value || new Date().toISOString().substring(0,10);
+    document.getElementById("rutaTexto").textContent =
+      "Reportes de Campo 2026 / " + sector + " / " + subcat + " / " + frente + " / " + hoy;
+    div.style.display = "block";
+  } else {
+    div.style.display = "none";
+  }
+
   if (!frente) return;
-  var data = CUENTAS_ORDENES[frente];
-  if (data) {
-    var opC = document.createElement("option"); opC.value = data.cuenta; opC.textContent = data.cuenta; opC.selected = true; selCuenta.appendChild(opC);
-    var opO = document.createElement("option"); opO.value = data.orden; opO.textContent = data.orden; opO.selected = true; selOrden.appendChild(opO);
+
+  if (subcat === "CAPEX") {
+    // Buscar si es proyecto PEP
+    var pepProj = capexData.pep.find(function(p){ return p.proyecto === frente; });
+    if (pepProj) {
+      // Mostrar Elemento PEP, ocultar Cuenta/Orden
+      pepDisplay.style.display = "block";
+      document.getElementById("pepValue").textContent = pepProj.elementoPEP;
+      cuentaOrdenWrap.style.display = "none";
+      return;
+    }
+    // Buscar si es proyecto Cuenta/Orden
+    var coProj = capexData.cuentaOrden.find(function(p){ return p.proyecto === frente; });
+    if (coProj) {
+      pepDisplay.style.display = "none";
+      cuentaOrdenWrap.style.display = "block";
+      var opC = document.createElement("option");
+      opC.value = coProj.cuenta; opC.textContent = coProj.cuenta; opC.selected = true;
+      selCuenta.appendChild(opC);
+      var opO = document.createElement("option");
+      opO.value = coProj.orden; opO.textContent = coProj.orden; opO.selected = true;
+      selOrden.appendChild(opO);
+      return;
+    }
+  } else {
+    // Geotecnia: mostrar Cuenta/Orden normalmente
+    cuentaOrdenWrap.style.display = "block";
+    var data = CUENTAS_ORDENES[frente];
+    if (data) {
+      var opC = document.createElement("option");
+      opC.value = data.cuenta; opC.textContent = data.cuenta; opC.selected = true;
+      selCuenta.appendChild(opC);
+      var opO = document.createElement("option");
+      opO.value = data.orden; opO.textContent = data.orden; opO.selected = true;
+      selOrden.appendChild(opO);
+    }
   }
 }
 
+// ─── MOVILIDAD ──────────────────────────────────────────────────────────
 function mostrarPlacaOtro() {
   var cam = document.getElementById("camioneta").value;
-  var placa = document.getElementById("placa"); var placaOtro = document.getElementById("placaOtro");
-  if (cam === "No") { placa.value=""; placa.style.display="block"; placa.readOnly=true; placa.placeholder="Placa asignada"; placaOtro.style.display="none"; placaOtro.value=""; }
-  else if (cam === "Otro") { placa.style.display="none"; placa.value=""; placaOtro.style.display="block"; placaOtro.value=""; placaOtro.focus(); }
-  else { placa.value=cam; placa.style.display="block"; placa.readOnly=true; placaOtro.style.display="none"; placaOtro.value=""; }
+  var placa = document.getElementById("placa");
+  var placaOtro = document.getElementById("placaOtro");
+  if (cam === "No") {
+    placa.value = ""; placa.style.display = "block"; placa.readOnly = true; placa.placeholder = "Placa asignada";
+    placaOtro.style.display = "none"; placaOtro.value = "";
+  } else if (cam === "Otro") {
+    placa.style.display = "none"; placa.value = "";
+    placaOtro.style.display = "block"; placaOtro.value = ""; placaOtro.focus();
+  } else {
+    placa.value = cam; placa.style.display = "block"; placa.readOnly = true;
+    placaOtro.style.display = "none"; placaOtro.value = "";
+  }
 }
 
+// ─── TIPO REPORTE ───────────────────────────────────────────────────────
 function seleccionarTipo(tipo, btn) {
   tipoActual = tipo;
   document.querySelectorAll(".tipo-btn").forEach(function(b){ b.classList.remove("activo"); });
@@ -348,104 +483,164 @@ function seleccionarTipo(tipo, btn) {
   document.querySelectorAll(".seccion").forEach(function(s){ s.classList.remove("visible"); });
   document.getElementById("sec-" + tipo).classList.add("visible");
   document.getElementById("cardMovilidad").style.display = (tipo === "diario") ? "block" : "none";
-  document.getElementById("cardGastos").style.display = (tipo === "diario") ? "block" : "none";
+  document.getElementById("cardGastos").style.display    = (tipo === "diario") ? "block" : "none";
 }
 
-function mostrarArchivo(input) { document.getElementById("nombreArchivo").textContent = input.files[0] ? input.files[0].name : ""; }
+function mostrarArchivo(input) {
+  document.getElementById("nombreArchivo").textContent = input.files[0] ? input.files[0].name : "";
+}
 
+// ─── VALIDACION ─────────────────────────────────────────────────────────
 function validar() {
-  if (!document.getElementById("fecha").value) { alert("Selecciona la fecha"); return false; }
-  if (!document.getElementById("responsable").value) { alert("Selecciona tu nombre"); return false; }
-  if (!document.getElementById("puesto").value) { alert("Selecciona tu puesto"); return false; }
-  if (!document.getElementById("sector").value) { alert("Selecciona el sector"); return false; }
-  if (!document.getElementById("subcategoria").value) { alert("Selecciona la subcategoria"); return false; }
-  if (!document.getElementById("frente").value) { alert("Selecciona el frente de trabajo"); return false; }
-  if (!tipoActual) { alert("Selecciona el tipo de reporte"); return false; }
+  var subcat = document.getElementById("subcategoria").value;
+  var frenteLabel = subcat === "CAPEX" ? "proyecto" : "frente de trabajo";
+
+  if (!document.getElementById("fecha").value)        { alert("Selecciona la fecha"); return false; }
+  if (!subcat)                                         { alert("Selecciona la subcategoria"); return false; }
+  if (!document.getElementById("responsable").value)   { alert("Selecciona tu nombre"); return false; }
+  if (!document.getElementById("puesto").value)        { alert("Selecciona tu puesto"); return false; }
+  if (!document.getElementById("sector").value)        { alert("Selecciona el sector"); return false; }
+  if (!document.getElementById("frente").value)        { alert("Selecciona el " + frenteLabel); return false; }
+  if (!tipoActual)                                      { alert("Selecciona el tipo de reporte"); return false; }
   if (tipoActual==="diario" && !document.getElementById("actividad").value.trim()) { alert("Describe la actividad"); return false; }
   return true;
 }
 
+// ─── ENVIAR ─────────────────────────────────────────────────────────────
 function enviar() {
   if (!validar()) return;
   var archivo = document.getElementById("fileInput").files[0];
   if (archivo && archivo.size > 50*1024*1024) { alert("El archivo supera 50 MB"); return; }
+
   document.getElementById("btnEnviar").disabled = true;
   document.getElementById("btnEnviar").textContent = "Enviando...";
   document.getElementById("progreso").style.display = "block";
   document.getElementById("resultado").style.display = "none";
   animar();
+
   var tipoLabels = { diario:"Reporte Diario", semanal:"Reporte Semanal", final:"Reporte Final", mensual:"Reporte Mensual" };
+
   var descripcion = "";
-  if (tipoActual==="diario") descripcion = document.getElementById("actividad").value;
+  if (tipoActual==="diario")  descripcion = document.getElementById("actividad").value;
   if (tipoActual==="semanal") descripcion = document.getElementById("obsSemanal").value;
-  if (tipoActual==="final") descripcion = document.getElementById("obsFinal").value;
+  if (tipoActual==="final")   descripcion = document.getElementById("obsFinal").value;
   if (tipoActual==="mensual") descripcion = document.getElementById("obsMensual").value;
+
   var rawAvance = "";
-  if (tipoActual==="diario") rawAvance = document.getElementById("avance").value;
+  if (tipoActual==="diario")  rawAvance = document.getElementById("avance").value;
   if (tipoActual==="semanal") rawAvance = document.getElementById("avanceSemanal").value;
-  if (tipoActual==="final") rawAvance = document.getElementById("avanceFinal").value;
+  if (tipoActual==="final")   rawAvance = document.getElementById("avanceFinal").value;
   if (tipoActual==="mensual") rawAvance = document.getElementById("avanceMensual").value;
+
+  // Obtener Elemento PEP si aplica
+  var subcat = document.getElementById("subcategoria").value;
+  var elementoPEP = "";
+  if (subcat === "CAPEX") {
+    var pepEl = document.getElementById("pepValue");
+    if (pepEl && document.getElementById("pepDisplay").style.display !== "none") {
+      elementoPEP = pepEl.textContent;
+    }
+  }
+
   var datos = {
-    fecha: document.getElementById("fecha").value,
-    responsable: document.getElementById("responsable").value,
-    puesto: document.getElementById("puesto").value,
-    sector: document.getElementById("sector").value,
-    subcategoria: document.getElementById("subcategoria").value,
-    frente: document.getElementById("frente").value,
-    camioneta: document.getElementById("camioneta").value === "No" ? "No" : "Si",
-    placa: document.getElementById("camioneta").value === "Otro" ? document.getElementById("placaOtro").value : document.getElementById("placa").value,
-    kmInicial: document.getElementById("kmInicial").value,
-    kmFinal: document.getElementById("kmFinal").value,
-    origen: document.getElementById("origen").value,
-    destino: document.getElementById("destino").value,
-    alimentacion: document.getElementById("alimentacion").value,
-    hospedaje: document.getElementById("hospedaje").value,
-    tipoReporte: tipoLabels[tipoActual],
-    descripcion: descripcion,
-    avance: rawAvance ? parseFloat(rawAvance).toString() : "",
-    problemas: tipoActual==="diario" ? document.getElementById("problemas").value : "",
-    requiereOficina: "No", notas: "",
-    nombreArchivo: archivo ? archivo.name : "",
-    mimeType: archivo ? (archivo.type || "application/octet-stream") : "",
-    archivoBase64: ""
+    fecha:           document.getElementById("fecha").value,
+    responsable:     document.getElementById("responsable").value,
+    puesto:          document.getElementById("puesto").value,
+    sector:          document.getElementById("sector").value,
+    subcategoria:    document.getElementById("subcategoria").value,
+    frente:          document.getElementById("frente").value,
+    camioneta:       document.getElementById("camioneta").value === "No" ? "No" : "Si",
+    placa:           document.getElementById("camioneta").value === "Otro" ? document.getElementById("placaOtro").value : document.getElementById("placa").value,
+    kmInicial:       document.getElementById("kmInicial").value,
+    kmFinal:         document.getElementById("kmFinal").value,
+    origen:          document.getElementById("origen").value,
+    destino:         document.getElementById("destino").value,
+    alimentacion:    document.getElementById("alimentacion").value,
+    hospedaje:       document.getElementById("hospedaje").value,
+    tipoReporte:     tipoLabels[tipoActual],
+    descripcion:     descripcion,
+    avance:          rawAvance ? parseFloat(rawAvance).toString() : "",
+    problemas:       tipoActual==="diario" ? document.getElementById("problemas").value : "",
+    requiereOficina: "No",
+    notas:           "",
+    elementoPEP:     elementoPEP,
+    nombreArchivo:   archivo ? archivo.name : "",
+    mimeType:        archivo ? (archivo.type || "application/octet-stream") : "",
+    archivoBase64:   ""
   };
+
   function enviarDatos(base64) {
     datos.archivoBase64 = base64;
-    fetch("/api/reporte", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(datos) })
-    .then(function(r){ return r.json(); })
-    .then(function(res) {
-      document.getElementById("btnEnviar").disabled=false; document.getElementById("btnEnviar").textContent="Enviar Reporte";
-      document.getElementById("progreso").style.display="none";
-      var d = document.getElementById("resultado"); d.style.display="block";
-      if (res.ok) { d.className="resultado ok"; d.innerHTML="<h3>Reporte enviado correctamente</h3><p>El coordinador fue notificado.</p>"; limpiar(); }
-      else { d.className="resultado err"; d.innerHTML="<p>Error: "+(res.error||"Error desconocido")+"</p>"; }
+    fetch("/api/reporte", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(datos)
     })
-    .catch(function(err) {
-      document.getElementById("btnEnviar").disabled=false; document.getElementById("btnEnviar").textContent="Enviar Reporte";
-      document.getElementById("progreso").style.display="none";
-      var d=document.getElementById("resultado"); d.style.display="block"; d.className="resultado err"; d.innerHTML="<p>Error de conexion: "+err.message+"</p>";
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      document.getElementById("btnEnviar").disabled = false;
+      document.getElementById("btnEnviar").textContent = "Enviar Reporte";
+      document.getElementById("progreso").style.display = "none";
+      var d = document.getElementById("resultado");
+      d.style.display = "block";
+      if (res.ok) {
+        d.className = "resultado ok";
+        d.innerHTML = "<h3>Reporte enviado correctamente</h3><p>El coordinador fue notificado.</p>";
+        limpiar();
+      } else {
+        d.className = "resultado err";
+        d.innerHTML = "<p>Error: " + (res.error || "Error desconocido") + "</p>";
+      }
+    })
+    .catch(function(err){
+      document.getElementById("btnEnviar").disabled = false;
+      document.getElementById("btnEnviar").textContent = "Enviar Reporte";
+      document.getElementById("progreso").style.display = "none";
+      var d = document.getElementById("resultado");
+      d.style.display = "block";
+      d.className = "resultado err";
+      d.innerHTML = "<p>Error de conexion: " + err.message + "</p>";
     });
   }
-  if (archivo) { var r=new FileReader(); r.onload=function(e){ enviarDatos(e.target.result.split(",")[1]); }; r.readAsDataURL(archivo); }
-  else { enviarDatos(""); }
+
+  if (archivo) {
+    var r = new FileReader();
+    r.onload = function(e){ enviarDatos(e.target.result.split(",")[1]); };
+    r.readAsDataURL(archivo);
+  } else {
+    enviarDatos("");
+  }
 }
 
 function animar() {
-  var fill=document.getElementById("pfill"), txt=document.getElementById("ptxt"), pct=0;
-  var msgs=["Preparando...","Guardando en Drive...","Notificando coordinador...","Registrando..."];
-  var iv=setInterval(function(){ pct=Math.min(pct+Math.random()*18,88); fill.style.width=pct+"%"; txt.textContent=msgs[Math.floor(pct/25)]||"Procesando..."; if(pct>=88) clearInterval(iv); },350);
+  var fill = document.getElementById("pfill"), txt = document.getElementById("ptxt"), pct = 0;
+  var msgs = ["Preparando...","Guardando en Drive...","Notificando coordinador...","Registrando..."];
+  var iv = setInterval(function(){
+    pct = Math.min(pct + Math.random()*18, 88);
+    fill.style.width = pct + "%";
+    txt.textContent = msgs[Math.floor(pct/25)] || "Procesando...";
+    if (pct >= 88) clearInterval(iv);
+  }, 350);
 }
 
 function limpiar() {
-  tipoActual="";
+  tipoActual = "";
   document.querySelectorAll(".tipo-btn").forEach(function(b){ b.classList.remove("activo"); });
   document.querySelectorAll(".seccion").forEach(function(s){ s.classList.remove("visible"); });
-  ["actividad","problemas","obsSemanal","avanceSemanal","avanceFinal","obsFinal","avanceMensual","obsMensual","placa","kmInicial","kmFinal","origen","destino","avance"].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=""; });
-  ["camioneta","alimentacion","hospedaje"].forEach(function(id){ document.getElementById(id).value="No"; });
-  document.getElementById("placaOtro").style.display="none"; document.getElementById("placaOtro").value="";
-  document.getElementById("placa").style.display="block"; document.getElementById("placa").readOnly=true; document.getElementById("placa").placeholder="Placa asignada";
-  document.getElementById("fileInput").value=""; document.getElementById("nombreArchivo").textContent="";
-  document.getElementById("cardMovilidad").style.display="none"; document.getElementById("cardGastos").style.display="none";
+  ["actividad","problemas","obsSemanal","avanceSemanal","avanceFinal","obsFinal",
+   "avanceMensual","obsMensual","placa","kmInicial","kmFinal","origen","destino","avance"
+  ].forEach(function(id){ var el = document.getElementById(id); if(el) el.value = ""; });
+  ["camioneta","alimentacion","hospedaje"].forEach(function(id){ document.getElementById(id).value = "No"; });
+  document.getElementById("placaOtro").style.display = "none";
+  document.getElementById("placaOtro").value = "";
+  document.getElementById("placa").style.display = "block";
+  document.getElementById("placa").readOnly = true;
+  document.getElementById("placa").placeholder = "Placa asignada";
+  document.getElementById("fileInput").value = "";
+  document.getElementById("nombreArchivo").textContent = "";
+  document.getElementById("cardMovilidad").style.display = "none";
+  document.getElementById("cardGastos").style.display = "none";
+  document.getElementById("pepDisplay").style.display = "none";
+  document.getElementById("cuentaOrdenWrap").style.display = "block";
 }
 </script>
 </body>
