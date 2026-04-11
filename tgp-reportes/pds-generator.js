@@ -14,7 +14,7 @@ const WHITE = "FFFFFF";
 const BORDER_THIN = { style: "thin", color: { argb: "FF000000" } };
 const ALL_BORDERS = { top: BORDER_THIN, bottom: BORDER_THIN, left: BORDER_THIN, right: BORDER_THIN };
 
-// ─── MAPEO: Frente → Cuenta / Orden ──────────────────────────────────────────
+// ─── MAPEO: Frente → Cuenta / Orden (Geotecnia) ─────────────────────────────
 const FRENTES_MAPPING = {
   // SELVA
   "M.G. KP 43+830 - KP 53+000 - ETAPA 1": { cuenta: "63800018", orden: "TGEO-2610" },
@@ -38,7 +38,48 @@ const FRENTES_MAPPING = {
   "APOYO A INGENIERIA":                      { cuenta: "63290002", orden: "TOGA/SIE-26-02-02" }
 };
 
-function getCuentaOrden(frente) {
+// ─── MAPEO: Proyecto CAPEX → Cuenta / Orden / ElementoPEP ───────────────────
+const CAPEX_MAPPING = {
+  // Proyectos con Elemento PEP (sin cuenta/orden tradicional)
+  "Protecciones mecanicas ductos NG/NG":                  { elementoPEP: "TGPY/OPE-1501-2-2", cuenta: "", orden: "" },
+  "Mejoras Skids Gas combustible en PS's":                { elementoPEP: "TGPY/OPE-1901-2-4", cuenta: "", orden: "" },
+  "Construccion nuevas instalaciones Lurin":              { elementoPEP: "TGPY/OPE-1902-2-2", cuenta: "", orden: "" },
+  "Mejora instalaciones Aerodromo Kiteni":                { elementoPEP: "TGPY/OPE-2101-1-2", cuenta: "", orden: "" },
+  "Actualizacion Sistema de Automatizacion":              { elementoPEP: "TGPY/OPE-2201-2-4", cuenta: "", orden: "" },
+  "Cambio Tableros / Luminarias Areas Clasificadas":      { elementoPEP: "TGPY/OPE-2301-2-3", cuenta: "", orden: "" },
+  "Plan Mitigacion Ruido PC Kamani (venteo)":             { elementoPEP: "TGPY/OPE-2302-2-4", cuenta: "", orden: "" },
+  "Adecuacion Valvula Sobrepresion NG32 PS1":             { elementoPEP: "TGPY/OPE-2304-2-4", cuenta: "", orden: "" },
+  "Upgrade motores Waukesha PS's":                        { elementoPEP: "TGPY/OPE-2602-2-3", cuenta: "", orden: "" },
+  "Cerco perimetrico KP12 XV-10000 / XV-50001":           { elementoPEP: "TGPY/OPE-2603-1-3", cuenta: "", orden: "" },
+  "Plan multianual reemplazo valvulas NG-NGL":            { elementoPEP: "TGPY/OPE-2305-2-4", cuenta: "", orden: "" },
+  "Instalacion Sistema Monitoreo de fuego en PS's":       { elementoPEP: "TGPY/OPE-2403-1-4", cuenta: "", orden: "" },
+  "Adecuacion Sistema contra incendios BOK":              { elementoPEP: "TGPY/OPE-2406-2-3", cuenta: "", orden: "" },
+  "Instalacion motogenerador GN Camp PS3":                { elementoPEP: "TGPY/OPE-2408-2-3", cuenta: "", orden: "" },
+  "Reemplazo de Pisos Campamentos Geotecnia":             { elementoPEP: "TGPY/OPE-2409-2-3", cuenta: "", orden: "" },
+  "Medicion calidad gas puntos de entrega":               { elementoPEP: "TGPY/OPE-2414-2-3", cuenta: "", orden: "" },
+  "Actualizacion Computador Flujo CG Lurin":              { elementoPEP: "TGPY/OPE-2503-2-3", cuenta: "", orden: "" },
+  "Mejoras Sala de Servidores Torre Panama":              { elementoPEP: "TGPY/OPE-2509-2-3", cuenta: "", orden: "" },
+  "Cerco perimetrico KP75 XV-10002 / XV-50003":           { elementoPEP: "TGPY/OPE-2604-1-3", cuenta: "", orden: "" },
+  "Nuevo cerco valvulas XV-50014 / XV-50018":             { elementoPEP: "TGPY/OPE-2608-1-2", cuenta: "", orden: "" },
+  "Supervision Instalacion KP43 (Selva)":                 { elementoPEP: "TGPY/OPE-2609-2-2", cuenta: "", orden: "" },
+  // Proyectos con Cuenta/Orden
+  "Reemplazo de PTARD en PS3":                            { elementoPEP: "", cuenta: "A111078",  orden: "TGP6-2502" },
+  "Servicio de Supervision HSE - Selva":                  { elementoPEP: "", cuenta: "6325000",  orden: "TG3CDV1" },
+  "Mantenimiento Mayor Puente Comercial KP151+850":       { elementoPEP: "", cuenta: "6323004",  orden: "TGCI-2503" }
+};
+
+function getCuentaOrden(frente, subcategoria) {
+  if (subcategoria === "CAPEX") {
+    const capex = CAPEX_MAPPING[frente];
+    if (capex) {
+      // Para PEP, usar elementoPEP como "orden" para que aparezca en el PDS
+      if (capex.elementoPEP && !capex.cuenta) {
+        return { cuenta: capex.elementoPEP, orden: "PEP" };
+      }
+      return { cuenta: capex.cuenta, orden: capex.orden };
+    }
+    return { cuenta: "", orden: "" };
+  }
   return FRENTES_MAPPING[frente] || { cuenta: "", orden: "" };
 }
 
@@ -81,7 +122,7 @@ async function withRetry(fn, maxRetries = 3) {
 }
 
 // ─── OBTENER REPORTES DIARIOS DESDE RAW_DATA ─────────────────────────────────
-async function getReportesDiarios(sheets, spreadsheetId, sector, yearMonth) {
+async function getReportesDiarios(sheets, spreadsheetId, sector, yearMonth, filtroSubcategoria) {
   const result = await sheets.spreadsheets.values.get({
     spreadsheetId,
     range: "RAW_DATA!A2:W"
@@ -93,9 +134,14 @@ async function getReportesDiarios(sheets, spreadsheetId, sector, yearMonth) {
     const fecha = r[1] || "";
     const sectorRow = r[4] || "";
     const tipo = r[15] || "";
-    return sectorRow === sector
+    const subcat = r[5] || "";
+    const matchBase = sectorRow === sector
       && fecha.startsWith(yearMonth)
       && tipo.toLowerCase().includes("diario");
+    if (!matchBase) return false;
+    // Filtrar por subcategoria si se especifica
+    if (filtroSubcategoria) return subcat === filtroSubcategoria;
+    return true;
   }).map(r => ({
     timestamp:    r[0]  || "",
     fecha:        r[1]  || "",
@@ -268,7 +314,7 @@ function buildDaySheet(wb, dayStr, sector, yearMonth, reportes, logoImageId, fir
 
   for (let i = 0; i < reportes.length; i++) {
     const r = reportes[i];
-    const { cuenta, orden } = getCuentaOrden(r.frente);
+    const { cuenta, orden } = getCuentaOrden(r.frente, r.subcategoria);
     ws.getRow(row).height = 20;
     ws.mergeCells(`C${row}:E${row}`);
     ws.mergeCells(`H${row}:I${row}`);
@@ -291,7 +337,7 @@ function buildDaySheet(wb, dayStr, sector, yearMonth, reportes, logoImageId, fir
     ws.getCell(`G${row}`).alignment = { horizontal: "center", vertical: "middle" };
     ws.getCell(`G${row}`).border = ALL_BORDERS;
 
-    ws.getCell(`H${row}`).value = r.puesto || "SUPERVISOR DE GEOTECNIA SENIOR";
+    ws.getCell(`H${row}`).value = r.puesto || (r.subcategoria === "CAPEX" ? "SUPERVISOR CAPEX" : "SUPERVISOR DE GEOTECNIA SENIOR");
     ws.getCell(`H${row}`).font = { name: "Calibri", size: 10 };
     ws.getCell(`H${row}`).alignment = { horizontal: "center", vertical: "middle", wrapText: true };
     ws.getCell(`H${row}`).border = ALL_BORDERS;
@@ -372,7 +418,7 @@ function buildDaySheet(wb, dayStr, sector, yearMonth, reportes, logoImageId, fir
   const vehiculos = reportes.filter(r => r.camioneta === "Si" && r.placa);
   let eqNum = 1;
   for (const r of vehiculos) {
-    const { cuenta, orden } = getCuentaOrden(r.frente);
+    const { cuenta, orden } = getCuentaOrden(r.frente, r.subcategoria);
     const kmI = parseFloat(r.kmInicial) || 0;
     const kmF = parseFloat(r.kmFinal) || 0;
     const recorrido = kmF - kmI;
@@ -492,6 +538,7 @@ function buildDaySheet(wb, dayStr, sector, yearMonth, reportes, logoImageId, fir
     for (const r of reportes) {
       comentarios += `${r.responsable}\n`;
       if (r.descripcion) comentarios += `* ${r.descripcion}\n`;
+      if (r.observaciones) comentarios += `* Obs: ${r.observaciones}\n`;
       comentarios += "\n";
     }
 
@@ -572,35 +619,19 @@ function buildDaySheet(wb, dayStr, sector, yearMonth, reportes, logoImageId, fir
   return ws;
 }
 
-// ─── GENERAR PDS COMPLETO ────────────────────────────────────────────────────
-async function generatePDS(sheets, drive, spreadsheetId, sector, yearMonth, pdsRootFolderId) {
-  console.log(`[PDS] Generando PDS para ${sector} / ${yearMonth}...`);
-
-  // 1. Leer reportes diarios del sector y mes
-  const reportes = await withRetry(() =>
-    getReportesDiarios(sheets, spreadsheetId, sector, yearMonth)
-  );
-
-  if (reportes.length === 0) {
-    console.log("[PDS] Sin reportes diarios para este sector/mes. Omitiendo.");
-    return null;
-  }
-
-  // 2. Agrupar por día
+// ─── CREAR WORKBOOK Y SUBIR A DRIVE ─────────────────────────────────────────
+async function buildAndUploadPDS(drive, sector, yearMonth, reportes, folderParentId, fileNamePrefix, description, pdsRootFolderId) {
   const porDia = agruparPorDia(reportes);
-  console.log(`[PDS] Días con datos: ${Object.keys(porDia).join(", ")}`);
+  console.log(`[PDS] ${fileNamePrefix} — Días con datos: ${Object.keys(porDia).join(", ")}`);
 
-  // 3. Crear workbook
   const wb = new ExcelJS.Workbook();
-  wb.creator = "TGP Reportes v9";
+  wb.creator = "TGP Reportes v10";
   wb.created = new Date();
 
-  // Agregar imágenes al workbook
   const logoPath = path.join(__dirname, "templates", "logo_tgp.png");
   const firmaPath = path.join(__dirname, "templates", "firma_sello.jpeg");
 
   let logoImageId, firmaImageId;
-  // Intentar cargar imágenes desde archivos locales; si no existen usar base64 inline
   try {
     if (fs.existsSync(logoPath)) {
       logoImageId = wb.addImage({ filename: logoPath, extension: "png" });
@@ -616,35 +647,22 @@ async function generatePDS(sheets, drive, spreadsheetId, sector, yearMonth, pdsR
     console.warn("[PDS] Firma no encontrada, omitiendo.");
   }
 
-  // 4. Crear hojas para cada día que tenga datos
   const dias = Object.keys(porDia).sort();
   for (const dia of dias) {
     buildDaySheet(wb, dia, sector, yearMonth, porDia[dia], logoImageId, firmaImageId);
   }
 
-  // 5. Generar buffer
   const buffer = await wb.xlsx.writeBuffer();
   console.log(`[PDS] Excel generado: ${Math.round(buffer.length / 1024)}KB, ${dias.length} pestañas`);
 
-  // 6. Subir a Drive: PARTE DIARIO DE SERVICIO/{Sector}/PDS_{Sector}_{YYYY-MM}.xlsx
-  const raizId = await withRetry(() =>
-    getOrCreateFolder(drive, "PARTE DIARIO DE SERVICIO", pdsRootFolderId || "root")
-  );
-  const sectorId = await withRetry(() =>
-    getOrCreateFolder(drive, sector.toUpperCase(), raizId)
-  );
-
-  const fileName = `PDS_${sector.toUpperCase()}_${yearMonth}.xlsx`;
-
-  // Buscar si ya existe para actualizar
-  const existingQ = `name='${fileName}' and '${sectorId}' in parents and trashed=false`;
+  const fileName = `${fileNamePrefix}.xlsx`;
+  const existingQ = `name='${fileName}' and '${folderParentId}' in parents and trashed=false`;
   const existing = await withRetry(() =>
     drive.files.list({ q: existingQ, fields: "files(id)", pageSize: 1, supportsAllDrives: true })
   );
 
   let fileId;
   if (existing.data.files.length > 0) {
-    // Actualizar archivo existente
     fileId = existing.data.files[0].id;
     await withRetry(() =>
       drive.files.update({
@@ -658,13 +676,12 @@ async function generatePDS(sheets, drive, spreadsheetId, sector, yearMonth, pdsR
     );
     console.log(`[PDS] Archivo actualizado: ${fileName} (${fileId})`);
   } else {
-    // Crear nuevo
     const created = await withRetry(() =>
       drive.files.create({
         requestBody: {
           name: fileName,
-          parents: [sectorId],
-          description: `Parte Diario de Servicios - ${sector} - ${yearMonth}`
+          parents: [folderParentId],
+          description
         },
         media: {
           mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -681,8 +698,82 @@ async function generatePDS(sheets, drive, spreadsheetId, sector, yearMonth, pdsR
   return fileId;
 }
 
+// ─── GENERAR PDS COMPLETO ────────────────────────────────────────────────────
+async function generatePDS(sheets, drive, spreadsheetId, sector, yearMonth, pdsRootFolderId) {
+  console.log(`[PDS] Generando PDS para ${sector} / ${yearMonth}...`);
+
+  // Carpeta raíz PDS
+  const raizId = await withRetry(() =>
+    getOrCreateFolder(drive, "PARTE DIARIO DE SERVICIO", pdsRootFolderId || "root")
+  );
+  const sectorId = await withRetry(() =>
+    getOrCreateFolder(drive, sector.toUpperCase(), raizId)
+  );
+
+  // ═══ PDS GEOTECNIA (comportamiento original) ═══
+  const reportesGeo = await withRetry(() =>
+    getReportesDiarios(sheets, spreadsheetId, sector, yearMonth, "Geotecnia")
+  );
+
+  if (reportesGeo.length > 0) {
+    await buildAndUploadPDS(
+      drive, sector, yearMonth, reportesGeo, sectorId,
+      `PDS_${sector.toUpperCase()}_${yearMonth}`,
+      `Parte Diario de Servicios - Geotecnia - ${sector} - ${yearMonth}`,
+      pdsRootFolderId
+    );
+  } else {
+    console.log("[PDS] Sin reportes Geotecnia para este sector/mes.");
+  }
+
+  // ═══ PDS CAPEX (un PDS por proyecto independiente) ═══
+  const reportesCapex = await withRetry(() =>
+    getReportesDiarios(sheets, spreadsheetId, sector, yearMonth, "CAPEX")
+  );
+
+  if (reportesCapex.length > 0) {
+    // Crear carpeta CAPEX dentro del sector
+    const capexFolderId = await withRetry(() =>
+      getOrCreateFolder(drive, "CAPEX", sectorId)
+    );
+
+    // Agrupar por proyecto (frente)
+    const porProyecto = {};
+    for (const r of reportesCapex) {
+      if (!porProyecto[r.frente]) porProyecto[r.frente] = [];
+      porProyecto[r.frente].push(r);
+    }
+
+    // Generar un PDS por cada proyecto CAPEX
+    for (const [proyecto, reportes] of Object.entries(porProyecto)) {
+      // Nombre de archivo limpio (sin caracteres especiales)
+      const nombreLimpio = proyecto
+        .replace(/[\/\\:*?"<>|]/g, "-")
+        .replace(/\s+/g, "_")
+        .substring(0, 60);
+      const filePrefix = `PDS_CAPEX_${nombreLimpio}_${yearMonth}`;
+
+      console.log(`[PDS-CAPEX] Proyecto: ${proyecto} — ${reportes.length} reportes`);
+
+      await buildAndUploadPDS(
+        drive, sector, yearMonth, reportes, capexFolderId,
+        filePrefix,
+        `PDS CAPEX - ${proyecto} - ${sector} - ${yearMonth}`,
+        pdsRootFolderId
+      );
+    }
+
+    console.log(`[PDS-CAPEX] ${Object.keys(porProyecto).length} proyectos procesados para ${sector}`);
+  } else {
+    console.log("[PDS] Sin reportes CAPEX para este sector/mes.");
+  }
+
+  return true;
+}
+
 module.exports = {
   generatePDS,
   FRENTES_MAPPING,
+  CAPEX_MAPPING,
   getCuentaOrden
 };
