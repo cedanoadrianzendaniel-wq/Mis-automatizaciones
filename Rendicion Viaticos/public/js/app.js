@@ -167,6 +167,13 @@ function initScanArea() {
           const code = jsQR(imageData.data, canvas.width, canvas.height, { inversionAttempts: "dontInvert" });
 
           if (code) {
+            const capturedFrame = canvas.toDataURL("image/jpeg", 0.85);
+            const previewImgEl = $("#previewImg");
+            const previewEl = $("#scanPreview");
+            const placeholderEl = $("#scanPlaceholder");
+            previewImgEl.src = capturedFrame;
+            previewEl.hidden = false;
+            placeholderEl.hidden = true;
             cerrarQR();
             procesarQR(code.data);
             return;
