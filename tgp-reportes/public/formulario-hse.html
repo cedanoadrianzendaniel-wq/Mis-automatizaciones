@@ -59,7 +59,7 @@
           <div class="field">
             <label>Responsable *</label>
             <select id="responsable" required>
-              <option value="">Cargando...</option>
+              <option value="">Seleccione subcategoría primero</option>
             </select>
           </div>
         </div>
@@ -84,9 +84,10 @@
           </div>
           <div class="field">
             <label>Subcategoría *</label>
-            <select id="subcategoria" required>
+            <select id="subcategoria" required onchange="cambiarSubcategoria()">
               <option value="">Seleccionar...</option>
               <option value="Geotecnia">Geotecnia</option>
+              <option value="CAPEX">CAPEX</option>
             </select>
           </div>
         </div>
@@ -144,21 +145,30 @@
   document.getElementById("fecha").value = hoy;
 })();
 
-// ─── Cargar supervisores ─────────────────────────────────────────────────────
-fetch("/api/supervisores")
-  .then(r => r.json())
-  .then(lista => {
-    const sel = document.getElementById("responsable");
-    sel.innerHTML = '<option value="">Seleccionar...</option>';
-    lista.forEach(s => {
-      const o = document.createElement("option");
-      o.value = s.nombre;
-      o.textContent = s.nombre;
-      sel.appendChild(o);
+// ─── Cargar supervisores por subcategoría ────────────────────────────────────
+function cambiarSubcategoria() {
+  const subcat = document.getElementById("subcategoria").value;
+  const sel = document.getElementById("responsable");
+  sel.innerHTML = '<option value="">Cargando...</option>';
+  if (!subcat) {
+    sel.innerHTML = '<option value="">Seleccione subcategoría primero</option>';
+    return;
+  }
+  fetch("/api/supervisores?subcategoria=" + encodeURIComponent(subcat))
+    .then(r => r.json())
+    .then(lista => {
+      sel.innerHTML = '<option value="">Seleccionar...</option>';
+      lista.forEach(s => {
+        const o = document.createElement("option");
+        o.value = s.nombre;
+        o.textContent = s.nombre;
+        sel.appendChild(o);
+      });
+    }).catch(() => {
+      sel.innerHTML = '<option value="">Error al cargar</option>';
     });
-  }).catch(() => {
-    document.getElementById("responsable").innerHTML = '<option value="">Error al cargar</option>';
-  });
+  actualizarFrentes();
+}
 
 // ─── Frentes dinámicos ───────────────────────────────────────────────────────
 const FRENTES = {};
