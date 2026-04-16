@@ -145,7 +145,7 @@
 })();
 
 // ─── Cargar supervisores ─────────────────────────────────────────────────────
-fetch("/api/supervisores")
+fetch("/api/supervisores?excluir=CAPEX")
   .then(r => r.json())
   .then(lista => {
     const sel = document.getElementById("responsable");
