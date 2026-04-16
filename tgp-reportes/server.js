@@ -109,6 +109,8 @@ const SUPERVISORES = [
   { nombre: "PAUL PACSI ALAVE",          sector: "", subcategoria: "Geotecnia" },
   { nombre: "DANIEL ATAYUPANQUI TARCO",  sector: "", subcategoria: "Geotecnia" },
   { nombre: "CARLOS PUENTE",             sector: "", subcategoria: "Geotecnia" },
+  { nombre: "CHRISTIAN RAMIREZ",         sector: "", subcategoria: "Geotecnia" },
+  { nombre: "ORLANDO SALHUANA",          sector: "", subcategoria: "Geotecnia" },
   // ── CAPEX ──
   { nombre: "FERNANDO DAVILA",           sector: "", subcategoria: "CAPEX" },
   { nombre: "GREGORY VELASQUEZ",         sector: "", subcategoria: "CAPEX" },
@@ -118,7 +120,9 @@ const SUPERVISORES = [
   { nombre: "GUSTAVO CANDIOTTI",         sector: "", subcategoria: "CAPEX" },
   { nombre: "RONALDO MONTERO",           sector: "", subcategoria: "CAPEX" },
   { nombre: "EDWIN HERBOZO",             sector: "", subcategoria: "CAPEX" },
-  { nombre: "LUIS JAUREGUI",             sector: "", subcategoria: "CAPEX" }
+  { nombre: "LUIS JAUREGUI",             sector: "", subcategoria: "CAPEX" },
+  { nombre: "ABRAHAM ARCE",              sector: "", subcategoria: "CAPEX" },
+  { nombre: "PETTER BLAS",               sector: "", subcategoria: "CAPEX" }
 ];
 
 // ─── GOOGLE AUTH (OAuth2) ────────────────────────────────────────────────────
@@ -382,9 +386,11 @@ async function enviarEmailHSE(datos, urlArchivo, ahora) {
 app.get("/",          (req, res) => res.sendFile(path.join(__dirname, "public", "formulario.html")));
 app.get("/dashboard", (req, res) => res.sendFile(path.join(__dirname, "public", "dashboard.html")));
 app.get("/api/supervisores", (req, res) => {
-  const { subcategoria } = req.query;
+  const { subcategoria, excluir } = req.query;
   if (subcategoria) {
     res.json(SUPERVISORES.filter(s => s.subcategoria === subcategoria));
+  } else if (excluir) {
+    res.json(SUPERVISORES.filter(s => s.subcategoria !== excluir));
   } else {
     res.json(SUPERVISORES);
   }
