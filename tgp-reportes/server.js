@@ -32,6 +32,33 @@ const CARPETA_RAIZ_HSE_ID = process.env.CARPETA_RAIZ_HSE_ID || "";
 const SPREADSHEET_ID_HSE  = process.env.SPREADSHEET_ID_HSE || "";
 
 // ─── DATOS ESTÁTICOS ─────────────────────────────────────────────────────────
+const PROYECTOS_CAPEX_LISTA = [
+  "Protecciones mecanicas ductos NG/NG",
+  "Mejoras Skids Gas combustible en PS's",
+  "Construccion nuevas instalaciones Lurin",
+  "Mejora instalaciones Aerodromo Kiteni",
+  "Actualizacion Sistema de Automatizacion",
+  "Cambio Tableros / Luminarias Areas Clasificadas",
+  "Plan Mitigacion Ruido PC Kamani (venteo)",
+  "Adecuacion Valvula Sobrepresion NG32 PS1",
+  "Upgrade motores Waukesha PS's",
+  "Cerco perimetrico KP12 XV-10000 / XV-50001",
+  "Plan multianual reemplazo valvulas NG-NGL",
+  "Instalacion Sistema Monitoreo de fuego en PS's",
+  "Adecuacion Sistema contra incendios BOK",
+  "Instalacion motogenerador GN Camp PS3",
+  "Reemplazo de Pisos Campamentos Geotecnia",
+  "Medicion calidad gas puntos de entrega",
+  "Actualizacion Computador Flujo CG Lurin",
+  "Mejoras Sala de Servidores Torre Panama",
+  "Cerco perimetrico KP75 XV-10002 / XV-50003",
+  "Nuevo cerco valvulas XV-50014 / XV-50018",
+  "Supervision Instalacion KP43 (Selva)",
+  "Reemplazo de PTARD en PS3",
+  "Servicio de Supervision HSE - Selva",
+  "Mantenimiento Mayor Puente Comercial KP151+850"
+];
+
 const FRENTES = {
   "Costa_Geotecnia": [
     "SOPORTE A INGENIERIA",
@@ -55,7 +82,10 @@ const FRENTES = {
     "Perforaciones del KP126",
     "Perforaciones del KP55+118",
     "Apoyo / Ingenieria"
-  ]
+  ],
+  "Costa_CAPEX":  PROYECTOS_CAPEX_LISTA,
+  "Sierra_CAPEX": PROYECTOS_CAPEX_LISTA,
+  "Selva_CAPEX":  PROYECTOS_CAPEX_LISTA
 };
 
 // ─── CAPEX — Proyectos con Elemento PEP ─────────────────────────────────────
