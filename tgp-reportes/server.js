@@ -56,7 +56,7 @@ const PROYECTOS_CAPEX_LISTA = [
   "Supervision Instalacion KP43 (Selva)",
   "Reemplazo de PTARD en PS3",
   "Servicio de Supervision HSE - Selva",
-  "Mantenimiento Mayor Puente Comercial KP151+850"
+  "Mantenimiento Mayor de Pintura Cruce Aereo Comercial KP151+800"
 ];
 
 const FRENTES = {
@@ -117,7 +117,7 @@ const PROYECTOS_CAPEX_PEP = [
 const PROYECTOS_CAPEX_CO = [
   { proyecto: "Reemplazo de PTARD en PS3",                    cuenta: "A111078",  orden: "TGP6-2502" },
   { proyecto: "Servicio de Supervision HSE - Selva",          cuenta: "6325000",  orden: "TG3CDV1" },
-  { proyecto: "Mantenimiento Mayor Puente Comercial KP151+850", cuenta: "6323004", orden: "TGCI-2503" }
+  { proyecto: "Mantenimiento Mayor de Pintura Cruce Aereo Comercial KP151+800", cuenta: "6323004", orden: "TGCI-2503" }
 ];
 
 const SUPERVISORES = [
@@ -152,7 +152,8 @@ const SUPERVISORES = [
   { nombre: "EDWIN HERBOZO",             sector: "", subcategoria: "CAPEX" },
   { nombre: "LUIS JAUREGUI",             sector: "", subcategoria: "CAPEX" },
   { nombre: "ABRAHAM ARCE",              sector: "", subcategoria: "CAPEX" },
-  { nombre: "PETTER BLAS",               sector: "", subcategoria: "CAPEX" }
+  { nombre: "PETTER BLAS",               sector: "", subcategoria: "CAPEX" },
+  { nombre: "ELLIEL ARMANDO MARTINEZ DE LA CRUZ", sector: "", subcategoria: "CAPEX" }
 ];
 
 // ─── GOOGLE AUTH (OAuth2) ────────────────────────────────────────────────────

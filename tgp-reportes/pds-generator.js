@@ -65,7 +65,7 @@ const CAPEX_MAPPING = {
   // Proyectos con Cuenta/Orden
   "Reemplazo de PTARD en PS3":                            { elementoPEP: "", cuenta: "A111078",  orden: "TGP6-2502" },
   "Servicio de Supervision HSE - Selva":                  { elementoPEP: "", cuenta: "6325000",  orden: "TG3CDV1" },
-  "Mantenimiento Mayor Puente Comercial KP151+850":       { elementoPEP: "", cuenta: "6323004",  orden: "TGCI-2503" }
+  "Mantenimiento Mayor de Pintura Cruce Aereo Comercial KP151+800": { elementoPEP: "", cuenta: "6323004",  orden: "TGCI-2503" }
 };
 
 function getCuentaOrden(frente, subcategoria) {
