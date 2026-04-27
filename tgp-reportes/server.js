@@ -141,6 +141,7 @@ const SUPERVISORES = [
   { nombre: "CARLOS PUENTE",             sector: "", subcategoria: "Geotecnia" },
   { nombre: "CHRISTIAN RAMIREZ",         sector: "", subcategoria: "Geotecnia" },
   { nombre: "ORLANDO SALHUANA",          sector: "", subcategoria: "Geotecnia" },
+  { nombre: "LESLY VANESSA CHIPA CASAVERDE", sector: "", subcategoria: "Geotecnia" },
   // ── CAPEX ──
   { nombre: "FERNANDO DAVILA",           sector: "", subcategoria: "CAPEX" },
   { nombre: "GREGORY VELASQUEZ",         sector: "", subcategoria: "CAPEX" },
