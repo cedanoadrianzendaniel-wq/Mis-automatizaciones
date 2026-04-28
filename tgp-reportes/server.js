@@ -65,7 +65,8 @@ const FRENTES = {
     "VIAL",
     "URGENCIA VIAL KP 472+700 AL KP 482+000",
     "KP 714+155 AL KP 730+698",
-    "MG KP 519+526 AL KP 540+839"
+    "MG KP 519+526 AL KP 540+839",
+    "TRABAJOS DE MANTENIMIENTO GEOTECNICO KP540+839 AL KP558+315 (NGL)"
   ],
   "Sierra_Geotecnia": [
     "MG KP 170+000 AL KP 179+850",
@@ -142,6 +143,7 @@ const SUPERVISORES = [
   { nombre: "CHRISTIAN RAMIREZ",         sector: "", subcategoria: "Geotecnia" },
   { nombre: "ORLANDO SALHUANA",          sector: "", subcategoria: "Geotecnia" },
   { nombre: "LESLY VANESSA CHIPA CASAVERDE", sector: "", subcategoria: "Geotecnia" },
+  { nombre: "JOSE MANUEL MARQUEZ CAPANNI", sector: "", subcategoria: "Geotecnia" },
   // ── CAPEX ──
   { nombre: "FERNANDO DAVILA",           sector: "", subcategoria: "CAPEX" },
   { nombre: "GREGORY VELASQUEZ",         sector: "", subcategoria: "CAPEX" },
