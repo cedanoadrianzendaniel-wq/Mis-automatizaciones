@@ -4,6 +4,8 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Reporte HSE — TGP</title>
+  <link rel="manifest" href="/manifest.json"/>
+  <meta name="theme-color" content="#1F3864"/>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:Arial,sans-serif;background:#f0f4f8;min-height:100vh;padding:20px}
@@ -271,25 +273,37 @@ document.getElementById("form").addEventListener("submit", async function(e){
       mimeType
     };
 
-    const resp = await fetch("/api/reporte-hse", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify(payload)
-    });
-    const json = await resp.json();
+    let res;
+    if (window.TGPOffline && window.TGPOffline.submit) {
+      res = await window.TGPOffline.submit("/api/reporte-hse", payload, "hse");
+    } else {
+      const resp = await fetch("/api/reporte-hse", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify(payload)
+      });
+      const json = await resp.json();
+      res = { ok: !!json.ok, queued: false, response: json };
+    }
 
     endProgress();
 
-    if(json.ok){
+    if(res.queued){
+      msg.className = "msg ok";
+      msg.textContent = "📥 Reporte HSE guardado en el celular. Se enviara cuando vuelva la conexion.";
+      msg.style.display = "block";
+      document.getElementById("form").reset();
+      document.getElementById("fileName").textContent = "";
+      document.getElementById("fecha").value = new Date().toLocaleDateString("sv-SE",{timeZone:"America/Lima"});
+    } else if(res.ok){
       msg.className = "msg ok";
       msg.textContent = "✅ Reporte HSE enviado. El coordinador fue notificado.";
       msg.style.display = "block";
       document.getElementById("form").reset();
       document.getElementById("fileName").textContent = "";
-      // restaurar fecha
       document.getElementById("fecha").value = new Date().toLocaleDateString("sv-SE",{timeZone:"America/Lima"});
     } else {
-      throw new Error(json.error || "Error desconocido");
+      throw new Error((res.response && res.response.error) || "Error desconocido");
     }
   } catch(err){
     endProgress();
@@ -302,5 +316,6 @@ document.getElementById("form").addEventListener("submit", async function(e){
   btn.textContent = "ENVIAR REPORTE HSE";
 });
 </script>
+<script src="/offline-queue.js"></script>
 </body>
 </html>

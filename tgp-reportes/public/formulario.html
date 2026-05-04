@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Reporte de Campo</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1F3864">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Arial,sans-serif;background:#EEF2F7;min-height:100vh;padding:16px}
@@ -573,24 +575,33 @@ function enviar() {
 
   function enviarDatos(base64) {
     datos.archivoBase64 = base64;
-    fetch("/api/reporte", {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body:JSON.stringify(datos)
-    })
-    .then(function(r){ return r.json(); })
+    var submitFn = (window.TGPOffline && window.TGPOffline.submit)
+      ? function(){ return window.TGPOffline.submit("/api/reporte", datos, "campo"); }
+      : function(){
+          return fetch("/api/reporte", {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body:JSON.stringify(datos)
+          }).then(function(r){ return r.json(); }).then(function(j){ return { ok: !!j.ok, queued: false, response: j }; });
+        };
+
+    submitFn()
     .then(function(res){
       document.getElementById("btnEnviar").disabled = false;
       document.getElementById("btnEnviar").textContent = "Enviar Reporte";
       document.getElementById("progreso").style.display = "none";
       var d = document.getElementById("resultado");
       d.style.display = "block";
-      if (res.ok) {
+      if (res.queued) {
+        d.className = "resultado ok";
+        d.innerHTML = "<h3>Reporte guardado en el celular</h3><p>Se enviara automaticamente cuando vuelva la conexion.</p>";
+        limpiar();
+      } else if (res.ok) {
         d.className = "resultado ok";
         d.innerHTML = "<h3>Reporte enviado correctamente</h3><p>El coordinador fue notificado.</p>";
         limpiar();
       } else {
         d.className = "resultado err";
-        d.innerHTML = "<p>Error: " + (res.error || "Error desconocido") + "</p>";
+        d.innerHTML = "<p>Error: " + ((res.response && res.response.error) || "Error desconocido") + "</p>";
       }
     })
     .catch(function(err){
@@ -600,7 +611,7 @@ function enviar() {
       var d = document.getElementById("resultado");
       d.style.display = "block";
       d.className = "resultado err";
-      d.innerHTML = "<p>Error de conexion: " + err.message + "</p>";
+      d.innerHTML = "<p>Error: " + err.message + "</p>";
     });
   }
 
@@ -645,5 +656,6 @@ function limpiar() {
   document.getElementById("cuentaOrdenWrap").style.display = "block";
 }
 </script>
+<script src="/offline-queue.js"></script>
 </body>
 </html>
