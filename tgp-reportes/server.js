@@ -18,6 +18,75 @@ app.use(express.json({ limit: "60mb" }));
 app.use(express.urlencoded({ extended: true, limit: "60mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
+// ─── RATE LIMITER (Fase 3) ──────────────────────────────────────────────────
+// Limita la concurrencia de envios para no saturar las APIs de Google cuando
+// muchos supervisores sincronizan a la vez tras volver de zona sin senal.
+// Solo aplica a /api/reporte y /api/reporte-hse.
+const REPORTE_MAX_CONCURRENT = parseInt(process.env.REPORTE_MAX_CONCURRENT || "2", 10);
+const REPORTE_SLOT_TIMEOUT_MS = 5 * 60 * 1000; // libera slot tras 5 min por seguridad
+
+function createLimiter(maxConcurrent) {
+  let active = 0;
+  const queue = [];
+
+  function tryNext() {
+    if (active >= maxConcurrent || queue.length === 0) return;
+    active++;
+    const job = queue.shift();
+    job.run().finally(function() {
+      active--;
+      tryNext();
+    });
+  }
+
+  return {
+    acquire: function(work) {
+      return new Promise(function(resolve, reject) {
+        queue.push({
+          run: function() {
+            return Promise.resolve()
+              .then(work)
+              .then(resolve, reject);
+          }
+        });
+        tryNext();
+      });
+    },
+    stats: function() { return { active: active, queued: queue.length }; }
+  };
+}
+
+const reporteLimiter = createLimiter(REPORTE_MAX_CONCURRENT);
+
+function rateLimitReportes(req, res, next) {
+  const startQueueTs = Date.now();
+  reporteLimiter.acquire(function() {
+    const waited = Date.now() - startQueueTs;
+    const stats = reporteLimiter.stats();
+    if (waited > 500 || stats.queued > 0) {
+      console.log("[RateLimit] " + req.path + " espero " + waited + "ms; activos=" +
+        stats.active + " encolados=" + stats.queued);
+    }
+    return new Promise(function(resolve) {
+      // Liberar el slot cuando termine la respuesta
+      let released = false;
+      const release = function() {
+        if (released) return;
+        released = true;
+        resolve();
+      };
+      res.on("finish", release);
+      res.on("close",  release);
+      // Timeout de seguridad: si el handler se cuelga, liberar slot
+      setTimeout(release, REPORTE_SLOT_TIMEOUT_MS);
+      next();
+    });
+  }).catch(function(err) {
+    console.error("[RateLimit] Error inesperado:", err);
+    if (!res.headersSent) res.status(500).json({ ok: false, error: "Error interno" });
+  });
+}
+
 // ─── CONFIG — CAMPO ──────────────────────────────────────────────────────────
 const EMAIL_COORDINADOR = process.env.EMAIL_COORDINADOR ||
   "yuri.arangoitia@bureauveritas.com, daniel.cedano@bureauveritas.com, gustavo.fernandez@bureauveritas.com, fiorella.diaz@bureauveritas.com";
@@ -431,6 +500,14 @@ app.get("/api/supervisores", (req, res) => {
   }
 });
 app.get("/api/todos-frentes",  (req, res) => res.json(FRENTES));
+app.get("/api/health", (req, res) => {
+  const stats = reporteLimiter.stats();
+  res.json({
+    ok: true,
+    rateLimiter: { maxConcurrent: REPORTE_MAX_CONCURRENT, active: stats.active, queued: stats.queued },
+    timestamp: new Date().toISOString()
+  });
+});
 app.get("/api/frentes", (req, res) => {
   const { sector, subcat } = req.query;
   res.json(FRENTES[`${sector}_${subcat}`] || []);
@@ -449,7 +526,7 @@ app.get("/portal", (req, res) => res.sendFile(path.join(__dirname, "public", "po
 // ─── RUTAS — HSE ─────────────────────────────────────────────────────────────
 app.get("/hse", (req, res) => res.sendFile(path.join(__dirname, "public", "formulario-hse.html")));
 
-app.post("/api/reporte-hse", async (req, res) => {
+app.post("/api/reporte-hse", rateLimitReportes, async (req, res) => {
   const datos = req.body;
   try {
     const ahora = fechaLima().replace("T", " ");
@@ -549,7 +626,7 @@ app.get("/api/diagnostico", async (req, res) => {
 });
 
 // ─── POST /api/reporte — CAMPO ────────────────────────────────────────────────
-app.post("/api/reporte", async (req, res) => {
+app.post("/api/reporte", rateLimitReportes, async (req, res) => {
   const datos = req.body;
   try {
     const ahora = fechaLima().replace("T", " ");
