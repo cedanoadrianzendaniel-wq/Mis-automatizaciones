@@ -6,10 +6,12 @@
 <title>Dashboard Coordinador</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial,sans-serif;background:#EEF2F7;min-height:100vh}
+body{font-family:Arial,sans-serif;background:#EEF2F7;min-height:100vh;color:#111}
 .topbar{background:#1F3864;color:white;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
 .topbar h1{font-size:15px}
-.topbar span{font-size:11px;opacity:.8}
+.topbar span{font-size:11px;opacity:.85}
+
+/* LOGIN */
 .login-wrap{display:flex;justify-content:center;align-items:center;min-height:80vh}
 .login-card{background:white;border-radius:14px;padding:32px;width:320px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.12)}
 .login-card h2{color:#1F3864;font-size:18px;margin-bottom:8px}
@@ -19,47 +21,100 @@ body{font-family:Arial,sans-serif;background:#EEF2F7;min-height:100vh}
 .login-card button{width:100%;padding:13px;background:#1F3864;color:white;border:none;border-radius:8px;font-size:14px;font-weight:bold;cursor:pointer}
 .login-card button:hover{background:#2E75B6}
 .err-msg{color:#DC2626;font-size:12px;margin-top:10px;min-height:18px}
+
 #dashScreen{display:none}
-.content{padding:16px;max-width:1100px;margin:0 auto}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.content{padding:16px;max-width:1200px;margin:0 auto}
+
+/* SECTION TITLES */
+.section-title{font-size:13px;font-weight:bold;color:#1F3864;margin:18px 0 10px 2px;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:8px}
+.section-title::before{content:"";width:4px;height:14px;background:#2E75B6;border-radius:2px}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 @media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr)}}
 .stat{background:white;border-radius:10px;padding:14px;text-align:center;box-shadow:0 1px 6px rgba(0,0,0,.07)}
 .stat .num{font-size:26px;font-weight:bold;color:#1F3864}
 .stat .lbl{font-size:11px;color:#6B7280;margin-top:2px}
-.resumen-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
-@media(max-width:700px){.resumen-grid{grid-template-columns:1fr}}
-.res-card{background:white;border-radius:10px;padding:14px;box-shadow:0 1px 6px rgba(0,0,0,.07)}
-.res-card h3{font-size:12px;font-weight:bold;color:#1F3864;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #BDD7EE}
-.res-row{display:flex;justify-content:space-between;font-size:11px;padding:4px 0;border-bottom:1px solid #F3F4F6}
-.res-row .val{font-weight:bold;color:#1F3864}
-.filtros{background:white;border-radius:10px;padding:14px;margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;box-shadow:0 1px 6px rgba(0,0,0,.07)}
-.filtros select,.filtros input{padding:8px 10px;border:1.5px solid #D1D5DB;border-radius:7px;font-size:12px;background:#FAFAFA;flex:1;min-width:110px;outline:none}
+.stat.filtered{border:2px solid #2E75B6}
+.stat.filtered .num{color:#2E75B6}
+
+/* FILTROS */
+.filtros{background:white;border-radius:10px;padding:14px;box-shadow:0 1px 6px rgba(0,0,0,.07)}
+.filtros .row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.filtros .row:last-child{margin-bottom:0}
+.filtros label{font-size:10px;font-weight:bold;color:#6B7280;text-transform:uppercase;display:block;margin-bottom:3px}
+.filtros .field{flex:1;min-width:140px}
+.filtros select,.filtros input{width:100%;padding:8px 10px;border:1.5px solid #D1D5DB;border-radius:7px;font-size:12px;background:#FAFAFA;outline:none}
+.filtros select:focus,.filtros input:focus{border-color:#2E75B6;background:white}
 .filtros button{padding:8px 14px;background:#1F3864;color:white;border:none;border-radius:7px;font-size:12px;cursor:pointer;font-weight:bold}
 .filtros button.sec{background:#F3F4F6;color:#374151}
+.filtros button.sec:hover{background:#E5E7EB}
+.filtros button:hover{background:#2E75B6}
+.presets{display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end}
+.preset{padding:7px 12px;background:#F0F7FF;color:#1F3864;border:1px solid #BDD7EE;border-radius:6px;font-size:11px;cursor:pointer;font-weight:bold}
+.preset:hover{background:#DBEEFF}
+.preset.activo{background:#1F3864;color:white;border-color:#1F3864}
+
+/* RANKING SUPERVISORES */
+.ranking{background:white;border-radius:10px;padding:14px;box-shadow:0 1px 6px rgba(0,0,0,.07)}
+.rank-empty{padding:30px;text-align:center;color:#9CA3AF;font-size:12px}
+.rank-row{display:grid;grid-template-columns:30px 1fr 60px;gap:10px;align-items:center;padding:7px 4px;border-bottom:1px solid #F3F4F6}
+.rank-row:last-child{border-bottom:none}
+.rank-pos{font-size:11px;font-weight:bold;color:#9CA3AF;text-align:center}
+.rank-pos.top1{color:#D97706}
+.rank-pos.top2{color:#6B7280}
+.rank-pos.top3{color:#92400E}
+.rank-name{font-size:12px;font-weight:bold;color:#1F3864;display:flex;flex-direction:column;gap:2px}
+.rank-bar-wrap{position:relative;background:#F3F4F6;height:18px;border-radius:9px;overflow:hidden;margin-top:2px}
+.rank-bar{height:100%;background:linear-gradient(90deg,#1F3864,#2E75B6);border-radius:9px;transition:width .4s}
+.rank-meta{font-size:10px;color:#6B7280;font-weight:normal;margin-top:1px;display:flex;gap:8px;flex-wrap:wrap}
+.rank-meta span{background:#F0F7FF;padding:1px 6px;border-radius:3px;color:#1F3864}
+.rank-count{font-size:13px;font-weight:bold;color:#1F3864;text-align:right}
+
+/* SECTORES */
+.resumen-sectores{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:700px){.resumen-sectores{grid-template-columns:1fr}}
+.res-card{background:white;border-radius:10px;padding:14px;box-shadow:0 1px 6px rgba(0,0,0,.07)}
+.res-card h3{font-size:12px;font-weight:bold;color:#1F3864;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #BDD7EE}
+.res-row{display:flex;justify-content:space-between;font-size:12px;padding:5px 0;border-bottom:1px solid #F3F4F6}
+.res-row:last-child{border-bottom:none}
+.res-row .val{font-weight:bold;color:#1F3864}
+
+/* TABLA */
 .tabla-wrap{background:white;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.07);overflow:hidden}
-.tabla-head{background:#1F3864;color:white;padding:12px 16px;font-size:12px;font-weight:bold;display:flex;justify-content:space-between;align-items:center}
+.tabla-head{background:#1F3864;color:white;padding:12px 16px;font-size:12px;font-weight:bold;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}
+.btn-export{background:#10B981;color:white;border:none;border-radius:6px;padding:6px 12px;font-size:11px;cursor:pointer;font-weight:bold}
+.btn-export:hover{background:#059669}
+.tabla-scroll{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:12px}
-th{background:#EEF2F7;padding:9px 10px;text-align:left;font-size:11px;color:#374151;font-weight:bold;border-bottom:1px solid #E5E7EB}
-td{padding:8px 10px;border-bottom:1px solid #F3F4F6;vertical-align:top;max-width:200px;word-break:break-word}
+th{background:#EEF2F7;padding:9px 10px;text-align:left;font-size:11px;color:#374151;font-weight:bold;border-bottom:1px solid #E5E7EB;cursor:pointer;user-select:none;white-space:nowrap}
+th:hover{background:#DBEAFE}
+th.sorted::after{content:" ▼";font-size:9px;color:#2E75B6}
+th.sorted-asc::after{content:" ▲";font-size:9px;color:#2E75B6}
+td{padding:8px 10px;border-bottom:1px solid #F3F4F6;vertical-align:top;max-width:220px;word-break:break-word}
 tr:hover td{background:#F9FAFB}
-.badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:bold}
+.badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:bold;white-space:nowrap}
 .b-costa{background:#DBEAFE;color:#1D4ED8}
 .b-sierra{background:#D1FAE5;color:#065F46}
 .b-selva{background:#FEF3C7;color:#92400E}
+.tipo-tag{display:inline-block;background:#EDE9FE;color:#5B21B6;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:bold;white-space:nowrap}
 .frente-tag{display:inline-block;background:#F0F7FF;border:1px solid #BDD7EE;border-radius:4px;padding:1px 6px;font-size:10px;color:#1F3864}
 .link-arch{color:#2E75B6;text-decoration:none;font-size:11px}
+.link-arch:hover{text-decoration:underline}
 .msg{text-align:center;padding:40px;color:#9CA3AF;font-size:13px}
-.pagination{display:flex;justify-content:center;gap:8px;padding:14px;flex-wrap:wrap}
-.pag-btn{padding:6px 12px;border:1px solid #D1D5DB;border-radius:6px;background:white;cursor:pointer;font-size:12px}
+.pagination{display:flex;justify-content:center;gap:6px;padding:14px;flex-wrap:wrap}
+.pag-btn{padding:6px 11px;border:1px solid #D1D5DB;border-radius:6px;background:white;cursor:pointer;font-size:12px}
+.pag-btn:hover{background:#F0F7FF}
 .pag-btn.activo{background:#1F3864;color:white;border-color:#1F3864}
-.back-link{display:block;text-align:center;margin-top:12px;font-size:12px;color:#6B7280}
+.pag-btn:disabled{opacity:.4;cursor:not-allowed}
+.back-link{display:block;text-align:center;margin-top:14px;font-size:12px;color:#6B7280}
 .back-link a{color:#2E75B6}
 </style>
 </head>
 <body>
 
 <div class="topbar">
-  <h1>Dashboard Coordinador - Reportes de Campo 2026</h1>
+  <h1>Dashboard Coordinador — Reportes de Campo 2026</h1>
   <span id="ultimaAct"></span>
 </div>
 
@@ -77,29 +132,90 @@ tr:hover td{background:#F9FAFB}
 
 <div id="dashScreen">
   <div class="content">
+
+    <!-- STATS -->
+    <div class="section-title">Resumen general</div>
     <div class="stats">
       <div class="stat"><div class="num" id="stTotal">0</div><div class="lbl">Total reportes</div></div>
       <div class="stat"><div class="num" id="stHoy">0</div><div class="lbl">Reportes hoy</div></div>
       <div class="stat"><div class="num" id="stSemana">0</div><div class="lbl">Esta semana</div></div>
       <div class="stat"><div class="num" id="stMes">0</div><div class="lbl">Este mes</div></div>
     </div>
-    <div class="resumen-grid" id="resumenSectores"></div>
+
+    <!-- FILTROS -->
+    <div class="section-title">Filtros</div>
     <div class="filtros">
-      <select id="fSector" onchange="filtrar()">
-        <option value="">Todos los sectores</option>
-        <option>Costa</option><option>Sierra</option><option>Selva</option>
-      </select>
-      <select id="fFrente" onchange="filtrar()"><option value="">Todos los frentes</option></select>
-      <input type="date" id="fFecha" onchange="filtrar()">
-      <button onclick="limpiarFiltros()">Limpiar</button>
-      <button class="sec" onclick="cargarDatos()">Actualizar</button>
+      <div class="row">
+        <div class="field">
+          <label>Supervisor</label>
+          <select id="fSupervisor" onchange="filtrar()">
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Sector</label>
+          <select id="fSector" onchange="filtrar()">
+            <option value="">Todos</option>
+            <option>Costa</option><option>Sierra</option><option>Selva</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Frente</label>
+          <select id="fFrente" onchange="filtrar()">
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Tipo</label>
+          <select id="fTipo" onchange="filtrar()">
+            <option value="">Todos</option>
+            <option>Reporte Diario</option>
+            <option>Reporte Semanal</option>
+            <option>Reporte Mensual</option>
+            <option>Reporte Final</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Desde</label>
+          <input type="date" id="fDesde" onchange="filtrar()">
+        </div>
+        <div class="field">
+          <label>Hasta</label>
+          <input type="date" id="fHasta" onchange="filtrar()">
+        </div>
+        <div class="field presets">
+          <button class="preset" onclick="presetFecha('hoy', this)">Hoy</button>
+          <button class="preset" onclick="presetFecha('semana', this)">Semana</button>
+          <button class="preset" onclick="presetFecha('mes', this)">Este mes</button>
+          <button class="preset" onclick="presetFecha('mesAnt', this)">Mes anterior</button>
+        </div>
+        <div class="field" style="flex:0 0 auto;display:flex;align-items:flex-end;gap:6px">
+          <button class="sec" onclick="limpiarFiltros()">Limpiar</button>
+          <button onclick="cargarDatos()">Actualizar</button>
+        </div>
+      </div>
     </div>
+
+    <!-- RANKING SUPERVISORES -->
+    <div class="section-title">Ranking de supervisores <span style="font-size:10px;color:#6B7280;font-weight:normal;text-transform:none;letter-spacing:0;margin-left:6px" id="rankingPeriodo"></span></div>
+    <div class="ranking" id="rankingArea">
+      <div class="rank-empty">Cargando...</div>
+    </div>
+
+    <!-- SECTORES -->
+    <div class="section-title">Por sector</div>
+    <div class="resumen-sectores" id="resumenSectores"></div>
+
+    <!-- TABLA DETALLE -->
+    <div class="section-title">Detalle de reportes</div>
     <div class="tabla-wrap">
       <div class="tabla-head">
-        <span>Reportes recibidos</span>
-        <span id="contadorFiltro"></span>
+        <span>Reportes recibidos — <span id="contadorFiltro">0 registros</span></span>
+        <button class="btn-export" onclick="exportarCSV()">⬇ Exportar CSV</button>
       </div>
-      <div id="tablaArea"><div class="msg">Cargando reportes...</div></div>
+      <div class="tabla-scroll" id="tablaArea"><div class="msg">Cargando reportes...</div></div>
     </div>
     <div id="paginacion" class="pagination"></div>
     <p class="back-link"><a href="/">Volver al formulario</a></p>
@@ -109,7 +225,9 @@ tr:hover td{background:#F9FAFB}
 <script>
 var todosReportes = [], reportesFiltrados = [];
 var paginaActual = 1, POR_PAGINA = 15;
+var sortCol = "fecha", sortDir = "desc";
 
+// ─── LOGIN ────────────────────────────────────────────────────────────────
 function login() {
   var clave = document.getElementById("clave").value;
   if (!clave) { document.getElementById("errLogin").textContent = "Ingresa la clave"; return; }
@@ -126,6 +244,7 @@ function login() {
   .catch(function() { document.getElementById("errLogin").textContent = "Error de conexion"; });
 }
 
+// ─── CARGA ─────────────────────────────────────────────────────────────────
 function cargarDatos() {
   document.getElementById("tablaArea").innerHTML = '<div class="msg">Cargando...</div>';
   fetch("/api/datos")
@@ -134,80 +253,242 @@ function cargarDatos() {
       if (!res || res.error) { document.getElementById("tablaArea").innerHTML = '<div class="msg">Error al cargar datos</div>'; return; }
       todosReportes = res.reportes || [];
       document.getElementById("ultimaAct").textContent = "Actualizado: " + new Date().toLocaleTimeString();
-      actualizarStats(); actualizarResumenSectores(); actualizarFiltroFrente(); filtrar();
+      poblarSelectores();
+      // Default: mostrar mes actual al primer load
+      if (!document.getElementById("fDesde").value && !document.getElementById("fHasta").value) {
+        presetFecha("mes");
+      } else {
+        filtrar();
+      }
     })
     .catch(function() { document.getElementById("tablaArea").innerHTML = '<div class="msg">Error al cargar</div>'; });
 }
 
+// ─── POBLAR SELECTORES ────────────────────────────────────────────────────
+function poblarSelectores() {
+  // Supervisores
+  var sup = {}, fr = {};
+  todosReportes.forEach(function(r) {
+    if (r.responsable) sup[r.responsable] = (sup[r.responsable] || 0) + 1;
+    if (r.frente)      fr[r.frente]       = 1;
+  });
+  var selSup = document.getElementById("fSupervisor");
+  selSup.innerHTML = '<option value="">Todos (' + Object.keys(sup).length + ')</option>';
+  Object.keys(sup).sort().forEach(function(n) {
+    var op = document.createElement("option");
+    op.value = n; op.textContent = n + " (" + sup[n] + ")";
+    selSup.appendChild(op);
+  });
+  // Frentes
+  var selFr = document.getElementById("fFrente");
+  selFr.innerHTML = '<option value="">Todos</option>';
+  Object.keys(fr).sort().forEach(function(f) {
+    var op = document.createElement("option");
+    op.value = f; op.textContent = f;
+    selFr.appendChild(op);
+  });
+}
+
+// ─── PRESETS DE FECHA ──────────────────────────────────────────────────────
+function presetFecha(tipo, btn) {
+  document.querySelectorAll(".preset").forEach(function(b){ b.classList.remove("activo"); });
+  if (btn) btn.classList.add("activo");
+  var hoy = new Date();
+  var iso = function(d){ return d.toISOString().substring(0,10); };
+  var desde = "", hasta = "";
+  if (tipo === "hoy") {
+    desde = hasta = iso(hoy);
+  } else if (tipo === "semana") {
+    var lunes = new Date(hoy);
+    var dia = lunes.getDay() || 7; // lunes=1, domingo=7
+    lunes.setDate(lunes.getDate() - (dia - 1));
+    desde = iso(lunes); hasta = iso(hoy);
+  } else if (tipo === "mes") {
+    desde = iso(new Date(hoy.getFullYear(), hoy.getMonth(), 1));
+    hasta = iso(hoy);
+  } else if (tipo === "mesAnt") {
+    var primMesAnt  = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+    var ultMesAnt   = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
+    desde = iso(primMesAnt); hasta = iso(ultMesAnt);
+  }
+  document.getElementById("fDesde").value = desde;
+  document.getElementById("fHasta").value = hasta;
+  filtrar();
+}
+
+// ─── FILTRAR ───────────────────────────────────────────────────────────────
+function filtrar() {
+  var sup    = document.getElementById("fSupervisor").value;
+  var sec    = document.getElementById("fSector").value;
+  var frente = document.getElementById("fFrente").value;
+  var tipo   = document.getElementById("fTipo").value;
+  var desde  = document.getElementById("fDesde").value;
+  var hasta  = document.getElementById("fHasta").value;
+
+  reportesFiltrados = todosReportes.filter(function(r) {
+    if (sup    && r.responsable !== sup)                       return false;
+    if (sec    && r.sector !== sec)                            return false;
+    if (frente && r.frente !== frente)                         return false;
+    if (tipo   && r.tipoReporte !== tipo)                      return false;
+    var f = String(r.fecha).substring(0,10);
+    if (desde && f < desde)                                    return false;
+    if (hasta && f > hasta)                                    return false;
+    return true;
+  });
+
+  // Si el usuario movio fechas manualmente, deselectar presets
+  // (no aplicar si vino de un preset porque el preset llama filtrar)
+  paginaActual = 1;
+  ordenar();
+  actualizarStats();
+  actualizarRanking();
+  actualizarResumenSectores();
+}
+
+function limpiarFiltros() {
+  ["fSupervisor","fSector","fFrente","fTipo","fDesde","fHasta"].forEach(function(id){ document.getElementById(id).value = ""; });
+  document.querySelectorAll(".preset").forEach(function(b){ b.classList.remove("activo"); });
+  filtrar();
+}
+
+// ─── STATS (sobre los filtrados) ──────────────────────────────────────────
 function actualizarStats() {
   var hoy = new Date().toISOString().substring(0,10);
   var mes = new Date().toISOString().substring(0,7);
-  var sem = semanaActual();
-  document.getElementById("stTotal").textContent  = todosReportes.length;
-  document.getElementById("stHoy").textContent    = todosReportes.filter(function(r){ return String(r.fecha).substring(0,10) === hoy; }).length;
-  document.getElementById("stSemana").textContent = todosReportes.filter(function(r){ return String(r.semana) === String(sem); }).length;
-  document.getElementById("stMes").textContent    = todosReportes.filter(function(r){ return String(r.fecha).substring(0,7) === mes; }).length;
+  var luIso = (function(){
+    var d = new Date(); var dia = d.getDay() || 7;
+    d.setDate(d.getDate() - (dia - 1));
+    return d.toISOString().substring(0,10);
+  })();
+  document.getElementById("stTotal").textContent  = reportesFiltrados.length;
+  document.getElementById("stHoy").textContent    = reportesFiltrados.filter(function(r){ return String(r.fecha).substring(0,10) === hoy; }).length;
+  document.getElementById("stSemana").textContent = reportesFiltrados.filter(function(r){ var f=String(r.fecha).substring(0,10); return f >= luIso && f <= hoy; }).length;
+  document.getElementById("stMes").textContent    = reportesFiltrados.filter(function(r){ return String(r.fecha).substring(0,7) === mes; }).length;
+  // Marcar la card "Total" como filtrada si hay filtros activos
+  var hayFiltro = ["fSupervisor","fSector","fFrente","fTipo","fDesde","fHasta"].some(function(id){ return document.getElementById(id).value; });
+  document.querySelectorAll(".stat")[0].classList.toggle("filtered", hayFiltro);
 }
 
-function semanaActual() {
-  var d = new Date(), ini = new Date(d.getFullYear(), 0, 1);
-  return Math.ceil(((d - ini) / 86400000 + ini.getDay() + 1) / 7);
+// ─── RANKING DE SUPERVISORES ──────────────────────────────────────────────
+function actualizarRanking() {
+  var area = document.getElementById("rankingArea");
+  var periodoTxt = document.getElementById("rankingPeriodo");
+  var desde = document.getElementById("fDesde").value;
+  var hasta = document.getElementById("fHasta").value;
+  if (desde && hasta) periodoTxt.textContent = "(" + desde + " a " + hasta + ")";
+  else if (desde)     periodoTxt.textContent = "(desde " + desde + ")";
+  else if (hasta)     periodoTxt.textContent = "(hasta " + hasta + ")";
+  else                periodoTxt.textContent = "(todo el periodo)";
+
+  if (reportesFiltrados.length === 0) {
+    area.innerHTML = '<div class="rank-empty">Sin datos para los filtros seleccionados</div>';
+    return;
+  }
+
+  // Agrupar por supervisor y desglosar por tipo
+  var grupos = {};
+  reportesFiltrados.forEach(function(r) {
+    var n = r.responsable || "(sin nombre)";
+    if (!grupos[n]) grupos[n] = { total:0, sectores:{}, tipos:{} };
+    grupos[n].total++;
+    if (r.sector)      grupos[n].sectores[r.sector] = (grupos[n].sectores[r.sector] || 0) + 1;
+    if (r.tipoReporte) grupos[n].tipos[r.tipoReporte] = (grupos[n].tipos[r.tipoReporte] || 0) + 1;
+  });
+  var lista = Object.keys(grupos).map(function(n){
+    var g = grupos[n];
+    return { nombre:n, total:g.total, sectores:g.sectores, tipos:g.tipos };
+  });
+  lista.sort(function(a,b){ return b.total - a.total; });
+  var max = lista[0].total;
+
+  var html = "";
+  lista.forEach(function(item, idx) {
+    var pct = Math.max(8, Math.round(item.total * 100 / max));
+    var posClass = idx===0 ? "top1" : idx===1 ? "top2" : idx===2 ? "top3" : "";
+    var sectoresMeta = Object.keys(item.sectores).map(function(s){ return s + ": " + item.sectores[s]; }).join(" · ");
+    var tiposMeta = Object.keys(item.tipos).map(function(t){
+      return '<span>' + t.replace("Reporte ","") + ": " + item.tipos[t] + '</span>';
+    }).join(" ");
+    html += '<div class="rank-row">';
+    html +=   '<div class="rank-pos ' + posClass + '">#' + (idx+1) + '</div>';
+    html +=   '<div class="rank-name">' + item.nombre;
+    html +=     '<div class="rank-bar-wrap"><div class="rank-bar" style="width:' + pct + '%"></div></div>';
+    html +=     '<div class="rank-meta">' + (sectoresMeta ? '<span>' + sectoresMeta + '</span>' : '') + tiposMeta + '</div>';
+    html +=   '</div>';
+    html +=   '<div class="rank-count">' + item.total + '</div>';
+    html += '</div>';
+  });
+  area.innerHTML = html;
 }
 
+// ─── RESUMEN POR SECTOR (sobre filtrados) ─────────────────────────────────
 function actualizarResumenSectores() {
-  var hoy = new Date().toISOString().substring(0,10);
   var html = "";
   ["Costa","Sierra","Selva"].forEach(function(sec) {
-    var tot  = todosReportes.filter(function(r){ return r.sector === sec; }).length;
-    var hoyC = todosReportes.filter(function(r){ return r.sector === sec && String(r.fecha).substring(0,10) === hoy; }).length;
+    var enSec = reportesFiltrados.filter(function(r){ return r.sector === sec; });
+    var supDistintos = {};
+    enSec.forEach(function(r){ if (r.responsable) supDistintos[r.responsable] = 1; });
     html += '<div class="res-card"><h3>' + sec + '</h3>';
-    html += '<div class="res-row"><span>Total</span><span class="val">' + tot + '</span></div>';
-    html += '<div class="res-row"><span style="color:#059669">Hoy</span><span class="val" style="color:#059669">' + hoyC + '</span></div>';
+    html += '<div class="res-row"><span>Total reportes</span><span class="val">' + enSec.length + '</span></div>';
+    html += '<div class="res-row"><span>Supervisores activos</span><span class="val">' + Object.keys(supDistintos).length + '</span></div>';
     html += '</div>';
   });
   document.getElementById("resumenSectores").innerHTML = html;
 }
 
-function actualizarFiltroFrente() {
-  var sel = document.getElementById("fFrente");
-  sel.innerHTML = '<option value="">Todos los frentes</option>';
-  var vistos = {};
-  todosReportes.forEach(function(r) {
-    if (r.frente && !vistos[r.frente]) {
-      vistos[r.frente] = 1;
-      var op = document.createElement("option"); op.value = r.frente; op.textContent = r.frente; sel.appendChild(op);
-    }
+// ─── ORDENAMIENTO ─────────────────────────────────────────────────────────
+function ordenar() {
+  var col = sortCol, dir = sortDir === "asc" ? 1 : -1;
+  reportesFiltrados.sort(function(a,b) {
+    var va = (a[col] || "").toString();
+    var vb = (b[col] || "").toString();
+    if (va < vb) return -1*dir;
+    if (va > vb) return  1*dir;
+    return 0;
   });
+  renderTabla();
 }
 
-function filtrar() {
-  var sec = document.getElementById("fSector").value;
-  var frente = document.getElementById("fFrente").value;
-  var fecha = document.getElementById("fFecha").value;
-  reportesFiltrados = todosReportes.filter(function(r) {
-    if (sec    && r.sector !== sec)                          return false;
-    if (frente && r.frente !== frente)                       return false;
-    if (fecha  && String(r.fecha).substring(0,10) !== fecha) return false;
-    return true;
-  });
-  paginaActual = 1; renderTabla();
+function ordenarPor(col) {
+  if (sortCol === col) sortDir = sortDir === "asc" ? "desc" : "asc";
+  else { sortCol = col; sortDir = "desc"; }
+  ordenar();
 }
 
-function limpiarFiltros() {
-  ["fSector","fFrente","fFecha"].forEach(function(id){ document.getElementById(id).value = ""; });
-  filtrar();
-}
-
+// ─── RENDER TABLA ─────────────────────────────────────────────────────────
 function renderTabla() {
   var ini = (paginaActual - 1) * POR_PAGINA;
   var pag = reportesFiltrados.slice(ini, ini + POR_PAGINA);
   document.getElementById("contadorFiltro").textContent = reportesFiltrados.length + " registros";
-  if (pag.length === 0) { document.getElementById("tablaArea").innerHTML='<div class="msg">No hay reportes con estos filtros</div>'; document.getElementById("paginacion").innerHTML=""; return; }
-  var html = "<table><thead><tr><th>Fecha</th><th>Responsable</th><th>Sector</th><th>Frente de Trabajo</th><th>Archivo</th></tr></thead><tbody>";
+  if (pag.length === 0) {
+    document.getElementById("tablaArea").innerHTML = '<div class="msg">No hay reportes con estos filtros</div>';
+    document.getElementById("paginacion").innerHTML = "";
+    return;
+  }
+  var th = function(col, label) {
+    var cls = sortCol === col ? (sortDir === "asc" ? "sorted-asc" : "sorted") : "";
+    return '<th class="' + cls + '" onclick="ordenarPor(\'' + col + '\')">' + label + '</th>';
+  };
+  var html = "<table><thead><tr>" +
+    th("fecha","Fecha") +
+    th("responsable","Supervisor") +
+    th("sector","Sector") +
+    th("frente","Frente") +
+    th("tipoReporte","Tipo") +
+    "<th>Archivo</th>" +
+    "</tr></thead><tbody>";
   pag.forEach(function(r) {
     var bSec = "b-" + (r.sector||"").toLowerCase();
-    var arch = r.link ? '<a class="link-arch" href="' + r.link + '" target="_blank">Ver archivo</a>' : "-";
-    html += "<tr><td>" + String(r.fecha).substring(0,10) + "</td><td><b>" + (r.responsable||"-") + "</b></td><td><span class='badge " + bSec + "'>" + (r.sector||"-") + "</span></td><td><span class='frente-tag'>" + (r.frente||"-") + "</span></td><td>" + arch + "</td></tr>";
+    var arch = r.link ? '<a class="link-arch" href="' + r.link + '" target="_blank">Ver</a>' : "-";
+    var tipo = r.tipoReporte ? '<span class="tipo-tag">' + r.tipoReporte.replace("Reporte ","") + '</span>' : "-";
+    html += "<tr>";
+    html +=   "<td>" + String(r.fecha).substring(0,10) + "</td>";
+    html +=   "<td><b>" + (r.responsable||"-") + "</b></td>";
+    html +=   "<td><span class='badge " + bSec + "'>" + (r.sector||"-") + "</span></td>";
+    html +=   "<td><span class='frente-tag'>" + (r.frente||"-") + "</span></td>";
+    html +=   "<td>" + tipo + "</td>";
+    html +=   "<td>" + arch + "</td>";
+    html += "</tr>";
   });
   html += "</tbody></table>";
   document.getElementById("tablaArea").innerHTML = html;
@@ -218,13 +499,50 @@ function renderPaginacion() {
   var total = Math.ceil(reportesFiltrados.length / POR_PAGINA);
   if (total <= 1) { document.getElementById("paginacion").innerHTML = ""; return; }
   var html = "";
-  for (var i = 1; i <= total; i++) {
+  html += '<button class="pag-btn" onclick="irPagina(' + Math.max(1,paginaActual-1) + ')" ' + (paginaActual===1?"disabled":"") + '>‹</button>';
+  // Mostrar maximo ~9 botones centrados en la pagina actual
+  var maxBtns = 9;
+  var startP = Math.max(1, paginaActual - Math.floor(maxBtns/2));
+  var endP = Math.min(total, startP + maxBtns - 1);
+  if (endP - startP < maxBtns - 1) startP = Math.max(1, endP - maxBtns + 1);
+  if (startP > 1) html += '<button class="pag-btn" onclick="irPagina(1)">1</button>' + (startP > 2 ? '<span style="padding:6px">...</span>' : '');
+  for (var i = startP; i <= endP; i++) {
     html += '<button class="pag-btn ' + (i===paginaActual?"activo":"") + '" onclick="irPagina(' + i + ')">' + i + '</button>';
   }
+  if (endP < total) html += (endP < total-1 ? '<span style="padding:6px">...</span>' : '') + '<button class="pag-btn" onclick="irPagina(' + total + ')">' + total + '</button>';
+  html += '<button class="pag-btn" onclick="irPagina(' + Math.min(total,paginaActual+1) + ')" ' + (paginaActual===total?"disabled":"") + '>›</button>';
   document.getElementById("paginacion").innerHTML = html;
 }
 
-function irPagina(n) { paginaActual = n; renderTabla(); window.scrollTo(0,0); }
+function irPagina(n) { paginaActual = n; renderTabla(); window.scrollTo({top:0,behavior:"smooth"}); }
+
+// ─── EXPORTAR CSV ─────────────────────────────────────────────────────────
+function exportarCSV() {
+  if (reportesFiltrados.length === 0) { alert("No hay datos para exportar"); return; }
+  var headers = ["Fecha","Supervisor","Sector","Frente","Tipo","Link"];
+  var rows = reportesFiltrados.map(function(r){
+    return [
+      String(r.fecha).substring(0,10),
+      r.responsable||"",
+      r.sector||"",
+      r.frente||"",
+      r.tipoReporte||"",
+      r.link||""
+    ];
+  });
+  var csv = [headers].concat(rows).map(function(row){
+    return row.map(function(c){
+      var s = String(c).replace(/"/g,'""');
+      return /[",\n;]/.test(s) ? '"'+s+'"' : s;
+    }).join(",");
+  }).join("\n");
+  var blob = new Blob(["﻿"+csv], { type: "text/csv;charset=utf-8;" });
+  var fecha = new Date().toISOString().substring(0,10);
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "reportes_campo_" + fecha + ".csv";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
 </script>
 </body>
 </html>
