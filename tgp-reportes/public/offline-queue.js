@@ -233,11 +233,33 @@
     else refreshIndicator();
   }, 60000);
 
+  // ─── PRE-WARM CACHE ───────────────────────────────────────────────────────
+  // Descarga todas las variantes de listas para que queden disponibles offline
+  function prewarmCache() {
+    if (!navigator.onLine) return;
+    var urls = [
+      "/api/supervisores",                                // lista completa
+      "/api/supervisores?subcategoria=Geotecnia",
+      "/api/supervisores?subcategoria=CAPEX",
+      "/api/proyectos-capex",
+      "/api/todos-frentes"
+    ];
+    urls.forEach(function(u) {
+      fetch(u).catch(function() {});
+    });
+  }
+
   // Inicializar al cargar
   document.addEventListener("DOMContentLoaded", function() {
     refreshIndicator();
-    if (navigator.onLine) syncQueue();
+    if (navigator.onLine) {
+      prewarmCache();
+      syncQueue();
+    }
   });
+
+  // Tambien pre-warm cuando vuelve la conexion
+  window.addEventListener("online", function() { prewarmCache(); });
 
   // ─── REGISTRO DE SERVICE WORKER ───────────────────────────────────────────
   if ("serviceWorker" in navigator) {

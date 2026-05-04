@@ -4,7 +4,7 @@
 // abran sin conexion. Los envios POST NO se cachean; los maneja offline-queue.js
 // ═══════════════════════════════════════════════════════════════════════════
 
-const CACHE_VERSION = "tgp-reportes-v1";
+const CACHE_VERSION = "tgp-reportes-v2";
 const STATIC_CACHE  = CACHE_VERSION + "-static";
 const API_CACHE     = CACHE_VERSION + "-api";
 
@@ -111,8 +111,39 @@ async function staleWhileRevalidate(req) {
   }
   const fresh = await networkPromise;
   if (fresh) return fresh;
-  // Sin cache y sin red: respuesta vacia razonable
-  return new Response(JSON.stringify({}), {
-    headers: { "Content-Type": "application/json" }
-  });
+
+  // Sin cache y sin red: intentar fallback inteligente
+  const url = new URL(req.url);
+
+  // Para /api/supervisores?subcategoria=X, intentar /api/supervisores (sin filtro)
+  // y filtrar del lado del SW
+  if (url.pathname === "/api/supervisores" && url.searchParams.get("subcategoria")) {
+    const fullCache = await cache.match(self.location.origin + "/api/supervisores");
+    if (fullCache) {
+      try {
+        const all = await fullCache.json();
+        const subcat = url.searchParams.get("subcategoria");
+        const filtered = all.filter(function(s) { return s.subcategoria === subcat; });
+        return new Response(JSON.stringify(filtered), {
+          headers: { "Content-Type": "application/json" }
+        });
+      } catch (e) {}
+    }
+    // Fallback final: array vacio
+    return new Response("[]", { headers: { "Content-Type": "application/json" } });
+  }
+
+  // Fallbacks por endpoint
+  if (url.pathname === "/api/supervisores") {
+    return new Response("[]", { headers: { "Content-Type": "application/json" } });
+  }
+  if (url.pathname === "/api/proyectos-capex") {
+    return new Response(JSON.stringify({ pep: [], cuentaOrden: [] }), {
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+  if (url.pathname === "/api/todos-frentes") {
+    return new Response("{}", { headers: { "Content-Type": "application/json" } });
+  }
+  return new Response("{}", { headers: { "Content-Type": "application/json" } });
 }
