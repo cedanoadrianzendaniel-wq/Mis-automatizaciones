@@ -4,7 +4,7 @@
 // abran sin conexion. Los envios POST NO se cachean; los maneja offline-queue.js
 // ═══════════════════════════════════════════════════════════════════════════
 
-const CACHE_VERSION = "tgp-reportes-v2";
+const CACHE_VERSION = "tgp-reportes-v3";
 const STATIC_CACHE  = CACHE_VERSION + "-static";
 const API_CACHE     = CACHE_VERSION + "-api";
 
@@ -57,6 +57,15 @@ self.addEventListener("fetch", function(event) {
 
   // Solo same-origin
   if (url.origin !== self.location.origin) return;
+
+  // ─── Dashboard y portal: network-only (paginas de coordinador, online-only) ──
+  // No las cacheamos para que actualizaciones se vean siempre y no por SW stale.
+  if (url.pathname === "/dashboard" ||
+      url.pathname === "/portal" ||
+      url.pathname === "/dashboard.html" ||
+      url.pathname === "/portal.html") {
+    return; // dejar que el browser haga fetch normal
+  }
 
   // ─── Listas API: stale-while-revalidate ─────────
   const isListEndpoint = API_LIST_ENDPOINTS.some(function(p) {
