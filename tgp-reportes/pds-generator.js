@@ -36,6 +36,7 @@ const FRENTES_MAPPING = {
   "MG KP 170+000 AL KP 179+850":            { cuenta: "63440002", orden: "TGEO-2821" },
   "MG KP 179+850 AL KP 194+000":            { cuenta: "63440002", orden: "TGEO-2822" },
   "MG KP 194+000 AL KP 209+360":            { cuenta: "63440002", orden: "TGEO-2823" },
+  "M.G. KP 209+360 - KP 227+750":           { cuenta: "63800018", orden: "TGEO-2624" },
   "APOYO A INGENIERIA":                      { cuenta: "63290002", orden: "TOGA/SIE-26-02-02" }
 };
 
