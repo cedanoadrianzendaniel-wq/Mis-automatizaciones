@@ -130,12 +130,12 @@ const PROYECTOS_CAPEX_LISTA = [
 
 const FRENTES = {
   "Costa_Geotecnia": [
-    "SOPORTE A INGENIERIA",
+    "Supervision BV - Ingenieria 2026",
     "VIAL",
     "URGENCIA VIAL KP 472+700 AL KP 482+000",
-    "KP 714+155 AL KP 730+698",
-    "MG KP 519+526 AL KP 540+839",
-    "TRABAJOS DE MANTENIMIENTO GEOTECNICO KP540+839 AL KP558+315 (NGL)"
+    "M.G. KP 714+155 - KP 730+698",
+    "M.G. KP 519+526 - KP 540+839 (NGL)",
+    "M.G. KP 540+839 - KP 558+315 (NLG)"
   ],
   "Sierra_Geotecnia": [
     "MG KP 170+000 AL KP 179+850",

@@ -40,12 +40,17 @@ const FRENTES_MAPPING = {
   "Reparacion de F.O. KP61+150":                 { cuenta: "63800018", orden: "TG1CDV1" },
   "Perforaciones del KP126":                     { cuenta: "63800018", orden: "TGGA/SEL-25-08-07" },
   "Perforaciones del KP55+118":                  { cuenta: "63800018", orden: "TGGA/SEL-26-02-01" },
-  // COSTA
-  "SOPORTE A INGENIERIA":                    { cuenta: "63800018", orden: "TGGA/COS-26-02-01" },
-  "VIAL":                                    { cuenta: "63800018", orden: "TG3CDV1" },
-  "URGENCIA VIAL KP 472+700 AL KP 482+000": { cuenta: "63440004", orden: "TGCI-2644" },
-  "KP 714+155 AL KP 730+698":               { cuenta: "63440002", orden: "TGEO-2629" },
-  "MG KP 519+526 AL KP 540+839":            { cuenta: "63440002", orden: "TGEO-2631" },
+  // COSTA — frentes activos (nombres oficiales del cliente 2026-05-05)
+  "Supervision BV - Ingenieria 2026":          { cuenta: "63290002", orden: "TGGA/COS-26-02-01" },
+  "VIAL":                                      { cuenta: "63800018", orden: "TG3CDV1" },
+  "URGENCIA VIAL KP 472+700 AL KP 482+000":    { cuenta: "63440004", orden: "TGCI-2644" },
+  "M.G. KP 714+155 - KP 730+698":              { cuenta: "63800018", orden: "TGEO-2629" },
+  "M.G. KP 519+526 - KP 540+839 (NGL)":        { cuenta: "63800018", orden: "TGEO-2631" },
+  "M.G. KP 540+839 - KP 558+315 (NLG)":        { cuenta: "63800018", orden: "TGEO-2632" },
+  // COSTA — nombres legacy (reportes historicos en Sheets; mismo cuenta/orden oficial)
+  "SOPORTE A INGENIERIA":                      { cuenta: "63290002", orden: "TGGA/COS-26-02-01" },
+  "KP 714+155 AL KP 730+698":                  { cuenta: "63800018", orden: "TGEO-2629" },
+  "MG KP 519+526 AL KP 540+839":               { cuenta: "63800018", orden: "TGEO-2631" },
   "TRABAJOS DE MANTENIMIENTO GEOTECNICO KP540+839 AL KP558+315 (NGL)": { cuenta: "63800018", orden: "TGEO-2632" },
   // SIERRA
   "MG KP 170+000 AL KP 179+850":            { cuenta: "63440002", orden: "TGEO-2621" },
