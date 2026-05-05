@@ -41,18 +41,18 @@ const FRENTES_MAPPING = {
   "Perforaciones del KP126":                     { cuenta: "63800018", orden: "TGGA/SEL-25-08-07" },
   "Perforaciones del KP55+118":                  { cuenta: "63800018", orden: "TGGA/SEL-26-02-01" },
   // COSTA
-  "SOPORTE A INGENIERIA":                    { cuenta: "63800018", orden: "TOGA/COS-26-02-01" },
-  "VIAL":                                    { cuenta: "63800018", orden: "TGEO-2871" },
-  "URGENCIA VIAL KP 472+700 AL KP 482+000": { cuenta: "63440002", orden: "TGEO-2644" },
+  "SOPORTE A INGENIERIA":                    { cuenta: "63800018", orden: "TGGA/COS-26-02-01" },
+  "VIAL":                                    { cuenta: "63800018", orden: "TG3CDV1" },
+  "URGENCIA VIAL KP 472+700 AL KP 482+000": { cuenta: "63440004", orden: "TGCI-2644" },
   "KP 714+155 AL KP 730+698":               { cuenta: "63440002", orden: "TGEO-2629" },
-  "MG KP 519+526 AL KP 540+839":            { cuenta: "63440002", orden: "TGEO-2857" },
+  "MG KP 519+526 AL KP 540+839":            { cuenta: "63440002", orden: "TGEO-2631" },
   "TRABAJOS DE MANTENIMIENTO GEOTECNICO KP540+839 AL KP558+315 (NGL)": { cuenta: "63800018", orden: "TGEO-2632" },
   // SIERRA
-  "MG KP 170+000 AL KP 179+850":            { cuenta: "63440002", orden: "TGEO-2821" },
-  "MG KP 179+850 AL KP 194+000":            { cuenta: "63440002", orden: "TGEO-2822" },
-  "MG KP 194+000 AL KP 209+360":            { cuenta: "63440002", orden: "TGEO-2823" },
+  "MG KP 170+000 AL KP 179+850":            { cuenta: "63440002", orden: "TGEO-2621" },
+  "MG KP 179+850 AL KP 194+000":            { cuenta: "63440002", orden: "TGEO-2622" },
+  "MG KP 194+000 AL KP 209+360":            { cuenta: "63440002", orden: "TGEO-2623" },
   "M.G. KP 209+360 - KP 227+750":           { cuenta: "63800018", orden: "TGEO-2624" },
-  "APOYO A INGENIERIA":                      { cuenta: "63290002", orden: "TOGA/SIE-26-02-02" }
+  "APOYO A INGENIERIA":                      { cuenta: "63290002", orden: "TGGA/SIE-26-02-02" }
 };
 
 // ─── MAPEO: Proyecto CAPEX → Cuenta / Orden / ElementoPEP ───────────────────
