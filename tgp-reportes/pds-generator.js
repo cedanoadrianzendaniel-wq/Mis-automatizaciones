@@ -44,7 +44,7 @@ const FRENTES_MAPPING = {
   "SOPORTE A INGENIERIA":                    { cuenta: "63800018", orden: "TOGA/COS-26-02-01" },
   "VIAL":                                    { cuenta: "63800018", orden: "TGEO-2871" },
   "URGENCIA VIAL KP 472+700 AL KP 482+000": { cuenta: "63440002", orden: "TGEO-2644" },
-  "KP 714+155 AL KP 730+698":               { cuenta: "8344002",  orden: "TGEO-2629" },
+  "KP 714+155 AL KP 730+698":               { cuenta: "63440002", orden: "TGEO-2629" },
   "MG KP 519+526 AL KP 540+839":            { cuenta: "63440002", orden: "TGEO-2857" },
   "TRABAJOS DE MANTENIMIENTO GEOTECNICO KP540+839 AL KP558+315 (NGL)": { cuenta: "63800018", orden: "TGEO-2632" },
   // SIERRA
