@@ -156,6 +156,7 @@ const FRENTES = {
     "MG KP 43+830 - KP 53+000 - ETAPA 1",
     "MG KP 75+680 - KP 89+000 / 89+600",
     "SPT / Exploracion KP 55+118",
+    "OG. KP55+118",
     "Perforaciones KP 126+600",
     "Perforaciones adicionales (KP 71 / otros)",
     "Reparacion F.O KP 61+150 (TI)",
