@@ -593,11 +593,18 @@ app.get("/api/diagnostico", async (req, res) => {
       REFRESH_TOKEN:    process.env.GOOGLE_REFRESH_TOKEN
         ? "OK (" + process.env.GOOGLE_REFRESH_TOKEN.substring(0, 10) + "...)" : "FALTA",
       SPREADSHEET_ID:     process.env.SPREADSHEET_ID     || "FALTA",
-      SPREADSHEET_ID_HSE: process.env.SPREADSHEET_ID_HSE || "FALTA"
+      SPREADSHEET_ID_HSE: process.env.SPREADSHEET_ID_HSE || "FALTA",
+      SMTP_HOST:        process.env.SMTP_HOST   ? process.env.SMTP_HOST : "FALTA",
+      SMTP_PORT:        process.env.SMTP_PORT   || "(default 587)",
+      SMTP_SECURE:      process.env.SMTP_SECURE || "(default false)",
+      SMTP_USER:        process.env.SMTP_USER   ? "OK (" + process.env.SMTP_USER + ")" : "FALTA",
+      SMTP_PASS:        process.env.SMTP_PASS   ? "OK (****" + process.env.SMTP_PASS.slice(-2) + ")" : "FALTA",
+      EMAIL_COORDINADOR: EMAIL_COORDINADOR ? EMAIL_COORDINADOR.split(",").length + " destinatario(s): " + EMAIL_COORDINADOR : "FALTA"
     },
     drive: null,
     sheets: null,
-    sheetsHSE: null
+    sheetsHSE: null,
+    smtp: null
   };
   try {
     const auth  = getGoogleAuth();
@@ -631,7 +638,72 @@ app.get("/api/diagnostico", async (req, res) => {
   } catch (e) {
     resultado.sheetsHSE = { ok: false, error: e.message, code: e.code };
   }
+  // ─── Verificacion SMTP (verify, sin enviar) ─────────────
+  try {
+    if (!process.env.SMTP_HOST) {
+      resultado.smtp = { ok: false, error: "SMTP_HOST no configurado" };
+    } else if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      resultado.smtp = { ok: false, error: "SMTP_USER o SMTP_PASS faltan" };
+    } else {
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT || "587"),
+        secure: process.env.SMTP_SECURE === "true",
+        auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+      });
+      await transporter.verify();
+      resultado.smtp = { ok: true, host: process.env.SMTP_HOST, user: process.env.SMTP_USER };
+    }
+  } catch (e) {
+    resultado.smtp = { ok: false, error: e.message, code: e.code };
+  }
   res.json(resultado);
+});
+
+// ─── TEST EMAIL ─────────────────────────────────────────────────────────────
+// Envia un correo de prueba al EMAIL_COORDINADOR para verificar entregabilidad
+// Requiere clave del dashboard para evitar abuso
+app.get("/api/test-email", async (req, res) => {
+  const { clave, to } = req.query;
+  if (String(clave).trim() !== CLAVE_DASHBOARD) {
+    return res.status(401).json({ ok: false, error: "Clave incorrecta. Usa ?clave=XXX" });
+  }
+  if (!process.env.SMTP_HOST) {
+    return res.json({ ok: false, error: "SMTP_HOST no configurado en EasyPanel" });
+  }
+  try {
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || "587"),
+      secure: process.env.SMTP_SECURE === "true",
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+    });
+    const destino = to || EMAIL_COORDINADOR;
+    const info = await transporter.sendMail({
+      from: `"Reportes TGP - TEST" <${process.env.SMTP_USER}>`,
+      to: destino,
+      subject: "[TEST] Reportes TGP - " + new Date().toISOString(),
+      html: `<div style="font-family:Arial,sans-serif;padding:16px">
+        <h2 style="color:#1F3864">Correo de prueba</h2>
+        <p>Este es un correo de prueba enviado desde el sistema TGP Reportes para verificar
+        que la configuracion SMTP funciona y los correos llegan a destino.</p>
+        <p><b>Si lo recibes:</b> SMTP funciona. Si los reportes reales no llegan, revisa la carpeta de spam o filtros del correo.</p>
+        <p><b>Hora:</b> ${new Date().toString()}</p>
+        <p><b>Destinatarios:</b> ${destino}</p>
+        <hr><small style="color:#888">Enviado desde /api/test-email</small>
+      </div>`
+    });
+    res.json({
+      ok: true,
+      messageId: info.messageId,
+      accepted: info.accepted,
+      rejected: info.rejected,
+      response: info.response,
+      destino
+    });
+  } catch (e) {
+    res.json({ ok: false, error: e.message, code: e.code, command: e.command });
+  }
 });
 
 // ─── POST /api/reporte — CAMPO ────────────────────────────────────────────────
