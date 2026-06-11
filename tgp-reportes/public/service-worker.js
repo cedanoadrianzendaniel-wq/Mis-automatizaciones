@@ -4,7 +4,7 @@
 // abran sin conexion. Los envios POST NO se cachean; los maneja offline-queue.js
 // ═══════════════════════════════════════════════════════════════════════════
 
-const CACHE_VERSION = "tgp-reportes-v6";
+const CACHE_VERSION = "tgp-reportes-v7";
 const STATIC_CACHE  = CACHE_VERSION + "-static";
 const API_CACHE     = CACHE_VERSION + "-api";
 

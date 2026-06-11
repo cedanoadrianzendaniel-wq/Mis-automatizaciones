@@ -154,6 +154,7 @@ const FRENTES = {
     "MG KP 25+000 - KP 35+000",
     "MG KP 35+000 - KP 43+830",
     "MG KP 43+830 - KP 53+000 - ETAPA 1",
+    "Mantenimiento Geotecnico kp61+500 al kp75+680",
     "MG KP 75+680 - KP 89+000 / 89+600",
     "SPT / Exploracion KP 55+118",
     "OG. KP55+118",
