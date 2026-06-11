@@ -30,6 +30,7 @@ const FRENTES_MAPPING = {
   "MG KP 75+680 - KP 89+000 / 89+600":           { cuenta: "63800018", orden: "TGEO-2613" },
   "SPT / Exploracion KP 55+118":                 { cuenta: "63800018", orden: "TGGA/SEL-26-02-01" },
   "OG. KP55+118":                                { cuenta: "63800018", orden: "TGGA/SEL-26-10-01" },
+  "YSPT KP7+860":                                { cuenta: "63800018", orden: "TGGA/SEL-26-02-04" },
   "Perforaciones KP 126+600":                    { cuenta: "63800018", orden: "TGGA/SEL-25-08-07" },
   "Perforaciones adicionales (KP 71 / otros)":   { cuenta: "63800018", orden: "TGGA/SEL-26-05-02" },
   "Reparacion F.O KP 61+150 (TI)":               { cuenta: "63800018", orden: "TG1CDV1" },
