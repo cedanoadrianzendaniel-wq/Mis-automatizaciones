@@ -28,6 +28,7 @@ const FRENTES_MAPPING = {
   "MG KP 43+830 - KP 53+000 - ETAPA 1":          { cuenta: "63800018", orden: "TGEO-2610" },
   "Mantenimiento Geotecnico kp61+500 al kp75+680": { cuenta: "63800018", orden: "TGEO-2612" },
   "MG KP 75+680 - KP 89+000 / 89+600":           { cuenta: "63800018", orden: "TGEO-2613" },
+  "M.G. KP 89+600 - KP 99+000":                  { cuenta: "63800018", orden: "TGEO-2614" },
   "SPT / Exploracion KP 55+118":                 { cuenta: "63800018", orden: "TGGA/SEL-26-02-01" },
   "OG. KP55+118":                                { cuenta: "63800018", orden: "TGGA/SEL-26-10-01" },
   "YSPT KP7+860":                                { cuenta: "63800018", orden: "TGGA/SEL-26-02-04" },
