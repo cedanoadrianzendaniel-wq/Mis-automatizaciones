@@ -162,6 +162,7 @@ const FRENTES = {
     "YSPT KP7+860",
     "Perforaciones KP 126+600",
     "Perforaciones adicionales (KP 71 / otros)",
+    "KP 43 - ATENCION EMERGENCIA",
     "Reparacion F.O KP 61+150 (TI)",
     "Soporte Vial / Mantenimiento Vial",
     "Apoyo / Ingenieria"
