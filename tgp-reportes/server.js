@@ -135,7 +135,9 @@ const FRENTES = {
     "URGENCIA VIAL KP 472+700 AL KP 482+000",
     "M.G. KP 714+155 - KP 730+698",
     "M.G. KP 519+526 - KP 540+839 (NGL)",
-    "M.G. KP 540+839 - KP 558+315 (NLG)"
+    "M.G. KP 540+839 - KP 558+315 (NLG)",
+    "FEN. KP 484+706 - KP 484+965",
+    "O.G. KP 726+140"
   ],
   "Sierra_Geotecnia": [
     "MG KP 170+000 AL KP 179+850",
@@ -227,6 +229,7 @@ const SUPERVISORES = [
   { nombre: "ORLANDO SALHUANA",          sector: "", subcategoria: "Geotecnia" },
   { nombre: "LESLY VANESSA CHIPA CASAVERDE", sector: "", subcategoria: "Geotecnia" },
   { nombre: "JOSE MANUEL MARQUEZ CAPANNI", sector: "", subcategoria: "Geotecnia" },
+  { nombre: "JOSE CACHICATARI CAHUAYA",    sector: "", subcategoria: "Geotecnia" },
   // ── CAPEX ──
   { nombre: "FERNANDO DAVILA",           sector: "", subcategoria: "CAPEX" },
   { nombre: "GREGORY VELASQUEZ",         sector: "", subcategoria: "CAPEX" },
@@ -239,7 +242,8 @@ const SUPERVISORES = [
   { nombre: "LUIS JAUREGUI",             sector: "", subcategoria: "CAPEX" },
   { nombre: "ABRAHAM ARCE",              sector: "", subcategoria: "CAPEX" },
   { nombre: "PETTER BLAS",               sector: "", subcategoria: "CAPEX" },
-  { nombre: "ELLIEL ARMANDO MARTINEZ DE LA CRUZ", sector: "", subcategoria: "CAPEX" }
+  { nombre: "ELLIEL ARMANDO MARTINEZ DE LA CRUZ", sector: "", subcategoria: "CAPEX" },
+  { nombre: "ABRAHAM JIMENEZ",           sector: "", subcategoria: "CAPEX" }
 ];
 
 // ─── GOOGLE AUTH (OAuth2) ────────────────────────────────────────────────────

@@ -52,6 +52,8 @@ const FRENTES_MAPPING = {
   "M.G. KP 714+155 - KP 730+698":              { cuenta: "63800018", orden: "TGEO-2629" },
   "M.G. KP 519+526 - KP 540+839 (NGL)":        { cuenta: "63800018", orden: "TGEO-2631" },
   "M.G. KP 540+839 - KP 558+315 (NLG)":        { cuenta: "63800018", orden: "TGEO-2632" },
+  "FEN. KP 484+706 - KP 484+965":              { cuenta: "63440002", orden: "TGEO-2637" },
+  "O.G. KP 726+140":                           { cuenta: "63440002", orden: "TGGA/COS-26-03-01" },
   // COSTA — nombres legacy (reportes historicos en Sheets; mismo cuenta/orden oficial)
   "SOPORTE A INGENIERIA":                      { cuenta: "63290002", orden: "TGGA/COS-26-02-01" },
   "KP 714+155 AL KP 730+698":                  { cuenta: "63800018", orden: "TGEO-2629" },
