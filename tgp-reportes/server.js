@@ -144,6 +144,7 @@ const FRENTES = {
     "MG KP 179+850 AL KP 194+000",
     "MG KP 194+000 AL KP 209+360",
     "M.G. KP 209+360 - KP 227+750",
+    "M.G. KP 240+200 AL KP 243+400",
     "APOYO A INGENIERIA"
   ],
   "Selva_Geotecnia": [
