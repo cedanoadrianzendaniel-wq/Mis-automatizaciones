@@ -45,6 +45,8 @@ const FRENTES_MAPPING = {
   "Reparacion de F.O. KP61+150":                 { cuenta: "63800018", orden: "TG1CDV1" },
   "Perforaciones del KP126":                     { cuenta: "63800018", orden: "TGGA/SEL-25-08-07" },
   "Perforaciones del KP55+118":                  { cuenta: "63800018", orden: "TGGA/SEL-26-02-01" },
+  "TAI 39+200":                                  { cuenta: "63800018", orden: "TGEO-2601" },
+  "M.G. KP 12+100 - KP 25+000":                  { cuenta: "63800018", orden: "TGEO-2607" },
   // COSTA — frentes activos (nombres oficiales del cliente 2026-05-05)
   "Supervision BV - Ingenieria 2026":          { cuenta: "63290002", orden: "TGGA/COS-26-02-01" },
   "VIAL":                                      { cuenta: "63800018", orden: "TG3CDV1" },
