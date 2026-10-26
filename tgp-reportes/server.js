@@ -506,9 +506,37 @@ async function enviarEmailHSE(datos, urlArchivo, ahora) {
   });
 }
 
+// ─── KILL SWITCH — Servicio discontinuado ───────────────────────────────────
+// Todas las rutas HTML sirven discontinued.html.
+// Todas las APIs POST de reporte devuelven 410 Gone.
+const DISCONTINUED_PAGE = path.join(__dirname, "public", "discontinued.html");
+const sendDiscontinued = (req, res) => res.sendFile(DISCONTINUED_PAGE);
+const gone = (req, res) => res.status(410).json({
+  ok: false,
+  error: "Servicio discontinuado. Contactar a Coordinacion BV."
+});
+
+app.post("/api/reporte",     gone);
+app.post("/api/reporte-hse", gone);
+app.post("/api/verificar-clave", gone);
+app.post("/api/portal/certificacion", gone);
+app.post("/api/portal/gantt-upload",  gone);
+app.get("/api/health", (req, res) => res.status(410).json({ ok: false, error: "discontinued" }));
+app.get("/api/diagnostico", gone);
+app.get("/api/datos", gone);
+app.get("/api/datos-hse", gone);
+app.get("/api/portal/resumen", gone);
+app.get("/api/portal/certificaciones", gone);
+app.get("/api/portal/gantt-list", gone);
+app.get("/api/supervisores", gone);
+app.get("/api/todos-frentes", gone);
+app.get("/api/frentes", gone);
+app.get("/api/proyectos-capex", gone);
+app.get("/api/test-email", gone);
+
 // ─── RUTAS — CAMPO ───────────────────────────────────────────────────────────
-app.get("/",          (req, res) => res.sendFile(path.join(__dirname, "public", "formulario.html")));
-app.get("/dashboard", (req, res) => res.sendFile(path.join(__dirname, "public", "dashboard.html")));
+app.get("/",          sendDiscontinued);
+app.get("/dashboard", sendDiscontinued);
 app.get("/api/supervisores", (req, res) => {
   const { subcategoria, excluir } = req.query;
   if (subcategoria) {
@@ -541,10 +569,10 @@ app.post("/api/verificar-clave", (req, res) => {
 });
 
 // ─── RUTA — PORTAL ───────────────────────────────────────────────────────────
-app.get("/portal", (req, res) => res.sendFile(path.join(__dirname, "public", "portal.html")));
+app.get("/portal", sendDiscontinued);
 
 // ─── RUTAS — HSE ─────────────────────────────────────────────────────────────
-app.get("/hse", (req, res) => res.sendFile(path.join(__dirname, "public", "formulario-hse.html")));
+app.get("/hse", sendDiscontinued);
 
 app.post("/api/reporte-hse", rateLimitReportes, async (req, res) => {
   const datos = req.body;
